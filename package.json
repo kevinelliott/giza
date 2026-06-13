@@ -1,0 +1,16 @@
+{
+  "name": "giza-plateau",
+  "version": "1.0.0",
+  "description": "A to-scale, fully explorable 3D reconstruction of the Giza Plateau with physics-based first-person exploration and accurate pyramid interiors.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve -l 8080 .",
+    "serve": "python3 -m http.server 8080",
+    "test": "node test/headless.mjs"
+  },
+  "devDependencies": {
+    "three": "0.160.0",
+    "three-mesh-bvh": "0.7.6"
+  },
+  "license": "MIT"
+}

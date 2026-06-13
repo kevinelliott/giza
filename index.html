@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Giza Plateau — To-Scale Explorable Simulation</title>
+<link rel="stylesheet" href="styles/main.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.6/build/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="loadbox">
+    <h1>THE GIZA PLATEAU</h1>
+    <p class="sub">A to-scale, fully explorable reconstruction</p>
+    <p id="status">Loading…</p>
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<!-- Crosshair -->
+<div id="crosshair">+</div>
+
+<!-- Start / pause overlay -->
+<div id="overlay">
+  <div class="card">
+    <h1>THE GIZA PLATEAU</h1>
+    <p class="sub">Built 1:1 from real survey data &mdash; pyramids, chambers,
+       the Sphinx and temples, with physics-based first-person exploration.</p>
+    <p class="big">Click to enter</p>
+    <div class="keys">
+      <span><b>W A S D</b> move</span>
+      <span><b>Mouse</b> look</span>
+      <span><b>Space</b> jump</span>
+      <span><b>Shift</b> sprint</span>
+      <span><b>F</b> fly / no-clip</span>
+      <span><b>L</b> headlamp</span>
+      <span><b>M</b> fast travel</span>
+      <span><b>H</b> help / facts</span>
+      <span><b>Esc</b> release mouse</span>
+    </div>
+    <p class="hint">Tip: press <b>L</b> for your headlamp before entering the
+      passages, or <b>M</b> to jump straight to the King&rsquo;s Chamber.</p>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="pos">&nbsp;</div>
+  <div id="states">
+    fly <b id="flyState">off</b> &middot; lamp <b id="lampState">off</b>
+    &middot; <b>M</b> map &middot; <b>H</b> help
+  </div>
+</div>
+<div id="lm">
+  <div id="lmName"></div>
+  <div id="lmBlurb"></div>
+</div>
+
+<!-- Fast-travel menu -->
+<div id="menu">
+  <h2>Fast Travel</h2>
+  <div id="menuList"></div>
+  <p class="close">press <b>M</b> to close</p>
+</div>
+
+<!-- Help / facts -->
+<div id="help">
+  <h2>Giza Plateau — the real numbers</h2>
+  <ul>
+    <li><b>Great Pyramid (Khufu)</b>: base 230.4 m, original height 146.6 m,
+        face slope 51&deg;50&prime;. ~2.3 million blocks.</li>
+    <li><b>Interior route</b>: original entrance on the north face ~17 m up &rarr;
+        Descending Passage &rarr; Ascending Passage &rarr; Grand Gallery
+        (46.7 m long, 8.6 m high) &rarr; King&rsquo;s Chamber. A branch leads to
+        the Queen&rsquo;s Chamber and another down to the Subterranean Chamber.</li>
+    <li><b>King&rsquo;s Chamber</b>: red granite, 10.47 &times; 5.23 m, 5.85 m high,
+        with the granite sarcophagus.</li>
+    <li><b>Khafre</b>: base 215.25 m, slope 53&deg;; keeps its casing near the top.</li>
+    <li><b>Menkaure</b>: base 102.2 m; lowest courses were red Aswan granite.</li>
+    <li><b>Great Sphinx</b>: 73 m long, 20 m high, faces due east.</li>
+    <li>Monument spacing and orientation are taken from real GPS coordinates;
+        passage cross-sections are slightly enlarged so you can walk them
+        upright (the real ones are ~1.0&ndash;1.2 m and require crouching).</li>
+  </ul>
+  <p class="close">press <b>H</b> to close</p>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
