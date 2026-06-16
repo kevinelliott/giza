@@ -5,7 +5,8 @@ import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
   KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
   WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY,
-  SATELLITES, BOAT_PITS, KHUFU_VALLEY
+  SATELLITES, BOAT_PITS, KHUFU_VALLEY,
+  TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -260,15 +261,16 @@ function buildKhentkaus(km, mats, collidables, group) {
   }
 }
 
-// Workers' town: rows of long low mud-brick galleries/buildings.
+// A settlement: rows of low mud-brick buildings/galleries.
 function buildVillage(v, mat, collidables, group, out) {
   const c = v.center, geoms = [];
-  const cols = 7, rows = 5, dx = 19, dz = 17;
+  const cols = v.cols || 7, rows = v.rows || 5, dx = v.dx || 19, dz = v.dz || 17;
+  const bw = v.bw || 13, bd = v.bd || 9;
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
       const x = c.x - (cols - 1) * dx / 2 + i * dx + (Math.random() - 0.5) * 2;
       const z = c.z - (rows - 1) * dz / 2 + j * dz + (Math.random() - 0.5) * 2;
-      const w = 13 + Math.random() * 3, d = 9 + Math.random() * 2, hh = 2.6 + Math.random();
+      const w = bw + Math.random() * 3, d = bd + Math.random() * 2, hh = 2.6 + Math.random();
       const g = new THREE.BoxGeometry(w, hh, d); g.translate(x, hh / 2, z);
       geoms.push(g);
       if (out) out.push({ x, z, w, d });
@@ -570,6 +572,36 @@ export function buildWorld(scene, mats) {
         'pit beside the Great Pyramid in 1954 and painstakingly reassembled.'
     });
   }
+
+  // Basalt pavement of Khufu's mortuary temple (the real floor was black basalt)
+  const basaltMat = new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.55, metalness: 0.1 });
+  const basalt = new THREE.Mesh(new THREE.BoxGeometry(48, 0.4, 24), basaltMat);
+  basalt.position.set(kc.x + 150, 0.2, kc.z); basalt.receiveShadow = true;
+  group.add(basalt);
+
+  // Trial Passages — a low rock-cut block with grooved corridor lines
+  const tp = TRIAL_PASSAGES.center, tpg = new THREE.Group();
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(16, 1.4, 9), mats.bedrock);
+  slab.position.y = 0.7; slab.userData.collidable = true; slab.castShadow = true; tpg.add(slab);
+  for (const off of [-1.5, 1.5]) {
+    const groove = new THREE.Mesh(new THREE.BoxGeometry(11, 0.6, 1.1),
+      new THREE.MeshStandardMaterial({ color: 0x3a3128, roughness: 1 }));
+    groove.position.set(off, 1.45, off);
+    tpg.add(groove);
+  }
+  tpg.position.set(tp.x, 0, tp.z); group.add(tpg); collidables.push(slab);
+  landmarks.push({ name: TRIAL_PASSAGES.name, blurb: TRIAL_PASSAGES.blurb, radius: 22,
+    pos: { x: tp.x, y: 3, z: tp.z } });
+
+  // Khentkaus town (priests' settlement) + workers' cemetery on the slope
+  buildVillage({ center: KHENTKAUS_TOWN.center, cols: 4, rows: 3, dx: 15, dz: 13, bw: 9, bd: 7 },
+    deco.mud, collidables, group, buildings);
+  landmarks.push({ name: KHENTKAUS_TOWN.name, blurb: KHENTKAUS_TOWN.blurb, radius: 45,
+    pos: { x: KHENTKAUS_TOWN.center.x, y: 3, z: KHENTKAUS_TOWN.center.z } });
+  buildMastabaField(WORKERS_CEMETERY.center.x - 32, WORKERS_CEMETERY.center.z - 22, 8, 6, 8, 7,
+    deco.mud, collidables, group, null, mastabas);
+  landmarks.push({ name: WORKERS_CEMETERY.name, blurb: WORKERS_CEMETERY.blurb, radius: 55,
+    pos: { x: WORKERS_CEMETERY.center.x, y: 2, z: WORKERS_CEMETERY.center.z } });
 
   // Palm groves near the valley temples and the plateau edge
   const palmSpots = [[380, 500], [392, 512], [372, 520], [405, 495], [360, 508],

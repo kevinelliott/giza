@@ -241,6 +241,26 @@ export const MENKAURE_VALLEY = {
          'stone and finished in mud brick after his death.'
 };
 
+// The Trial Passages — rock-cut corridors east of the Great Pyramid that
+// reproduce its internal passage system at near-full scale.
+export const TRIAL_PASSAGES = {
+  name: 'Trial Passages', center: { x: 160, z: -42 },
+  blurb: 'Rock-cut passages east of the Great Pyramid that reproduce its ' +
+         'internal corridors at near-full scale — likely a builders\' mock-up.'
+};
+// A priests'/officials' settlement beside the Khentkaus monument.
+export const KHENTKAUS_TOWN = {
+  name: 'Khentkaus Town', center: { x: 30, z: 548 },
+  blurb: 'A settlement of priests who served the cult of Queen Khentkaus I, ' +
+         'built against her monument.'
+};
+// Tombs of the actual pyramid builders, on the escarpment above their town.
+export const WORKERS_CEMETERY = {
+  name: "Workers' Cemetery", center: { x: 120, z: 700 },
+  blurb: 'Tombs of the pyramid builders on the slope above their town — small ' +
+         'mud-brick and stone tombs, some with miniature vaulted superstructures.'
+};
+
 // Satellite / cult pyramids beside the main pyramids.
 export const SATELLITES = [
   { name: 'Khufu Satellite Pyramid (G1-d)', base: 21.75, height: 13.8, center: { x: 95, z: 130 } },
@@ -278,5 +298,7 @@ export const TELEPORTS = [
   { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
   { label: 'Khafre Valley Temple', pos: { x: 366, y: 2, z: 482 - 30 } },
   { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } },
-  { label: 'Khufu Valley Temple', pos: { x: 520, y: 2, z: 50 - 28 } }
+  { label: 'Khufu Valley Temple', pos: { x: 520, y: 2, z: 50 - 28 } },
+  { label: 'Trial Passages', pos: { x: 160, y: 2, z: -42 - 12 } },
+  { label: "Workers' Cemetery", pos: { x: 120, y: 2, z: 700 - 35 } }
 ];
