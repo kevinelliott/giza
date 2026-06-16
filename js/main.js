@@ -269,6 +269,7 @@ function animate() {
   if (isTouch && started) applyLook();      // touch look drives the camera
   const active = started || controls.isLocked;
   player.update(delta, active ? input : ZERO_INPUT);
+  if (world.tick) world.tick(clock.getElapsedTime());
   updateHUD();
   renderer.render(scene, camera);
 }

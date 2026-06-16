@@ -3,3 +3,4 @@ package-lock.json
 index.local.html
 test/preview*.png
 _*.cjs
+test/shot*.png

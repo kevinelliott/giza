@@ -6,7 +6,8 @@ built from real survey data, and the pyramids are **explorable inside** with
 authentic passage systems and chambers.
 
 ![The three pyramids of Giza, to scale](assets/preview.png)
-![The Great Pyramid's north face, entrance and stair](assets/preview_ground.png)
+![The Great Sphinx and its valley temple](assets/preview_sphinx.png)
+![The Great Pyramid's north face, casing remnants, entrance and stair](assets/preview_ground.png)
 
 ## Run it
 
@@ -58,10 +59,16 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 - **Pyramid of Menkaure** — base 102.2 m, with its red-granite lower courses;
   descending passage to a burial chamber.
 - **Subsidiary "queens'" pyramids** of Khufu and Menkaure.
-- **The Great Sphinx** — 73 m long, 20 m high, facing due east — plus the
-  Sphinx (Valley) Temple and the mortuary temples east of each pyramid.
-- A weathered desert plateau, late-afternoon physical sky, sun shadows, and
-  scattered fallen casing blocks.
+- **The Great Sphinx** — 73 m long, 20 m high, facing due east, with its
+  nemes headdress and the Dream Stele between its paws — plus the Sphinx
+  (Valley) Temple and the mortuary temples east of each pyramid.
+- **Mastaba cemeteries** (the Eastern and Western fields of street-gridded
+  tombs around the Great Pyramid), **causeways** running toward the valley
+  temples, surviving **casing stones** at the Great Pyramid's base, and a
+  reconstructed **solar boat** in its pit on the south side.
+- A weathered desert plateau, late-afternoon physical sky, sun shadows,
+  scattered fallen casing blocks, **palm groves**, **camels** by the Sphinx,
+  and **birds** circling overhead.
 
 ### Notes on accuracy
 

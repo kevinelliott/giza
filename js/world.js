@@ -134,28 +134,31 @@ function buildSmallPyramid(q, mats, collidables, group) {
 
 function buildSphinx(mats, collidables, group) {
   const s = SPHINX;
+  const L = s.length, H = s.height, W = s.width;
   const g = new THREE.Group();
-  const add = (sx, sy, sz, x, y, z, mat) => {
+  const add = (sx, sy, sz, x, y, z, mat, collide = true) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat || mats.bedrock);
     m.position.set(x, y, z);
-    m.userData.collidable = true; m.castShadow = true; m.receiveShadow = true;
-    g.add(m); collidables.push(m);
-    return m;
+    m.castShadow = true; m.receiveShadow = true;
+    if (collide) { m.userData.collidable = true; collidables.push(m); }
+    g.add(m); return m;
   };
-  // Faces east (+X). Body lies along X, paws extend forward (+X).
-  const bodyL = s.length * 0.62, bodyH = s.height * 0.55, bodyW = s.width * 0.7;
-  add(bodyL, bodyH, bodyW, -s.length * 0.05, bodyH / 2, 0);              // haunches/body
-  add(s.length * 0.5, bodyH * 0.55, bodyW * 0.95, s.length * 0.22, bodyH * 0.3, 0); // forelegs base
-  // outstretched paws
-  add(s.length * 0.5, bodyH * 0.28, bodyW * 0.32, s.length * 0.3, bodyH * 0.18, bodyW * 0.28);
-  add(s.length * 0.5, bodyH * 0.28, bodyW * 0.32, s.length * 0.3, bodyH * 0.18, -bodyW * 0.28);
-  // chest rising to the head
-  add(bodyL * 0.35, s.height * 0.85, bodyW * 0.85, -s.length * 0.18, s.height * 0.42, 0);
-  // head + nemes headdress
-  const head = add(s.width * 0.55, s.height * 0.5, s.width * 0.55,
-    -s.length * 0.3, s.height * 0.78, 0);
-  add(s.width * 0.75, s.height * 0.28, s.width * 0.8,
-    -s.length * 0.31, s.height * 1.0, 0);                                // headdress top
+  // Faces east (+X): head and outstretched paws at the front (+X), the
+  // crouching lion body and haunches behind (−X).
+  add(L * 0.55, H * 0.5, W * 0.72, -L * 0.16, H * 0.25, 0);          // body
+  add(L * 0.2, H * 0.62, W * 0.72, -L * 0.4, H * 0.31, 0);           // rear haunches (taller)
+  // forelegs + outstretched paws reaching east
+  for (const sz of [1, -1]) {
+    add(L * 0.46, H * 0.22, W * 0.22, L * 0.2, H * 0.11, sz * W * 0.24); // leg
+    add(W * 0.12, H * 0.16, W * 0.18, L * 0.45, H * 0.08, sz * W * 0.24); // paw toes
+  }
+  add(L * 0.14, H * 0.62, W * 0.55, L * 0.05, H * 0.4, 0);           // chest below the head
+  // head, neck and the striped nemes headdress, looking east
+  add(W * 0.34, H * 0.34, W * 0.36, L * 0.16, H * 0.78, 0);          // head/face
+  add(W * 0.6, H * 0.34, W * 0.6, L * 0.12, H * 0.82, 0);            // nemes headdress (broad)
+  add(W * 0.22, H * 0.12, W * 0.5, L * 0.2, H * 0.62, 0, mats.granite); // ceremonial beard stub
+  // Dream Stele standing between the paws (Thutmose IV)
+  add(W * 0.12, H * 0.5, W * 0.34, L * 0.5, H * 0.25, 0, mats.granite);
   g.position.set(s.center.x, 0, s.center.z);
   group.add(g);
 }
@@ -176,6 +179,179 @@ function buildEnclosure(cx, cz, sx, sz, height, mats, collidables, group) {
 }
 function boxAt(sx, sy, sz, x, y, z) {
   const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); return g;
+}
+
+// An axis-arbitrary box spanning a→b with cross-section w×h (used for causeways).
+function orientedBox(a, b, w, h, mat, collidables, group) {
+  const A = new THREE.Vector3(a.x, a.y, a.z), B = new THREE.Vector3(b.x, b.y, b.z);
+  const dir = new THREE.Vector3().subVectors(B, A); const len = dir.length(); dir.normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+  let right = new THREE.Vector3().crossVectors(up, dir);
+  if (right.lengthSq() < 1e-4) right.set(1, 0, 0); right.normalize();
+  const upv = new THREE.Vector3().crossVectors(dir, right).normalize();
+  const m = new THREE.Matrix4().makeBasis(right, upv, dir);
+  m.setPosition(new THREE.Vector3().addVectors(A, B).multiplyScalar(0.5));
+  const g = new THREE.BoxGeometry(w, h, len); g.applyMatrix4(m);
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
+  group.add(mesh); collidables.push(mesh);
+  return mesh;
+}
+
+// A field of mastaba tombs (flat-topped, battered) in a regular street grid —
+// the real plateau is densely covered with these around the Great Pyramid.
+function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, skip) {
+  const geoms = [];
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const x = cx + i * dx + (Math.random() - 0.5) * 2;
+      const z = cz + j * dz + (Math.random() - 0.5) * 2;
+      if (skip && skip(x, z)) continue;
+      const L = dx * 0.62 + Math.random() * 3;      // E–W length
+      const W = dz * 0.6 + Math.random() * 2;       // N–S width
+      const H = 4 + Math.random() * 3.5;
+      // base course
+      const b = new THREE.BoxGeometry(L, H, W); b.translate(x, H / 2, z);
+      geoms.push(b);
+      // slightly inset top course = battered profile
+      const t = new THREE.BoxGeometry(L * 0.9, H * 0.18, W * 0.9);
+      t.translate(x, H + H * 0.09 - 0.1, z);
+      geoms.push(t);
+    }
+  }
+  if (!geoms.length) return;
+  const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
+  mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
+  group.add(mesh); collidables.push(mesh);
+}
+
+// A reconstructed wooden boat (like Khufu's solar barque) inside a stone pit.
+function buildBoatPit(cx, cz, mats, collidables, group) {
+  // pit rim
+  buildEnclosure(cx, cz, 46, 9, 1.6, mats, collidables, group);
+  const boat = new THREE.Group();
+  const wood = mats.wood;
+  // hull: a scaled, capped half-cylinder
+  const hull = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 38, 16, 1, false, 0, Math.PI), wood);
+  hull.rotation.z = Math.PI / 2;          // length along X
+  hull.rotation.y = Math.PI;              // open side up
+  hull.scale.set(1, 1, 0.5);              // narrow beam
+  hull.position.y = 2.2;
+  hull.userData.collidable = true; hull.castShadow = true;
+  boat.add(hull);
+  // upturned prow & stern
+  for (const sx of [-1, 1]) {
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.5, 6, 8), wood);
+    tip.position.set(sx * 19.5, 4.5, 0);
+    tip.rotation.z = sx * -0.7;
+    tip.castShadow = true; boat.add(tip);
+  }
+  // small deck cabin
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 2.6), wood);
+  cabin.position.set(3, 3.4, 0); cabin.castShadow = true;
+  cabin.userData.collidable = true; boat.add(cabin);
+  boat.position.set(cx, 0, cz);
+  group.add(boat);
+  collidables.push(hull, cabin);
+  return { x: cx, y: 4, z: cz };
+}
+
+// A single palm tree (trunk collidable, fronds decorative).
+function buildPalm(deco, x, z, scale) {
+  const g = new THREE.Group();
+  const h = 6 * scale;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * scale, 0.34 * scale, h, 6), deco.trunk);
+  trunk.position.y = h / 2; trunk.castShadow = true; trunk.userData.collidable = true;
+  g.add(trunk);
+  for (let i = 0; i < 8; i++) {
+    const frond = new THREE.Mesh(new THREE.ConeGeometry(0.5 * scale, 4.2 * scale, 4), deco.frond);
+    const a = (i / 8) * Math.PI * 2;
+    frond.position.set(Math.cos(a) * 1.6 * scale, h - 0.3, Math.sin(a) * 1.6 * scale);
+    frond.rotation.set(Math.PI / 2.4 * Math.cos(a), -a, Math.PI / 2.4 * Math.sin(a));
+    frond.castShadow = true;
+    g.add(frond);
+  }
+  g.position.set(x, 0, z);
+  return g;
+}
+
+// A simple resting/standing camel.
+function buildCamel(deco, x, z, rot, collidables) {
+  const g = new THREE.Group();
+  const part = (sx, sy, sz, px, py, pz, collide) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), deco.camel);
+    m.position.set(px, py, pz); m.castShadow = true;
+    if (collide) { m.userData.collidable = true; }
+    g.add(m); return m;
+  };
+  const body = part(3.4, 1.6, 1.4, 0, 2.0, 0, true);     // torso (collidable)
+  part(1.1, 1.0, 1.1, -0.5, 3.0, 0);                     // hump 1
+  part(1.0, 0.8, 1.0, 0.7, 2.9, 0);                      // hump 2
+  part(0.7, 2.0, 0.7, 2.0, 2.6, 0);                      // neck
+  part(0.9, 0.7, 0.6, 2.4, 3.6, 0);                      // head
+  for (const [lx, lz] of [[-1.2, 0.5], [-1.2, -0.5], [1.2, 0.5], [1.2, -0.5]])
+    part(0.35, 2.0, 0.35, lx, 1.0, lz);                  // legs
+  g.position.set(x, 0, z); g.rotation.y = rot;
+  g.updateMatrixWorld(true);
+  collidables.push(body);
+  return g;
+}
+
+// A flock of birds slowly circling overhead; returns an updater.
+function buildBirds(group) {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x2b2218, roughness: 1 });
+  const birds = [];
+  const flock = new THREE.Group();
+  for (let i = 0; i < 12; i++) {
+    const b = new THREE.Group();
+    for (const s of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 0.7), mat);
+      wing.position.x = s * 1.2; wing.rotation.z = s * 0.5;
+      b.add(wing);
+    }
+    flock.add(b);
+    birds.push({
+      g: b, cx: -150 + Math.random() * 400, cz: -100 + Math.random() * 600,
+      r: 40 + Math.random() * 120, y: 70 + Math.random() * 90,
+      sp: 0.05 + Math.random() * 0.08, ph: Math.random() * 7
+    });
+  }
+  group.add(flock);
+  return t => {
+    for (const b of birds) {
+      const a = b.ph + t * b.sp;
+      b.g.position.set(b.cx + Math.cos(a) * b.r, b.y + Math.sin(a * 2) * 4, b.cz + Math.sin(a) * b.r);
+      b.g.rotation.y = -a + Math.PI / 2;
+      const flap = Math.sin(t * 6 + b.ph) * 0.35;
+      b.g.children[0].rotation.z = 0.5 + flap;
+      b.g.children[1].rotation.z = -0.5 - flap;
+    }
+  };
+}
+
+// Surviving casing stones clustered at the base of the Great Pyramid's
+// north face (a real, much-photographed detail).
+function buildCasingRemnants(p, mats, collidables, group) {
+  const half = p.base / 2;
+  const geoms = [];
+  const rows = 7;
+  for (let r = 0; r < rows; r++) {
+    const y = r * 1.2;
+    const inset = r * 0.95;                 // follow the casing slope inward
+    const count = 9 - r;
+    for (let i = 0; i < count; i++) {
+      const w = 2.1, hgt = 1.2, d = 1.8;
+      const x = (i - (count - 1) / 2) * (w + 0.05) + 7;
+      const z = -half + 0.6 + inset;
+      const g = new THREE.BoxGeometry(w, hgt, d);
+      g.translate(x, y + hgt / 2, z);
+      geoms.push(g);
+    }
+  }
+  const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mats.casing);
+  mesh.position.set(p.center.x, 0, p.center.z);
+  mesh.userData.collidable = true; mesh.castShadow = true;
+  group.add(mesh); collidables.push(mesh);
 }
 
 function buildSky(scene) {
@@ -271,7 +447,51 @@ export function buildWorld(scene, mats) {
   blocks.userData.collidable = true; blocks.castShadow = true;
   group.add(blocks); collidables.push(blocks);
 
-  return { group, collidables, landmarks, sunDir };
+  // ---- Added outdoor detail ----------------------------------------
+  const deco = {
+    trunk: new THREE.MeshStandardMaterial({ color: 0x6e4a26, roughness: 0.9 }),
+    frond: new THREE.MeshStandardMaterial({ color: 0x55732f, roughness: 0.8, side: THREE.DoubleSide }),
+    camel: new THREE.MeshStandardMaterial({ color: 0xb18752, roughness: 0.85 })
+  };
+  const kc = PYRAMIDS.khufu.center;
+
+  // Cemeteries of mastaba tombs (Eastern + Western fields)
+  buildMastabaField(kc.x + 150, kc.z - 70, 7, 9, 22, 16, mats.bedrock, collidables, group);
+  buildMastabaField(kc.x - 360, kc.z - 110, 10, 13, 22, 17, mats.bedrock, collidables, group);
+
+  // Causeways from the mortuary temples toward the valley temples
+  orientedBox({ x: PYRAMIDS.khafre.center.x + 175, y: 3, z: PYRAMIDS.khafre.center.z + 6 },
+    { x: SPHINX.center.x - 20, y: 1.5, z: SPHINX.center.z }, 8, 3, mats.bedrock, collidables, group);
+  orientedBox({ x: PYRAMIDS.menkaure.center.x + 100, y: 2.5, z: PYRAMIDS.menkaure.center.z + 4 },
+    { x: PYRAMIDS.menkaure.center.x + 360, y: 1.2, z: PYRAMIDS.menkaure.center.z + 120 },
+    7, 2.5, mats.bedrock, collidables, group);
+
+  // Khufu's reconstructed solar boat in a pit on the south side
+  const boatPos = buildBoatPit(kc.x + 10, kc.z + 150, mats, collidables, group);
+  landmarks.push({
+    name: "Khufu's Solar Boat", radius: 26, pos: { x: boatPos.x, y: 5, z: boatPos.z },
+    blurb: 'A nod to the 43 m cedar "solar barque" found dismantled in a sealed ' +
+      'pit beside the Great Pyramid in 1954 and painstakingly reassembled.'
+  });
+
+  // Palm groves near the valley temples and the plateau edge
+  const palmSpots = [[380, 500], [392, 512], [372, 520], [405, 495], [360, 508],
+    [-650, 790], [-665, 805], [-635, 800]];
+  for (const [px, pz] of palmSpots) {
+    const t = buildPalm(deco, px + Math.random() * 6, pz + Math.random() * 6, 0.85 + Math.random() * 0.5);
+    t.traverse(m => { if (m.userData.collidable) collidables.push(m); });
+    group.add(t);
+  }
+
+  // Camels near the Sphinx viewing area
+  group.add(buildCamel(deco, SPHINX.center.x + 70, SPHINX.center.z + 18, -2.2, collidables));
+  group.add(buildCamel(deco, SPHINX.center.x + 80, SPHINX.center.z + 4, -1.9, collidables));
+
+  // Surviving casing at the Great Pyramid base + circling birds
+  buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
+  const tick = buildBirds(group);
+
+  return { group, collidables, landmarks, sunDir, tick };
 }
 
 function pyrApex(p) {
