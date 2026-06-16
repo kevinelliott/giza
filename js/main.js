@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -420,6 +420,7 @@ FEATURES.push({ kind: 'temple', label: KHUFU_VALLEY.name, x: KHUFU_VALLEY.center
 FEATURES.push({ kind: 'site', label: TRIAL_PASSAGES.name, x: TRIAL_PASSAGES.center.x, z: TRIAL_PASSAGES.center.z });
 FEATURES.push({ kind: 'site', label: KHENTKAUS_TOWN.name, x: KHENTKAUS_TOWN.center.x, z: KHENTKAUS_TOWN.center.z });
 FEATURES.push({ kind: 'site', label: WORKERS_CEMETERY.name, x: WORKERS_CEMETERY.center.x, z: WORKERS_CEMETERY.center.z });
+FEATURES.push({ kind: 'site', label: GIS_QUARRY.name, x: GIS_QUARRY.center.x, z: GIS_QUARRY.center.z });
 FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
 FEATURES.push({ kind: 'village', label: WORKERS_VILLAGE.name, x: WORKERS_VILLAGE.center.x, z: WORKERS_VILLAGE.center.z });
 FEATURES.push({ kind: 'temple', label: MENKAURE_VALLEY.name, x: MENKAURE_VALLEY.center.x, z: MENKAURE_VALLEY.center.z });
@@ -436,6 +437,7 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   for (const m of world.mastabas) {
     const mw = Math.max(1.5, m.w * scale), md = Math.max(1.5, m.d * scale);
     ctx.fillRect(X(m.x) - mw / 2, Y(m.z) - md / 2, mw, md);
+    if (full && collect && m.name) collect.push({ sx: X(m.x), sy: Y(m.z), name: m.name, r: Math.max(3, mw / 2) });
   }
   ctx.fillStyle = '#8a6b46';
   for (const b of world.buildings) {

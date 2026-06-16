@@ -241,6 +241,14 @@ export const MENKAURE_VALLEY = {
          'stone and finished in mud brick after his death.'
 };
 
+// The "GIS" central-field quarry south of the Great Pyramid, where much of
+// the core stone was cut.
+export const GIS_QUARRY = {
+  name: 'Central Field Quarry (GIS)', center: { x: -10, z: 250 },
+  blurb: 'The main quarry south of the Great Pyramid, where workers cut the ' +
+         'core limestone blocks — leaving stepped benches in the bedrock.'
+};
+
 // The Trial Passages — rock-cut corridors east of the Great Pyramid that
 // reproduce its internal passage system at near-full scale.
 export const TRIAL_PASSAGES = {
@@ -292,7 +300,7 @@ export const TELEPORTS = [
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
   { label: 'Pyramid of Khafre — north base', pos: { x: -340, y: 2, z: 340 - 120 } },
   { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
-  { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } },
+  { label: 'The Great Sphinx', pos: { x: 327 + 46, y: -5.5, z: 432 } },
   { label: 'Tomb of Khentkaus I', pos: { x: -40, y: 3, z: 505 - 40 } },
   { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } },
   { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
@@ -300,5 +308,6 @@ export const TELEPORTS = [
   { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } },
   { label: 'Khufu Valley Temple', pos: { x: 520, y: 2, z: 50 - 28 } },
   { label: 'Trial Passages', pos: { x: 160, y: 2, z: -42 - 12 } },
-  { label: "Workers' Cemetery", pos: { x: 120, y: 2, z: 700 - 35 } }
+  { label: "Workers' Cemetery", pos: { x: 120, y: 2, z: 700 - 35 } },
+  { label: 'Central Field Quarry', pos: { x: -10, y: 2, z: 250 } }
 ];

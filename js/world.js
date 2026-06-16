@@ -6,7 +6,7 @@ import {
   KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
   WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
-  TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY
+  TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -38,8 +38,15 @@ const PITS = [
   { c: PYRAMIDS.khafre.center, r: 105 },
   { c: PYRAMIDS.menkaure.center, r: 49 }
 ];
+const SPHINX_FLOOR = -6;        // the Sphinx sits 6 m below grade in its enclosure
+const SPHINX_RECT = {           // terrain removed here for the quarried enclosure
+  x0: SPHINX.center.x - 52, x1: SPHINX.center.x + 56,
+  z0: SPHINX.center.z - 33, z1: SPHINX.center.z + 33
+};
 function inPit(x, z) {
   for (const p of PITS) if (Math.hypot(x - p.c.x, z - p.c.z) < p.r) return true;
+  const r = SPHINX_RECT;
+  if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return true;
   return false;
 }
 
@@ -140,36 +147,77 @@ function buildSmallPyramid(q, mats, collidables, group) {
   group.add(mesh); collidables.push(mesh);
 }
 
-function buildSphinx(mats, collidables, group) {
+// A detailed Great Sphinx (recumbent lion, nemes headdress, outstretched
+// paws, Dream Stele), sat with its base at `baseY` inside its enclosure.
+function buildSphinx(mats, collidables, group, baseY) {
   const s = SPHINX;
-  const L = s.length, H = s.height, W = s.width;
   const g = new THREE.Group();
-  const add = (sx, sy, sz, x, y, z, mat, collide = true) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat || mats.bedrock);
-    m.position.set(x, y, z);
+  const body = mats.limestone, head = mats.casing, gr = mats.granite;
+  const add = (sx, sy, sz, x, y, z, mat, collide = true, rot = 0) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat || body);
+    m.position.set(x, y, z); if (rot) m.rotation.z = rot;
     m.castShadow = true; m.receiveShadow = true;
     if (collide) { m.userData.collidable = true; collidables.push(m); }
     g.add(m); return m;
   };
-  // Faces east (+X): head and outstretched paws at the front (+X), the
-  // crouching lion body and haunches behind (−X).
-  add(L * 0.55, H * 0.5, W * 0.72, -L * 0.16, H * 0.25, 0);          // body
-  add(L * 0.2, H * 0.62, W * 0.72, -L * 0.4, H * 0.31, 0);           // rear haunches (taller)
-  // forelegs + outstretched paws reaching east
-  for (const sz of [1, -1]) {
-    add(L * 0.46, H * 0.22, W * 0.22, L * 0.2, H * 0.11, sz * W * 0.24); // leg
-    add(W * 0.12, H * 0.16, W * 0.18, L * 0.45, H * 0.08, sz * W * 0.24); // paw toes
+  // Faces east (+X). Coordinates: x east (front), y up from base, z = ±width.
+  // — Recumbent lion body (rises toward the chest at the front) —
+  add(46, 9, 13, -18, 4.5, 0);                 // torso
+  add(17, 12.5, 13, -33, 6.2, 0);              // rear haunches (taller)
+  for (const sz of [1, -1]) {                  // folded hind legs along the sides
+    add(20, 3.5, 3.2, -28, 1.8, sz * 6.4);
+    add(7, 5, 3, -41, 2.5, sz * 5.5);          // rear paws
   }
-  add(L * 0.14, H * 0.62, W * 0.55, L * 0.05, H * 0.4, 0);           // chest below the head
-  // head, neck and the striped nemes headdress, looking east
-  add(W * 0.34, H * 0.34, W * 0.36, L * 0.16, H * 0.78, 0);          // head/face
-  add(W * 0.6, H * 0.34, W * 0.6, L * 0.12, H * 0.82, 0);            // nemes headdress (broad)
-  add(W * 0.22, H * 0.12, W * 0.5, L * 0.2, H * 0.62, 0, mats.granite); // ceremonial beard stub
-  // Dream Stele standing between the paws (Thutmose IV)
-  add(W * 0.12, H * 0.5, W * 0.34, L * 0.5, H * 0.25, 0, mats.granite);
-  g.position.set(s.center.x, 0, s.center.z);
+  // tail curling along the south flank to the right rear
+  add(14, 2.2, 2.2, -34, 1.1, 7.2, body, true);
+  // — Outstretched forepaws reaching east —
+  for (const sz of [1, -1]) {
+    add(30, 3.6, 4.4, 17, 1.8, sz * 4.6);      // foreleg
+    for (let t = 0; t < 4; t++)                // four toes per paw
+      add(1.7, 2.0, 0.9, 31.5, 1.0, sz * 4.6 + (t - 1.5) * 1.15, body, false);
+  }
+  // — Chest, neck, head —
+  add(10, 15, 11, 2.5, 7.5, 0);                // chest below the head
+  add(6, 5.5, 6.5, 8.5, 14.5, 0, head);        // neck
+  add(7, 8.5, 7, 12.5, 17.5, 0, head);         // face
+  add(1.2, 2.0, 4.5, 16.3, 18.5, 0, head, false); // brow ridge
+  add(1.4, 1.4, 1.4, 16.4, 17.6, 0, body, false); // broken nose stub
+  // nemes headdress: broad striped headcloth flaring at the sides + back
+  add(10, 4.5, 13.5, 11, 21.5, 0, head);       // crown of the headcloth
+  for (const sz of [1, -1])                    // side lappets (the flaps)
+    add(5.5, 10, 3, 12, 14.5, sz * 5.3, head, true, sz * 0.12);
+  add(5, 8, 6, 6.5, 16, 0, head);              // back of the headcloth
+  add(1.3, 1.3, 1.3, 16.6, 21.0, 0, gr, false);// uraeus (cobra) on the brow
+  add(2.0, 5.5, 2.4, 14.5, 11.5, 0, gr, false);// broken ceremonial beard stub
+  // Dream Stele of Thutmose IV, standing between the front paws
+  add(1.2, 9, 5, 30, 4.5, 0, gr);
+  g.position.set(s.center.x, baseY || 0, s.center.z);
   group.add(g);
 }
+
+// The quarried enclosure the Sphinx sits in: a sunken floor with rock walls
+// on the N, W and S sides (open to the east toward the temples), plus a ramp.
+function buildSphinxEnclosure(mats, collidables, group) {
+  const s = SPHINX, floorY = SPHINX_FLOOR;
+  const x0 = s.center.x - 46, x1 = s.center.x + 50, z0 = s.center.z - 26, z1 = s.center.z + 26;
+  const wallTop = 2, t = 5;
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 1, z1 - z0 + 2 * t), mats.bedrock);
+  floor.position.set((x0 + x1) / 2, floorY - 0.5, s.center.z); floor.receiveShadow = true;
+  floor.userData.collidable = true; group.add(floor); collidables.push(floor);
+  const wallH = wallTop - floorY;
+  const wall = (sx, sz, cx, cz) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, wallH, sz), mats.bedrock);
+    m.position.set(cx, floorY + wallH / 2, cz); m.castShadow = true; m.receiveShadow = true;
+    m.userData.collidable = true; group.add(m); collidables.push(m);
+  };
+  wall(x1 - x0 + 2 * t, t, (x0 + x1) / 2, z0 - t / 2);   // north
+  wall(x1 - x0 + 2 * t, t, (x0 + x1) / 2, z1 + t / 2);   // south
+  wall(t, z1 - z0, x0 - t / 2, s.center.z);              // west (behind the tail)
+  // ramp down into the enclosure from the north-west
+  orientedBox({ x: x0 + 10, y: 0, z: z0 - 14 }, { x: x0 + 10, y: floorY + 0.3, z: z0 + 6 },
+    6, 0.6, mats.bedrock, collidables, group);
+}
+
 
 // Low-walled stone enclosure (temple / mastaba), open-topped.
 function buildEnclosure(cx, cz, sx, sz, height, mats, collidables, group) {
@@ -208,8 +256,9 @@ function orientedBox(a, b, w, h, mat, collidables, group) {
 
 // A field of mastaba tombs (flat-topped, battered) in a regular street grid —
 // the real plateau is densely covered with these around the Great Pyramid.
-function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, skip, out) {
+function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, skip, out, prefix, baseNum) {
   const geoms = [];
+  let n = 0;
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
       const x = cx + i * dx + (Math.random() - 0.5) * 2;
@@ -223,10 +272,29 @@ function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, 
       const t = new THREE.BoxGeometry(L * 0.9, H * 0.18, W * 0.9);
       t.translate(x, H + H * 0.09 - 0.1, z);
       geoms.push(t);
-      if (out) out.push({ x, z, w: L, d: W });
+      if (out) {
+        const name = prefix ? `${prefix} ${(baseNum || 0) + n * 10}` : null;
+        out.push({ x, z, w: L, d: W, name });
+      }
+      n++;
     }
   }
   if (!geoms.length) return;
+  const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
+  mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
+  group.add(mesh); collidables.push(mesh);
+}
+
+// The Central-Field quarry: irregular stepped benches of cut bedrock.
+function buildQuarry(q, mat, collidables, group) {
+  const c = q.center, geoms = [];
+  for (let i = 0; i < 44; i++) {
+    const x = c.x + (Math.random() - 0.5) * 120;
+    const z = c.z + (Math.random() - 0.5) * 84;
+    const w = 6 + Math.random() * 16, d = 5 + Math.random() * 12, h = 1.2 + Math.random() * 4;
+    const g = new THREE.BoxGeometry(w, h, d); g.translate(x, h / 2, z);
+    geoms.push(g);
+  }
   const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
   mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
   group.add(mesh); collidables.push(mesh);
@@ -481,9 +549,10 @@ export function buildWorld(scene, mats) {
   for (const q of QUEENS_KHUFU) buildSmallPyramid(q, mats, collidables, group);
   for (const q of QUEENS_MENKAURE) buildSmallPyramid(q, mats, collidables, group);
 
-  // Sphinx + its valley temple
-  buildSphinx(mats, collidables, group);
-  landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 60,
+  // Sphinx, sunk into its quarried enclosure, + the temples in front (east)
+  buildSphinxEnclosure(mats, collidables, group);
+  buildSphinx(mats, collidables, group, SPHINX_FLOOR);
+  landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 70,
     pos: { x: SPHINX.center.x, y: 12, z: SPHINX.center.z } });
   buildEnclosure(SPHINX.center.x + 60, SPHINX.center.z, 38, 50, 9, mats, collidables, group); // Sphinx Temple, in front (east)
   // Khafre's valley temple, just south of the Sphinx Temple
@@ -525,8 +594,13 @@ export function buildWorld(scene, mats) {
 
   // Cemeteries of mastaba tombs — Eastern field sits well east of the queens'
   // pyramids; Western field is set back from the west face. Both in tidy rows.
-  buildMastabaField(kc.x + 205, kc.z - 120, 6, 13, 24, 21, mats.bedrock, collidables, group, null, mastabas);
-  buildMastabaField(kc.x - 395, kc.z - 120, 9, 13, 23, 20, mats.bedrock, collidables, group, null, mastabas);
+  buildMastabaField(kc.x + 205, kc.z - 120, 6, 13, 24, 21, mats.bedrock, collidables, group, null, mastabas, 'Mastaba G', 7110);
+  buildMastabaField(kc.x - 395, kc.z - 120, 9, 13, 23, 20, mats.bedrock, collidables, group, null, mastabas, 'Mastaba G', 1200);
+
+  // Central-Field quarry south of the Great Pyramid
+  buildQuarry(GIS_QUARRY, mats.bedrock, collidables, group);
+  landmarks.push({ name: GIS_QUARRY.name, blurb: GIS_QUARRY.blurb, radius: 80,
+    pos: { x: GIS_QUARRY.center.x, y: 3, z: GIS_QUARRY.center.z } });
 
   // Tomb of Khentkaus I + the workers' town
   buildKhentkaus(KHENTKAUS, mats, collidables, group);
@@ -599,7 +673,7 @@ export function buildWorld(scene, mats) {
   landmarks.push({ name: KHENTKAUS_TOWN.name, blurb: KHENTKAUS_TOWN.blurb, radius: 45,
     pos: { x: KHENTKAUS_TOWN.center.x, y: 3, z: KHENTKAUS_TOWN.center.z } });
   buildMastabaField(WORKERS_CEMETERY.center.x - 32, WORKERS_CEMETERY.center.z - 22, 8, 6, 8, 7,
-    deco.mud, collidables, group, null, mastabas);
+    deco.mud, collidables, group, null, mastabas, "Worker's tomb", 1);
   landmarks.push({ name: WORKERS_CEMETERY.name, blurb: WORKERS_CEMETERY.blurb, radius: 55,
     pos: { x: WORKERS_CEMETERY.center.x, y: 2, z: WORKERS_CEMETERY.center.z } });
 
