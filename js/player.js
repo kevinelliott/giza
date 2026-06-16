@@ -28,6 +28,8 @@ const SPEED_RUN = 16.0;
 const JUMP = 8.6;
 const FLY_SPEED = 60;
 const STEP_HEIGHT = 0.6;     // max ledge/stair the player auto-steps over
+const STAND_H = 1.8;
+const CROUCH_H = 1.05;
 
 export class Player {
   constructor(camera, collider) {
@@ -61,6 +63,9 @@ export class Player {
     this._up = new THREE.Vector3(0, 1, 0);
     this._cap = new THREE.Vector3();
     this._corr = new THREE.Vector3();
+    this._mv = new THREE.Vector3();
+    this._groundN = new THREE.Vector3(0, 1, 0);
+    this._ray = new THREE.Ray();
   }
 
   teleport(p) {
@@ -123,9 +128,16 @@ export class Player {
       return;
     }
 
-    const speed = input.sprint ? SPEED_RUN : SPEED_WALK;
+    // Crouch: smoothly shrink the capsule + eye height and slow down.
+    const targetH = input.crouch ? CROUCH_H : STAND_H;
+    this.height = THREE.MathUtils.damp(this.height, targetH, 12, delta);
+    this.segTop.set(0, Math.max(this.height - this.radius, this.radius + 0.02), 0);
+    this.eye = this.height - 0.18;
+
+    let speed = input.sprint ? SPEED_RUN : SPEED_WALK;
+    if (input.crouch) speed *= 0.5;
     this.velocity.y += GRAVITY * delta;
-    if (this.onGround && input.jump) { this.velocity.y = JUMP; this.onGround = false; }
+    if (this.onGround && input.jump && !input.crouch) { this.velocity.y = JUMP; this.onGround = false; }
 
     // Smoothly accelerate horizontal velocity toward the desired direction.
     this._target.copy(this._wish).multiplyScalar(speed);
@@ -133,16 +145,25 @@ export class Player {
     this.vXZ.x = THREE.MathUtils.damp(this.vXZ.x, this._target.x, lambda, delta);
     this.vXZ.z = THREE.MathUtils.damp(this.vXZ.z, this._target.z, lambda, delta);
 
-    // Vertical move + ground resolve.
+    // Vertical move + ground resolve (also capture the ground normal).
     this.position.y += this.velocity.y * delta;
     let corr = this._depen();
     this.onGround = corr.y > Math.abs(this.velocity.y * delta) * 0.25 + 1e-5;
-    if (this.onGround && this.velocity.y < 0) this.velocity.y = 0;
+    if (this.onGround) {
+      if (this.velocity.y < 0) this.velocity.y = 0;
+      if (corr.lengthSq() > 1e-9) this._groundN.copy(corr).normalize();
+    }
 
-    // Horizontal move, then slide along walls.
-    const dx = this.vXZ.x * delta, dz = this.vXZ.z * delta;
-    const startX = this.position.x, startZ = this.position.z;
-    this.position.x += dx; this.position.z += dz;
+    // Build the horizontal move; when grounded, project it onto the ground
+    // plane so slopes and ramps (stairs) are walked at full speed.
+    const move = this._mv.set(this.vXZ.x, 0, this.vXZ.z);
+    const mag = move.length();
+    if (this.onGround && mag > 1e-6) {
+      move.addScaledVector(this._groundN, -move.dot(this._groundN));
+      if (move.lengthSq() > 1e-9) move.normalize().multiplyScalar(mag);
+    }
+    const startX = this.position.x, startY = this.position.y, startZ = this.position.z;
+    this.position.addScaledVector(move, delta);
     corr = this._depen();
     const n = this._v1.set(corr.x, 0, corr.z);
     if (n.lengthSq() > 1e-9) {
@@ -151,25 +172,34 @@ export class Player {
       if (into < 0) this.vXZ.addScaledVector(n, -into);
     }
 
-    // Auto step-up: if blocked while grounded, retry the move lifted by
-    // STEP_HEIGHT and settle back down — lets us climb stairs and curbs.
-    const want = Math.hypot(dx, dz);
+    // Auto step-up for small vertical ledges/curbs the slope projection can't
+    // climb: retry the move lifted by STEP_HEIGHT, then settle back down.
+    const wantH = Math.hypot(move.x, move.z) * delta;
     const got = Math.hypot(this.position.x - startX, this.position.z - startZ);
-    if (this.onGround && want > 1e-4 && got < want * 0.85) {
+    let stepped = false;
+    if (this.onGround && wantH > 1e-4 && got < wantH * 0.85) {
       const sx = this.position.x, sy = this.position.y, sz = this.position.z;
-      this.position.set(startX, sy + STEP_HEIGHT, startZ);
+      this.position.set(startX, startY + STEP_HEIGHT, startZ);
       this._depen();
-      this.position.x += dx; this.position.z += dz;
+      this.position.addScaledVector(move, delta);
       this._depen();
       this.position.y -= STEP_HEIGHT + 0.05;
       const landed = this._depen();
       const stepGot = Math.hypot(this.position.x - startX, this.position.z - startZ);
-      if (stepGot > got + 0.02 && landed.y > -1e-3) {
-        this.onGround = true;
-      } else {
-        this.position.set(sx, sy, sz);    // step didn't help; keep the slide result
-      }
+      if (stepGot > got + 0.02 && landed.y > -1e-3) { this.onGround = true; stepped = true; }
+      else this.position.set(sx, sy, sz);
     }
+
+    // Ground snap via a downward ray: keeps us glued to down-slopes, stairs and
+    // convex crests instead of launching — without disturbing X/Z. Skipped on a
+    // frame we just stepped UP, so the snap can't drag us back off the step.
+    if (this.onGround && this.velocity.y <= 0 && !stepped) {
+      this._ray.origin.set(this.position.x, this.position.y + this.radius + 0.15, this.position.z);
+      this._ray.direction.set(0, -1, 0);
+      const hit = this.collider.geometry.boundsTree.raycastFirst(this._ray, THREE.DoubleSide);
+      if (hit && hit.distance <= this.radius + 0.15 + STEP_HEIGHT) this.position.y = hit.point.y;
+    }
+
     this.speedXZ = Math.hypot(this.vXZ.x, this.vXZ.z);
 
     // Head-bob while walking on the ground.

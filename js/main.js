@@ -344,6 +344,7 @@ if (isTouch && stickBase) {
     el.addEventListener('touchstart', e => { fn(); e.preventDefault(); }, { passive: false });
   };
   hold('btnJump', 'jump');
+  hold('btnCrouch', 'crouch');
   tap('btnSprint', toggleRun);
   tap('btnFly', toggleFly);
   tap('btnLamp', toggleLamp);

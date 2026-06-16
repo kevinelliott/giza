@@ -101,7 +101,10 @@ function along(p, dir, len) {
 }
 
 const ENTRANCE = { x: OFF, y: ENT_Y, z: ENT_Z };
-const J1 = along(ENTRANCE, dDown, 30);          // descending/ascending junction
+// A short LEVEL corridor just inside the doorway so you can walk straight in
+// off the entrance ramp before the passage starts to descend.
+const ENTRY_IN = { x: OFF, y: ENT_Y, z: ENT_Z + 9 };
+const J1 = along(ENTRY_IN, dDown, 26);          // descending/ascending junction
 const SUBT = along(J1, dDown, 78);              // subterranean chamber mouth
 const J2 = along(J1, dUp, 39);                  // foot of the Grand Gallery
 const QUEEN = { x: OFF, y: J2.y - 1.2, z: J2.z + 20.5 }; // horizontal run south
@@ -112,12 +115,13 @@ export const KHUFU_INTERIOR = {
   entrance: ENTRANCE,
   // Passages: list of {a,b,w,h,kind}
   passages: [
-    { a: ENTRANCE, b: J1,   w: 1.6, h: 2.2, kind: 'descending' },
-    { a: J1,       b: SUBT, w: 1.6, h: 2.2, kind: 'descending' },
-    { a: J1,       b: J2,   w: 1.6, h: 2.2, kind: 'ascending' },
-    { a: J2,       b: { x: QUEEN.x, y: QUEEN.y, z: QUEEN.z - 2.0 }, w: 1.6, h: 2.2, kind: 'queenPassage' },
+    { a: ENTRANCE, b: ENTRY_IN, w: 1.8, h: 3.0, kind: 'entry' },
+    { a: ENTRY_IN, b: J1,   w: 1.8, h: 3.0, kind: 'descending' },
+    { a: J1,       b: SUBT, w: 1.8, h: 2.8, kind: 'descending' },
+    { a: J1,       b: J2,   w: 1.8, h: 2.8, kind: 'ascending' },
+    { a: J2,       b: { x: QUEEN.x, y: QUEEN.y, z: QUEEN.z - 2.0 }, w: 1.8, h: 2.6, kind: 'queenPassage' },
     { a: J2,       b: GALLERY_TOP, w: 2.1, h: 6.0, kind: 'grandGallery' },
-    { a: GALLERY_TOP, b: { x: KING.x, y: KING.y, z: KING.z - 2.0 }, w: 1.6, h: 2.2, kind: 'antechamber' }
+    { a: GALLERY_TOP, b: { x: KING.x, y: KING.y, z: KING.z - 2.0 }, w: 1.8, h: 2.6, kind: 'antechamber' }
   ],
   chambers: [
     {

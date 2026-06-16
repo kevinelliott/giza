@@ -76,10 +76,11 @@ function buildPyramid(p, mats, collidables, group) {
   // exactly where the entrance passage begins.
   const def = isKhufu ? KHUFU_INTERIOR : simpleInterior(p);
   const e = def.entrance;
-  const hole = {
-    s0: e.x - 0.9, s1: e.x + 0.9,
-    y0: Math.max(0.2, e.y - 2.4), y1: e.y + 2.4
-  };
+  // The Great Pyramid's doorway runs lower and wider so the entrance ramp can
+  // pass cleanly through the face into the descending passage.
+  const hole = isKhufu
+    ? { s0: e.x - 1.5, s1: e.x + 1.5, y0: e.y - 6.5, y1: e.y + 2.8 }
+    : { s0: e.x - 0.9, s1: e.x + 0.9, y0: Math.max(0.2, e.y - 2.4), y1: e.y + 2.4 };
   const core = buildPyramidGeometry(p.base, p.height, { hole });
   const mesh = new THREE.Mesh(core, mats.limestone);
   mesh.position.set(p.center.x, 0, p.center.z);
@@ -113,14 +114,21 @@ function buildPyramid(p, mats, collidables, group) {
 
   if (isKhufu) {
     const half = p.base / 2;
+    const ox = p.center.x + def.entrance.x, oz = p.center.z;
+    const baseZ = oz - half - 40;                         // gentle, long run
+    // Deliver the player onto the descending passage FLOOR right at the mouth,
+    // so the ramp surface flows straight into the tunnel floor.
+    const floorY = def.entrance.y - 1.5;                  // passage floor at the mouth (h≈3)
+    const topPt = { x: ox, y: floorY, z: oz + def.entrance.z };
+    // Decorative stepped treads…
     const stair = new THREE.Mesh(
-      buildStaircase(
-        { x: def.entrance.x, y: 0, z: -half - 6 },
-        { x: def.entrance.x, y: def.entrance.y, z: def.entrance.z + 0.5 }, 3.0),
-      mats.wood);
-    stair.position.set(p.center.x, 0, p.center.z);
-    stair.userData.collidable = true;
-    group.add(stair); collidables.push(stair);
+      buildStaircase({ x: ox, y: 0, z: baseZ }, topPt, 3.4), mats.wood);
+    stair.castShadow = true; stair.receiveShadow = true;
+    group.add(stair);
+    // …over a smooth, invisible ramp that actually carries the player up.
+    const ramp = orientedBox({ x: ox, y: -0.3, z: baseZ },
+      { x: ox, y: topPt.y - 0.3, z: topPt.z }, 3.6, 0.6, mats.wood, collidables, group);
+    ramp.visible = false;
   }
   return def;
 }
