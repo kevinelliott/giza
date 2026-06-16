@@ -81,7 +81,11 @@ function buildPyramid(p, mats, collidables, group) {
   const hole = isKhufu
     ? { s0: e.x - 1.5, s1: e.x + 1.5, y0: e.y - 6.5, y1: e.y + 2.8 }
     : { s0: e.x - 0.9, s1: e.x + 0.9, y0: Math.max(0.2, e.y - 2.4), y1: e.y + 2.4 };
-  const core = buildPyramidGeometry(p.base, p.height, { hole });
+  // Real current state: Khufu lost its capstone (flat top at ~138.8 m);
+  // Menkaure's summit is damaged (~62 m); Khafre keeps a near-intact apex.
+  const truncate = p.id === 'khufu' ? 138.8 : (p.id === 'menkaure' ? 62 : null);
+  const core = buildPyramidGeometry(p.base, p.height,
+    truncate ? { hole, truncate } : { hole });
   const mesh = new THREE.Mesh(core, mats.limestone);
   mesh.position.set(p.center.x, 0, p.center.z);
   mesh.userData.collidable = true;

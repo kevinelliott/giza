@@ -36,7 +36,9 @@ function facePiece(outline, holes, map, uv, normal) {
 // Build the four sloped faces of a (possibly truncated) pyramid.
 // opts: { yRange:[y0,y1], hole:{s0,s1,y0,y1}, scale }
 export function buildPyramidGeometry(b, h, opts = {}) {
-  const [y0, y1] = opts.yRange || [0, h];
+  // `truncate` lops the apex off at that height and adds a flat top platform
+  // (the Great Pyramid lost its capstone, leaving a flat ~10 m top).
+  const [y0, y1] = opts.yRange || [0, opts.truncate || h];
   const k = opts.scale || 1;
   const W = y => (b / 2) * (1 - y / h);          // half-width at height y
   const z0 = -b / 2, dzdy = (b / 2) / h;          // north plane: z = z0 + dzdy*y
@@ -61,7 +63,16 @@ export function buildPyramidGeometry(b, h, opts = {}) {
   const west = facePiece(outline, null,
     (s, y) => [(z0 + dzdy * y) * k, y, s * k], uv, V(-1, dzdy, 0));
 
-  return mergeGeometries([north, south, east, west], false);
+  const faces = [north, south, east, west];
+  if (opts.truncate && !opts.yRange) {
+    // Flat top platform at the truncation height.
+    const Wt = W(y1) * k, ty = y1;
+    const top = new THREE.PlaneGeometry(Wt * 2, Wt * 2);
+    top.rotateX(-Math.PI / 2);
+    top.translate(0, ty, 0);
+    faces.push(top);
+  }
+  return mergeGeometries(faces, false);
 }
 
 // A box slab oriented along an arbitrary direction, returned in world/local

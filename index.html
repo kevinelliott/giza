@@ -67,7 +67,8 @@
       <span><b>Click / E</b> place / pick up torch</span>
       <span><b>F</b> fly / no-clip</span>
       <span><b>L</b> headlamp</span>
-      <span><b>M</b> fast travel</span>
+      <span><b>M</b> map / fast travel</span>
+      <span><b>&minus; / =</b> zoom minimap</span>
       <span><b>H</b> help / facts</span>
       <span><b>Esc</b> release mouse</span>
     </div>
@@ -92,11 +93,11 @@
   <div id="lmBlurb"></div>
 </div>
 
-<!-- Fast-travel menu -->
-<div id="menu">
-  <h2>Fast Travel</h2>
-  <div id="menuList"></div>
-  <p class="close">press <b>M</b> to close</p>
+<!-- Full-screen map (fast travel) -->
+<div id="mapfull">
+  <canvas id="mapcanvas"></canvas>
+  <div class="maphint">Drag to pan &middot; scroll to zoom &middot; click to fast-travel
+    (blue dots = key spots) &middot; <b>M</b>/<b>Esc</b> to close</div>
 </div>
 
 <!-- Help / facts -->

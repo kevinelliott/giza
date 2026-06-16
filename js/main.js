@@ -57,7 +57,7 @@ function applyLook() {
 function showCrosshair(v) { crosshair.style.display = v ? 'block' : 'none'; }
 
 function startMobile() {
-  if (menuOpen) return;
+  if (mapOpen) return;
   started = true;
   overlay.style.display = 'none';
   if (mobileUI) mobileUI.style.display = 'block';
@@ -65,7 +65,7 @@ function startMobile() {
   applyLook();
 }
 const requestLock = () => {
-  if (menuOpen) return;
+  if (mapOpen) return;
   const p = controls.lock();
   if (p && typeof p.catch === 'function') p.catch(() => {});
 };
@@ -75,7 +75,7 @@ controls.addEventListener('lock', () => {
   started = true; overlay.style.display = 'none'; showCrosshair(true);
 });
 controls.addEventListener('unlock', () => {
-  if (!menuOpen) { overlay.style.display = 'flex'; showCrosshair(false); }
+  if (!mapOpen) { overlay.style.display = 'flex'; showCrosshair(false); }
 });
 // On desktop, releasing the pointer pauses; on touch we never lock.
 if (isTouch) {
@@ -99,7 +99,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyR') toggleRun();
   if (e.code === 'KeyF') toggleFly();
   if (e.code === 'KeyL') toggleLamp();
-  if (e.code === 'KeyM') toggleMenu();
+  if (e.code === 'KeyM') toggleMap();
   if (e.code === 'KeyH') toggleHelp();
   if (e.code === 'KeyE') useItem();
   if (/^Digit[1-9]$/.test(e.code)) selectSlot(+e.code.slice(5) - 1);
@@ -119,32 +119,8 @@ function toggleRun() {
   const el = document.getElementById('runState'); if (el) el.textContent = runToggle ? 'ON' : 'off';
 }
 
-// ---- Teleport menu --------------------------------------------------
-let menuOpen = false;
-const menu = document.getElementById('menu');
-const menuList = document.getElementById('menuList');
-TELEPORTS.forEach((t, i) => {
-  const li = document.createElement('button');
-  li.className = 'tp';
-  li.textContent = `${i + 1}. ${t.label}`;
-  li.onclick = () => {
-    player.teleport(t.pos);
-    toggleMenu();
-    if (!isTouch) requestLock();
-  };
-  menuList.appendChild(li);
-});
-function toggleMenu() {
-  menuOpen = !menuOpen;
-  menu.style.display = menuOpen ? 'block' : 'none';
-  if (menuOpen) {
-    if (!isTouch) controls.unlock();
-    overlay.style.display = 'none';
-  } else if (isTouch && started) {
-    if (mobileUI) mobileUI.style.display = 'block';
-  }
-  if (menuOpen && mobileUI) mobileUI.style.display = 'none';
-}
+// ---- Map state (full map + minimap defined further below) -----------
+let mapOpen = false;
 const help = document.getElementById('help');
 function toggleHelp() { help.style.display = help.style.display === 'block' ? 'none' : 'block'; }
 
@@ -181,7 +157,7 @@ function selectSlot(i) {
 }
 renderHotbar();
 addEventListener('wheel', e => {
-  if (!(started || controls.isLocked)) return;
+  if (!(started || controls.isLocked) || mapOpen) return;
   selectSlot(selSlot + (e.deltaY > 0 ? 1 : -1));
 }, { passive: true });
 
@@ -195,7 +171,7 @@ const TORCH_MAT_STICK = new THREE.MeshStandardMaterial({ color: 0x5a3a1c, roughn
 
 // Aim + click: pick up a torch you're looking at, otherwise place one.
 function useItem() {
-  if (!(started || controls.isLocked) || menuOpen) return;
+  if (!(started || controls.isLocked) || mapOpen) return;
   _ray.set(camera.getWorldPosition(_rp), camera.getWorldDirection(_rd));
   _ray.far = 5;
   // 1) Pick up a placed torch under the crosshair.
@@ -349,7 +325,7 @@ if (isTouch && stickBase) {
   tap('btnFly', toggleFly);
   tap('btnLamp', toggleLamp);
   tap('btnPlace', useItem);
-  tap('btnMap', toggleMenu);
+  tap('btnMap', toggleMap);
 }
 
 // ---- HUD ------------------------------------------------------------
@@ -398,69 +374,174 @@ function updateHUD() {
   }
 }
 
-// ---- Overhead minimap (north-up) ------------------------------------
+// ---- Map: shared draw, minimap + full-screen, fast-travel -----------
+// Plottable features (derived from the same data the world is built from).
+const kc = PYRAMIDS.khufu.center, khf = PYRAMIDS.khafre.center, men = PYRAMIDS.menkaure.center;
+const FEATURES = [];
+FEATURES.push({ kind: 'pyr', label: 'Khufu', x: kc.x, z: kc.z, base: PYRAMIDS.khufu.base });
+FEATURES.push({ kind: 'pyr', label: 'Khafre', x: khf.x, z: khf.z, base: PYRAMIDS.khafre.base });
+FEATURES.push({ kind: 'pyr', label: 'Menkaure', x: men.x, z: men.z, base: PYRAMIDS.menkaure.base });
+for (const q of QUEENS_KHUFU) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
+for (const q of QUEENS_MENKAURE) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
+FEATURES.push({ kind: 'sphinx', label: 'Sphinx', x: SPHINX.center.x, z: SPHINX.center.z });
+FEATURES.push({ kind: 'temple', label: 'Khufu Mortuary Temple', x: kc.x + 150, z: kc.z });
+FEATURES.push({ kind: 'temple', label: 'Khafre Mortuary Temple', x: khf.x + 145, z: khf.z });
+FEATURES.push({ kind: 'temple', label: 'Menkaure Mortuary Temple', x: men.x + 78, z: men.z });
+FEATURES.push({ kind: 'temple', label: 'Sphinx (Valley) Temple', x: SPHINX.center.x + 60, z: SPHINX.center.z });
+FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: SPHINX.center.x - 20, z2: SPHINX.center.z });
+FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
+FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
+
+// Draw the plateau into a 2D context. Returns the world→screen transform.
+function drawMapView(ctx, w, h, cx, cz, scale, labels) {
+  const X = wx => w / 2 + (wx - cx) * scale;
+  const Y = wz => h / 2 + (wz - cz) * scale;
+  ctx.fillStyle = '#c2a468'; ctx.fillRect(0, 0, w, h);
+  ctx.lineWidth = Math.max(2, 7 * scale); ctx.strokeStyle = 'rgba(90,70,40,0.65)';
+  for (const f of FEATURES) if (f.kind === 'cause') {
+    ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.z)); ctx.lineTo(X(f.x2), Y(f.z2)); ctx.stroke();
+  }
+  ctx.textBaseline = 'middle'; ctx.font = '12px "Trebuchet MS", sans-serif';
+  for (const f of FEATURES) {
+    const sx = X(f.x), sy = Y(f.z);
+    if (f.kind === 'pyr') {
+      const s = Math.max(4, f.base * scale);
+      ctx.fillStyle = '#e8d199'; ctx.strokeStyle = '#7c6840'; ctx.lineWidth = 1.5;
+      ctx.fillRect(sx - s / 2, sy - s / 2, s, s); ctx.strokeRect(sx - s / 2, sy - s / 2, s, s);
+      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText(f.label, sx + s / 2 + 4, sy); }
+    } else if (f.kind === 'qpyr') {
+      const s = Math.max(2.5, f.base * scale);
+      ctx.fillStyle = '#c6a76d'; ctx.fillRect(sx - s / 2, sy - s / 2, s, s);
+    } else if (f.kind === 'temple') {
+      ctx.fillStyle = '#9a8a5e'; ctx.fillRect(sx - 5, sy - 4, 10, 8);
+      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText(f.label, sx + 9, sy); }
+    } else if (f.kind === 'sphinx') {
+      ctx.fillStyle = '#c7a884'; ctx.fillRect(sx - 7, sy - 3, 14, 6);
+      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText('Sphinx', sx + 10, sy); }
+    } else if (f.kind === 'boat') {
+      ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 7); ctx.fill();
+      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText("Solar Boat", sx + 8, sy); }
+    }
+  }
+  if (labels) {
+    for (const t of TELEPORTS) {
+      const sx = X(t.pos.x), sy = Y(t.pos.z);
+      ctx.fillStyle = '#3aa0ff'; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#0a3a66'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
+  // player + heading
+  const p = player.position, px = X(p.x), py = Y(p.z);
+  ctx.save(); ctx.translate(px, py); ctx.rotate(player.headingDeg() * Math.PI / 180);
+  ctx.fillStyle = '#54e081'; ctx.strokeStyle = '#0b3d1f'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath();
+  ctx.fill(); ctx.stroke(); ctx.restore();
+  return { X, Y };
+}
+
+// Minimap (corner): centred on the player, north-up, zoomable.
 const mm = document.getElementById('minimap');
 const mmx = mm.getContext('2d');
-const MM = { x0: -740, x1: 440, z0: -280, z1: 900 };   // world bounds shown
-const MS = mm.width;
-const mX = x => (x - MM.x0) / (MM.x1 - MM.x0) * MS;
-const mY = z => (z - MM.z0) / (MM.z1 - MM.z0) * MS;
-const mW = d => d / (MM.x1 - MM.x0) * MS;
-const mH = d => d / (MM.z1 - MM.z0) * MS;
-function mmSquare(c, base, fill, label) {
-  mmx.fillStyle = fill;
-  mmx.fillRect(mX(c.x) - mW(base) / 2, mY(c.z) - mH(base) / 2, mW(base), mH(base));
-  if (label) {
-    mmx.fillStyle = '#1a1206';
-    mmx.fillText(label, mX(c.x) - mmx.measureText(label).width / 2, mY(c.z) + 3);
+let mmScale = mm.width / 520;          // ~520 m across initially
+function drawMinimap() {
+  mmx.save();
+  mmx.beginPath(); mmx.rect(0, 0, mm.width, mm.height); mmx.clip();
+  drawMapView(mmx, mm.width, mm.height, player.position.x, player.position.z, mmScale, false);
+  mmx.fillStyle = '#ffd98a'; mmx.font = '10px sans-serif'; mmx.fillText('N', mm.width / 2 - 3, 9);
+  mmx.restore();
+}
+
+// Full-screen map: pan (drag), zoom (wheel), click to fast-travel.
+const mapfull = document.getElementById('mapfull');
+const mapcv = document.getElementById('mapcanvas');
+const mapx = mapcv.getContext('2d');
+const mapView = { cx: -120, cz: 320, scale: 0.5 };
+let mapDrag = null;
+function fitMapCanvas() { mapcv.width = innerWidth; mapcv.height = innerHeight; }
+function drawFull() {
+  if (!mapOpen) return;
+  drawMapView(mapx, mapcv.width, mapcv.height, mapView.cx, mapView.cz, mapView.scale, true);
+}
+function toggleMap() {
+  mapOpen = !mapOpen;
+  mapfull.style.display = mapOpen ? 'block' : 'none';
+  if (mapOpen) {
+    fitMapCanvas();
+    if (!isTouch) controls.unlock();
+    overlay.style.display = 'none';
+    if (mobileUI) mobileUI.style.display = 'none';
+  } else if (isTouch && started && mobileUI) {
+    mobileUI.style.display = 'block';
   }
 }
-function drawMinimap() {
-  mmx.clearRect(0, 0, MS, MS);
-  mmx.fillStyle = 'rgba(28, 19, 7, 0.62)';
-  mmx.fillRect(0, 0, MS, MS);
-  mmx.font = '8px "Trebuchet MS", sans-serif';
-  // monuments
-  mmSquare(PYRAMIDS.khufu.center, PYRAMIDS.khufu.base, '#e6cf94', 'Khufu');
-  mmSquare(PYRAMIDS.khafre.center, PYRAMIDS.khafre.base, '#e6cf94', 'Khafre');
-  mmSquare(PYRAMIDS.menkaure.center, PYRAMIDS.menkaure.base, '#e6cf94', 'Menk.');
-  for (const q of QUEENS_KHUFU) mmSquare(q.center, q.base, '#b89b66');
-  for (const q of QUEENS_MENKAURE) mmSquare(q.center, q.base, '#b89b66');
-  // sphinx
-  mmx.fillStyle = '#d8b48a';
-  mmx.fillRect(mX(SPHINX.center.x) - 4, mY(SPHINX.center.z) - 2, 8, 4);
-  mmx.fillStyle = '#1a1206';
-  mmx.fillText('Sphinx', mX(SPHINX.center.x) + 6, mY(SPHINX.center.z) + 3);
-  // player position + heading
-  const p = player.position;
-  const px = THREE.MathUtils.clamp(mX(p.x), 4, MS - 4);
-  const py = THREE.MathUtils.clamp(mY(p.z), 4, MS - 4);
-  mmx.save();
-  mmx.translate(px, py);
-  mmx.rotate(player.headingDeg() * Math.PI / 180);
-  mmx.fillStyle = '#54e081';
-  mmx.strokeStyle = '#0b3d1f'; mmx.lineWidth = 1;
-  mmx.beginPath(); mmx.moveTo(0, -7); mmx.lineTo(5, 6); mmx.lineTo(0, 3); mmx.lineTo(-5, 6); mmx.closePath();
-  mmx.fill(); mmx.stroke();
-  mmx.restore();
-  // north marker
-  mmx.fillStyle = '#ffd98a';
-  mmx.fillText('N', MS / 2 - 3, 10);
+function mapScreenToWorld(ev) {
+  const r = mapcv.getBoundingClientRect();
+  const sx = ev.clientX - r.left, sy = ev.clientY - r.top;
+  return {
+    x: mapView.cx + (sx - mapcv.width / 2) / mapView.scale,
+    z: mapView.cz + (sy - mapcv.height / 2) / mapView.scale, sx, sy
+  };
 }
+function travelTo(wx, wz) {
+  // snap to a named teleport if one is very close on screen
+  let best = null, bd = 18 / mapView.scale;
+  for (const t of TELEPORTS) {
+    const d = Math.hypot(t.pos.x - wx, t.pos.z - wz);
+    if (d < bd) { bd = d; best = t; }
+  }
+  if (best) { player.teleport(best.pos); }
+  else {
+    _ray.set(new THREE.Vector3(wx, 400, wz), new THREE.Vector3(0, -1, 0)); _ray.far = 900;
+    const hit = collider.geometry.boundsTree.raycastFirst(_ray, THREE.DoubleSide);
+    player.teleport({ x: wx, y: hit ? hit.point.y + 0.1 : 6, z: wz });
+  }
+  toggleMap();
+  if (!isTouch) requestLock();
+}
+mapcv.addEventListener('pointerdown', e => { mapDrag = { x: e.clientX, y: e.clientY, moved: 0 }; });
+mapcv.addEventListener('pointermove', e => {
+  if (!mapDrag) return;
+  const dx = e.clientX - mapDrag.x, dy = e.clientY - mapDrag.y;
+  mapDrag.moved += Math.abs(dx) + Math.abs(dy);
+  mapView.cx -= dx / mapView.scale; mapView.cz -= dy / mapView.scale;
+  mapDrag.x = e.clientX; mapDrag.y = e.clientY;
+});
+mapcv.addEventListener('pointerup', e => {
+  const wasClick = mapDrag && mapDrag.moved < 6;
+  mapDrag = null;
+  if (wasClick) { const w = mapScreenToWorld(e); travelTo(w.x, w.z); }
+});
+mapcv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const w = mapScreenToWorld(e);
+  mapView.scale = THREE.MathUtils.clamp(mapView.scale * (e.deltaY > 0 ? 0.88 : 1.14), 0.12, 4);
+  // keep cursor anchored
+  const r = mapcv.getBoundingClientRect();
+  mapView.cx = w.x - (e.clientX - r.left - mapcv.width / 2) / mapView.scale;
+  mapView.cz = w.z - (e.clientY - r.top - mapcv.height / 2) / mapView.scale;
+}, { passive: false });
+
+// Minimap zoom on the keyboard (- / =), and Esc closes the full map.
+addEventListener('keydown', e => {
+  if (e.code === 'Minus') mmScale = Math.max(mmScale * 0.8, mm.width / 3000);
+  if (e.code === 'Equal') mmScale = Math.min(mmScale * 1.25, mm.width / 120);
+  if (e.code === 'Escape' && mapOpen) toggleMap();
+});
 
 // ---- Resize + loop --------------------------------------------------
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  if (mapOpen) fitMapCanvas();
 });
 
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
-  if (isTouch && started) applyLook();      // touch look drives the camera
-  const active = started || controls.isLocked;
+  if (isTouch && started && !mapOpen) applyLook();   // touch look drives the camera
+  const active = (started || controls.isLocked) && !mapOpen;
   input.sprint = sprintHeld || runToggle;
   player.update(delta, active ? input : ZERO_INPUT);
   const t = clock.getElapsedTime();
@@ -468,6 +549,7 @@ function animate() {
   flickerTorches(t);
   updateHUD();
   drawMinimap();
+  drawFull();
   renderer.render(scene, camera);
 }
 const ZERO_INPUT = { forward: false, back: false, left: false, right: false,

@@ -133,6 +133,15 @@ b { color: #ffd98a; }
 #lmName { font-size: 1.15rem; color: #ffd98a; font-weight: 700; }
 #lmBlurb { font-size: 0.85rem; opacity: 0.9; line-height: 1.4; margin-top: 3px; }
 
+/* Full-screen map */
+#mapfull { position: fixed; inset: 0; z-index: 25; display: none; background: rgba(10, 7, 2, 0.82); }
+#mapcanvas { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+#mapfull .maphint {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 26;
+  color: #f3e9d2; background: rgba(20, 13, 4, 0.72); padding: 7px 16px; border-radius: 18px;
+  font-size: 0.85rem; border: 1px solid rgba(255, 217, 138, 0.35); white-space: nowrap;
+}
+
 /* Menu + help panels */
 #menu, #help {
   position: fixed; z-index: 20; display: none;

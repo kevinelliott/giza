@@ -56,19 +56,21 @@ export const PYRAMIDS = {
 };
 
 // ---- Subsidiary "queens'" pyramids ----------------------------------
-// Khufu's three (G1-a/b/c) stand in a N–S row just east of his pyramid's
-// east face, toward the south end (east face is at x ≈ +115).
+// Khufu's three (G1-a/b/c) stand in a N–S row just east of his east face
+// (face at x ≈ +115). Bases ~49.5 / 50 / 46.25 m; ~10 m gaps → centres
+// ~60 / 52 m apart (G1-c offset slightly east). Positioned off the SE.
 export const QUEENS_KHUFU = [
-  { base: 49.5, height: 30.25, center: { x: 143, z: 18 } },
-  { base: 49.0, height: 30,    center: { x: 143, z: 65 } },
-  { base: 46.25, height: 28,   center: { x: 143, z: 112 } }
+  { base: 49.5, height: 30.25, center: { x: 146, z: 40 } },   // G1-a (Hetepheres I)
+  { base: 50.0, height: 30,    center: { x: 146, z: 100 } },  // G1-b (Meritites I)
+  { base: 46.25, height: 28,   center: { x: 151, z: 152 } }   // G1-c (Henutsen)
 ];
-// Menkaure's three (G3-a/b/c) stand in an E–W row along his south side
-// (south face at z ≈ 739 + 51 = 790).
+// Menkaure's three (G3-a/b/c) sit in an E–W row just south of his south
+// face (face at z ≈ 739 + 51 = 790). G3-a (east) is the larger granite-cased
+// pyramid; G3-b/c are smaller, to the west; centres ~46 m apart.
 export const QUEENS_MENKAURE = [
-  { base: 44, height: 28, center: { x: -608, z: 812 } },
-  { base: 31, height: 21, center: { x: -562, z: 815 } },
-  { base: 31, height: 21, center: { x: -518, z: 812 } }
+  { base: 44, height: 28.4, center: { x: -516, z: 806 } },    // G3-a (granite-cased)
+  { base: 31.2, height: 21, center: { x: -562, z: 808 } },    // G3-b
+  { base: 31.2, height: 21, center: { x: -608, z: 806 } }     // G3-c
 ];
 
 // ---- The Great Sphinx -----------------------------------------------
