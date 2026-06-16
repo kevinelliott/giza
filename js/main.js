@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -387,8 +387,9 @@ FEATURES.push({ kind: 'sphinx', label: 'Sphinx', x: SPHINX.center.x, z: SPHINX.c
 FEATURES.push({ kind: 'temple', label: 'Khufu Mortuary Temple', x: kc.x + 150, z: kc.z });
 FEATURES.push({ kind: 'temple', label: 'Khafre Mortuary Temple', x: khf.x + 145, z: khf.z });
 FEATURES.push({ kind: 'temple', label: 'Menkaure Mortuary Temple', x: men.x + 78, z: men.z });
-FEATURES.push({ kind: 'temple', label: 'Sphinx (Valley) Temple', x: SPHINX.center.x + 60, z: SPHINX.center.z });
-FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: SPHINX.center.x - 20, z2: SPHINX.center.z });
+FEATURES.push({ kind: 'temple', label: 'Sphinx Temple', x: SPHINX.center.x + 60, z: SPHINX.center.z });
+FEATURES.push({ kind: 'temple', label: KHAFRE_VALLEY.name, x: KHAFRE_VALLEY.center.x, z: KHAFRE_VALLEY.center.z });
+FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: KHAFRE_VALLEY.center.x - 12, z2: KHAFRE_VALLEY.center.z - 14 });
 FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
 FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
 FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
@@ -550,6 +551,59 @@ function drawFull() {
     mapx.fillStyle = 'rgba(20,13,4,0.85)'; mapx.fillRect(tx - 4, ty - 10, tw + 8, 19);
     mapx.fillStyle = '#cfe6ff'; mapx.textBaseline = 'middle'; mapx.fillText(txt, tx, ty);
   }
+  drawLegend();
+  drawScaleBar();
+}
+
+// Legend explaining the map symbols (top-left of the full map).
+function drawLegend() {
+  const x = 14, y0 = 40, rh = 21, bw = 188;
+  const rows = [
+    ['pyr', 'Pyramid'], ['qpyr', 'Subsidiary pyramid'], ['temple', 'Temple'],
+    ['khent', 'Khentkaus (4th Pyramid)'], ['mast', 'Mastaba tombs / town'],
+    ['cause', 'Causeway'], ['wall', 'Wall of the Crow'],
+    ['boat', 'Solar boat'], ['tp', 'Fast-travel point'], ['you', 'You (facing)']
+  ];
+  mapx.fillStyle = 'rgba(20,13,4,0.78)'; mapx.strokeStyle = 'rgba(255,217,138,0.4)'; mapx.lineWidth = 1;
+  mapx.fillRect(x - 6, y0 - 22, bw, rows.length * rh + 28);
+  mapx.strokeRect(x - 6, y0 - 22, bw, rows.length * rh + 28);
+  mapx.fillStyle = '#ffd98a'; mapx.font = 'bold 13px "Trebuchet MS", sans-serif';
+  mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
+  mapx.fillText('Legend', x, y0 - 9);
+  mapx.font = '12px "Trebuchet MS", sans-serif';
+  rows.forEach(([k, label], i) => {
+    const cyl = y0 + 12 + i * rh, sxc = x + 7;
+    if (k === 'pyr') { mapx.fillStyle = '#e8d199'; mapx.strokeStyle = '#7c6840'; mapx.fillRect(sxc - 7, cyl - 7, 14, 14); mapx.strokeRect(sxc - 7, cyl - 7, 14, 14); }
+    else if (k === 'qpyr') { mapx.fillStyle = '#c6a76d'; mapx.fillRect(sxc - 4, cyl - 4, 8, 8); }
+    else if (k === 'temple') { mapx.fillStyle = '#8f7f54'; mapx.strokeStyle = '#5e5234'; mapx.fillRect(sxc - 6, cyl - 5, 12, 10); mapx.strokeRect(sxc - 6, cyl - 5, 12, 10); }
+    else if (k === 'khent') { mapx.fillStyle = '#cdbb8c'; mapx.strokeStyle = '#7c6840'; mapx.fillRect(sxc - 7, cyl - 7, 14, 14); mapx.strokeRect(sxc - 7, cyl - 7, 14, 14); }
+    else if (k === 'mast') { mapx.fillStyle = '#9c7c4c'; mapx.fillRect(sxc - 7, cyl - 4, 6, 6); mapx.fillRect(sxc, cyl - 1, 6, 6); }
+    else if (k === 'cause') { mapx.strokeStyle = 'rgba(90,70,40,0.9)'; mapx.lineWidth = 3; mapx.beginPath(); mapx.moveTo(sxc - 8, cyl); mapx.lineTo(sxc + 8, cyl); mapx.stroke(); }
+    else if (k === 'wall') { mapx.strokeStyle = '#6b5a3a'; mapx.lineWidth = 6; mapx.beginPath(); mapx.moveTo(sxc - 8, cyl); mapx.lineTo(sxc + 8, cyl); mapx.stroke(); }
+    else if (k === 'boat') { mapx.fillStyle = '#6b4a2b'; mapx.beginPath(); mapx.ellipse(sxc, cyl, 7, 3, 0, 0, 7); mapx.fill(); }
+    else if (k === 'tp') { mapx.fillStyle = '#3aa0ff'; mapx.strokeStyle = '#0a3a66'; mapx.lineWidth = 1.2; mapx.beginPath(); mapx.arc(sxc, cyl, 4.5, 0, 7); mapx.fill(); mapx.stroke(); }
+    else if (k === 'you') { mapx.fillStyle = '#54e081'; mapx.strokeStyle = '#0b3d1f'; mapx.lineWidth = 1.2; mapx.beginPath(); mapx.moveTo(sxc, cyl - 7); mapx.lineTo(sxc + 5, cyl + 6); mapx.lineTo(sxc, cyl + 2); mapx.lineTo(sxc - 5, cyl + 6); mapx.closePath(); mapx.fill(); mapx.stroke(); }
+    mapx.fillStyle = '#f3e9d2'; mapx.fillText(label, x + 20, cyl);
+  });
+}
+
+// Distance scale bar (bottom-left of the full map).
+function drawScaleBar() {
+  const raw = 150 / mapView.scale;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p, m = n >= 5 ? 5 : (n >= 2 ? 2 : 1);
+  const dist = m * p, barPx = dist * mapView.scale;
+  const bx = 20, by = mapcv.height - 72;
+  mapx.strokeStyle = '#fff'; mapx.lineWidth = 2;
+  mapx.beginPath();
+  mapx.moveTo(bx, by); mapx.lineTo(bx + barPx, by);
+  mapx.moveTo(bx, by - 5); mapx.lineTo(bx, by + 5);
+  mapx.moveTo(bx + barPx, by - 5); mapx.lineTo(bx + barPx, by + 5);
+  mapx.stroke();
+  mapx.fillStyle = '#fff'; mapx.font = '12px "Trebuchet MS", sans-serif';
+  mapx.textAlign = 'center'; mapx.textBaseline = 'alphabetic';
+  mapx.fillText(dist >= 1000 ? (dist / 1000) + ' km' : dist + ' m', bx + barPx / 2, by - 9);
+  mapx.textAlign = 'left';
 }
 function toggleMap() {
   mapOpen = !mapOpen;

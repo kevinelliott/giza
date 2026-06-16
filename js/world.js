@@ -4,7 +4,7 @@ import { Sky } from 'three/addons/objects/Sky.js';
 import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
   KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
-  WALL_OF_CROW, MENKAURE_VALLEY
+  WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -478,7 +478,11 @@ export function buildWorld(scene, mats) {
   buildSphinx(mats, collidables, group);
   landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 60,
     pos: { x: SPHINX.center.x, y: 12, z: SPHINX.center.z } });
-  buildEnclosure(SPHINX.center.x + 60, SPHINX.center.z, 38, 52, 9, mats, collidables, group); // Sphinx (Valley) Temple, in front (east)
+  buildEnclosure(SPHINX.center.x + 60, SPHINX.center.z, 38, 50, 9, mats, collidables, group); // Sphinx Temple, in front (east)
+  // Khafre's valley temple, just south of the Sphinx Temple
+  buildEnclosure(KHAFRE_VALLEY.center.x, KHAFRE_VALLEY.center.z, 45, 45, 9, mats, collidables, group);
+  landmarks.push({ name: KHAFRE_VALLEY.name, blurb: KHAFRE_VALLEY.blurb, radius: 34,
+    pos: { x: KHAFRE_VALLEY.center.x, y: 5, z: KHAFRE_VALLEY.center.z } });
 
   // Mortuary temples on the east faces (kept clear of the queens' pyramids).
   buildEnclosure(PYRAMIDS.khufu.center.x + 150, PYRAMIDS.khufu.center.z, 50, 26, 7, mats, collidables, group);
@@ -531,9 +535,9 @@ export function buildWorld(scene, mats) {
   landmarks.push({ name: MENKAURE_VALLEY.name, blurb: MENKAURE_VALLEY.blurb, radius: 32,
     pos: { x: MENKAURE_VALLEY.center.x, y: 5, z: MENKAURE_VALLEY.center.z } });
 
-  // Causeways from the mortuary temples toward the valley temples
+  // Causeways from the mortuary temples down to the valley temples
   orientedBox({ x: PYRAMIDS.khafre.center.x + 175, y: 3, z: PYRAMIDS.khafre.center.z + 6 },
-    { x: SPHINX.center.x - 20, y: 1.5, z: SPHINX.center.z }, 8, 3, mats.bedrock, collidables, group);
+    { x: KHAFRE_VALLEY.center.x - 12, y: 1.5, z: KHAFRE_VALLEY.center.z - 14 }, 8, 3, mats.bedrock, collidables, group);
   orientedBox({ x: PYRAMIDS.menkaure.center.x + 100, y: 2.5, z: PYRAMIDS.menkaure.center.z + 4 },
     { x: PYRAMIDS.menkaure.center.x + 360, y: 1.2, z: PYRAMIDS.menkaure.center.z + 120 },
     7, 2.5, mats.bedrock, collidables, group);

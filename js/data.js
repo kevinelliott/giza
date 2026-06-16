@@ -222,6 +222,14 @@ export const WALL_OF_CROW = {
   blurb: 'A massive limestone wall (~200 m long, ~10 m high) with a ' +
          'monumental gateway between the plateau and the workers\' town.'
 };
+// Khafre's granite valley temple, beside the Sphinx at the foot of his
+// causeway (distinct from, and just south of, the Sphinx Temple).
+export const KHAFRE_VALLEY = {
+  name: 'Khafre Valley Temple',
+  center: { x: 366, z: 482 },
+  blurb: 'Khafre\'s granite-clad valley temple beside the Sphinx, at the foot ' +
+         'of his causeway — its pillared hall held his great seated statues.'
+};
 // Menkaure's valley temple, at the foot (east end) of his causeway.
 export const MENKAURE_VALLEY = {
   name: 'Menkaure Valley Temple',
@@ -244,5 +252,6 @@ export const TELEPORTS = [
   { label: 'Tomb of Khentkaus I', pos: { x: -40, y: 3, z: 505 - 40 } },
   { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } },
   { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
+  { label: 'Khafre Valley Temple', pos: { x: 366, y: 2, z: 482 - 30 } },
   { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } }
 ];
