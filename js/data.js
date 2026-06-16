@@ -213,6 +213,22 @@ export const WORKERS_VILLAGE = {
   blurb: 'Heit el-Ghurab, the "Lost City of the Pyramids": barracks, bakeries ' +
          'and long galleries that housed the crews who built Giza.'
 };
+// The Wall of the Crow — a colossal stone wall with a monumental gateway,
+// separating the pyramid plateau from the workers' town.
+export const WALL_OF_CROW = {
+  name: 'Wall of the Crow',
+  a: { x: 150, z: 762 }, b: { x: 382, z: 772 },
+  height: 10, thickness: 8, gate: 14,
+  blurb: 'A massive limestone wall (~200 m long, ~10 m high) with a ' +
+         'monumental gateway between the plateau and the workers\' town.'
+};
+// Menkaure's valley temple, at the foot (east end) of his causeway.
+export const MENKAURE_VALLEY = {
+  name: 'Menkaure Valley Temple',
+  center: { x: -202, z: 859 },
+  blurb: 'Menkaure\'s valley temple at the foot of his causeway — begun in ' +
+         'stone and finished in mud brick after his death.'
+};
 
 // ---- Fast travel destinations (eye position, label) -----------------
 export const TELEPORTS = [
@@ -226,5 +242,7 @@ export const TELEPORTS = [
   { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
   { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } },
   { label: 'Tomb of Khentkaus I', pos: { x: -40, y: 3, z: 505 - 40 } },
-  { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } }
+  { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } },
+  { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
+  { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } }
 ];

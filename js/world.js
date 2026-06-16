@@ -3,7 +3,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
-  KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE
+  KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
+  WALL_OF_CROW, MENKAURE_VALLEY
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -227,6 +228,22 @@ function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, 
   const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
   mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
   group.add(mesh); collidables.push(mesh);
+}
+
+// The Wall of the Crow: two thick wall segments leaving a central gateway,
+// with a lintel over the gate (walk through the gap).
+function buildWallOfCrow(wc, mats, collidables, group) {
+  const a = wc.a, b = wc.b;
+  const dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz);
+  const ux = dx / L, uz = dz / L, gh = wc.height, th = wc.thickness, gw = wc.gate;
+  const pt = d => ({ x: a.x + ux * d, y: gh / 2, z: a.z + uz * d });
+  orientedBox(pt(0), pt(L / 2 - gw / 2), th, gh, mats.bedrock, collidables, group);
+  orientedBox(pt(L / 2 + gw / 2), pt(L), th, gh, mats.bedrock, collidables, group);
+  // lintel across the gateway, near the top
+  const ly = gh - 1.5;
+  orientedBox({ x: a.x + ux * (L / 2 - gw / 2), y: ly, z: a.z + uz * (L / 2 - gw / 2) },
+    { x: a.x + ux * (L / 2 + gw / 2), y: ly, z: a.z + uz * (L / 2 + gw / 2) },
+    th, 3, mats.bedrock, collidables, group);
 }
 
 // Two-tiered rock-cut monument (the tomb of Khentkaus I).
@@ -507,6 +524,12 @@ export function buildWorld(scene, mats) {
   buildVillage(WORKERS_VILLAGE, deco.mud, collidables, group, buildings);
   landmarks.push({ name: WORKERS_VILLAGE.name, blurb: WORKERS_VILLAGE.blurb, radius: 90,
     pos: { x: WORKERS_VILLAGE.center.x, y: 4, z: WORKERS_VILLAGE.center.z } });
+  buildWallOfCrow(WALL_OF_CROW, mats, collidables, group);
+  landmarks.push({ name: WALL_OF_CROW.name, blurb: WALL_OF_CROW.blurb, radius: 60,
+    pos: { x: 266, y: 6, z: 767 } });
+  buildEnclosure(MENKAURE_VALLEY.center.x, MENKAURE_VALLEY.center.z, 42, 34, 7, mats, collidables, group);
+  landmarks.push({ name: MENKAURE_VALLEY.name, blurb: MENKAURE_VALLEY.blurb, radius: 32,
+    pos: { x: MENKAURE_VALLEY.center.x, y: 5, z: MENKAURE_VALLEY.center.z } });
 
   // Causeways from the mortuary temples toward the valley temples
   orientedBox({ x: PYRAMIDS.khafre.center.x + 175, y: 3, z: PYRAMIDS.khafre.center.z + 6 },

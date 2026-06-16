@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -393,6 +393,8 @@ FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2
 FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
 FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
 FEATURES.push({ kind: 'village', label: WORKERS_VILLAGE.name, x: WORKERS_VILLAGE.center.x, z: WORKERS_VILLAGE.center.z });
+FEATURES.push({ kind: 'temple', label: MENKAURE_VALLEY.name, x: MENKAURE_VALLEY.center.x, z: MENKAURE_VALLEY.center.z });
+FEATURES.push({ kind: 'wall', label: WALL_OF_CROW.name, x: WALL_OF_CROW.a.x, z: WALL_OF_CROW.a.z, x2: WALL_OF_CROW.b.x, z2: WALL_OF_CROW.b.z });
 
 // Draw the plateau into a 2D context. On the full map, `collect` gathers
 // marker screen positions for hover tooltips. Returns the world→screen xform.
@@ -414,6 +416,11 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   ctx.lineWidth = Math.max(2, 6 * scale); ctx.strokeStyle = 'rgba(90,70,40,0.6)';
   for (const f of FEATURES) if (f.kind === 'cause') {
     ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.z)); ctx.lineTo(X(f.x2), Y(f.z2)); ctx.stroke();
+  }
+  ctx.lineWidth = Math.max(3, 8 * scale); ctx.strokeStyle = '#6b5a3a';
+  for (const f of FEATURES) if (f.kind === 'wall') {
+    ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.z)); ctx.lineTo(X(f.x2), Y(f.z2)); ctx.stroke();
+    if (full && collect) collect.push({ sx: X((f.x + f.x2) / 2), sy: Y((f.z + f.z2) / 2), name: f.label, r: Math.max(10, 30 * scale) });
   }
   ctx.textBaseline = 'middle';
   for (const f of FEATURES) {
@@ -522,6 +529,26 @@ function drawFull() {
     mapx.fillRect(tx - 5, ty - 11, tw + 10, 22); mapx.strokeRect(tx - 5, ty - 11, tw + 10, 22);
     mapx.fillStyle = '#ffd98a'; mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
     mapx.fillText(best.name, tx, ty);
+  }
+  // cardinal edge labels (the full map is always north-up)
+  const W = mapcv.width, H = mapcv.height;
+  mapx.fillStyle = 'rgba(255,217,138,0.85)'; mapx.font = 'bold 16px "Trebuchet MS", sans-serif';
+  mapx.textAlign = 'center'; mapx.textBaseline = 'middle';
+  mapx.fillText('N', W / 2, 20); mapx.fillText('S', W / 2, H - 26);
+  mapx.fillText('W', 18, H / 2); mapx.fillText('E', W - 18, H / 2);
+  mapx.textAlign = 'left';
+  // "you are here" cursor coordinates (E = east, N = north)
+  if (mapHover) {
+    const wx = mapView.cx + (mapHover.x - W / 2) / mapView.scale;
+    const wz = mapView.cz + (mapHover.y - H / 2) / mapView.scale;
+    const txt = `E ${wx.toFixed(0)}   N ${(-wz).toFixed(0)}`;
+    mapx.font = '12px "Trebuchet MS", sans-serif';
+    const tw = mapx.measureText(txt).width;
+    let tx = mapHover.x + 12, ty = mapHover.y + 20;
+    if (tx + tw + 8 > W) tx = mapHover.x - tw - 14;
+    if (ty + 11 > H) ty = mapHover.y - 20;
+    mapx.fillStyle = 'rgba(20,13,4,0.85)'; mapx.fillRect(tx - 4, ty - 10, tw + 8, 19);
+    mapx.fillStyle = '#cfe6ff'; mapx.textBaseline = 'middle'; mapx.fillText(txt, tx, ty);
   }
 }
 function toggleMap() {
