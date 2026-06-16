@@ -191,5 +191,5 @@ export const TELEPORTS = [
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT2(SUBT).y - 1.4, z: SUBT2(SUBT).z } },
   { label: 'Pyramid of Khafre — north base', pos: { x: -340, y: 2, z: 340 - 120 } },
   { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
-  { label: 'The Great Sphinx', pos: { x: 332 + 55, y: 4, z: 432 } }
+  { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } }
 ];

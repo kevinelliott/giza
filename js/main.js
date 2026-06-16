@@ -86,26 +86,38 @@ if (isTouch) {
 // ---- Input ----------------------------------------------------------
 const input = { forward: false, back: false, left: false, right: false,
   jump: false, crouch: false, sprint: false };
+let sprintHeld = false;       // Shift (hold)
+let runToggle = false;        // R / RUN button (toggle)
 const keymap = {
   KeyW: 'forward', ArrowUp: 'forward', KeyS: 'back', ArrowDown: 'back',
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
-  Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint',
-  ControlLeft: 'crouch', KeyC: 'crouch'
+  Space: 'jump', ControlLeft: 'crouch', KeyC: 'crouch'
 };
 addEventListener('keydown', e => {
   if (keymap[e.code]) { input[keymap[e.code]] = true; e.preventDefault(); }
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') sprintHeld = true;
+  if (e.code === 'KeyR') toggleRun();
   if (e.code === 'KeyF') toggleFly();
   if (e.code === 'KeyL') toggleLamp();
   if (e.code === 'KeyM') toggleMenu();
   if (e.code === 'KeyH') toggleHelp();
+  if (e.code === 'KeyE') useItem();
+  if (/^Digit[1-9]$/.test(e.code)) selectSlot(+e.code.slice(5) - 1);
 });
-addEventListener('keyup', e => { if (keymap[e.code]) input[keymap[e.code]] = false; });
+addEventListener('keyup', e => {
+  if (keymap[e.code]) input[keymap[e.code]] = false;
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') sprintHeld = false;
+});
 
 function toggleFly() {
   player.fly = !player.fly;
   document.getElementById('flyState').textContent = player.fly ? 'ON' : 'off';
 }
 function toggleLamp() { forceLamp = !forceLamp; }
+function toggleRun() {
+  runToggle = !runToggle;
+  const el = document.getElementById('runState'); if (el) el.textContent = runToggle ? 'ON' : 'off';
+}
 
 // ---- Teleport menu --------------------------------------------------
 let menuOpen = false;
@@ -135,6 +147,91 @@ function toggleMenu() {
 }
 const help = document.getElementById('help');
 function toggleHelp() { help.style.display = help.style.display === 'block' ? 'none' : 'block'; }
+
+// ---- Inventory + placeable torches ---------------------------------
+const inventory = [
+  { id: 'torch', name: 'Torch', count: 12 },
+  null, null, null, null, null
+];
+const ICONS = { torch: '🔥' };
+let selSlot = 0;
+const hotbar = document.getElementById('hotbar');
+const slotEls = [];
+inventory.forEach((_, i) => {
+  const el = document.createElement('div');
+  el.className = 'slot';
+  el.innerHTML = `<span class="key">${i + 1}</span><span class="icon"></span><span class="cnt"></span>`;
+  el.addEventListener('click', () => selectSlot(i));
+  el.addEventListener('touchstart', e => { selectSlot(i); e.preventDefault(); }, { passive: false });
+  hotbar.appendChild(el);
+  slotEls.push(el);
+});
+function renderHotbar() {
+  inventory.forEach((it, i) => {
+    const el = slotEls[i];
+    el.classList.toggle('sel', i === selSlot);
+    el.querySelector('.icon').textContent = (it && it.count > 0) ? (ICONS[it.id] || '?') : '';
+    el.querySelector('.cnt').textContent = (it && it.count > 1) ? it.count : '';
+  });
+}
+function selectSlot(i) {
+  const n = slotEls.length;
+  selSlot = ((i % n) + n) % n;
+  renderHotbar();
+}
+renderHotbar();
+addEventListener('wheel', e => {
+  if (!(started || controls.isLocked)) return;
+  selectSlot(selSlot + (e.deltaY > 0 ? 1 : -1));
+}, { passive: true });
+
+const _ray = new THREE.Raycaster();
+const _rp = new THREE.Vector3();
+const _rd = new THREE.Vector3();
+const placedTorches = [];
+function useItem() {
+  if (!(started || controls.isLocked) || menuOpen) return;
+  const it = inventory[selSlot];
+  if (!it || it.count <= 0 || it.id !== 'torch') return;
+  _ray.set(camera.getWorldPosition(_rp), camera.getWorldDirection(_rd));
+  _ray.far = 6;
+  const hit = _ray.intersectObject(collider, true)[0];
+  if (!hit) return;
+  const normal = hit.face
+    ? hit.face.normal.clone().transformDirection(collider.matrixWorld).normalize()
+    : new THREE.Vector3(0, 1, 0);
+  placeTorch(hit.point, normal);
+  it.count--; renderHotbar();
+}
+function placeTorch(point, normal) {
+  const g = new THREE.Group();
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, 0.85, 6),
+    new THREE.MeshStandardMaterial({ color: 0x5a3a1c, roughness: 0.9 }));
+  stick.rotation.x = Math.PI / 2.5;
+  stick.position.set(0, 0.12, 0.28);
+  g.add(stick);
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffc24a, emissive: 0xff7a18, emissiveIntensity: 2.6 }));
+  flame.position.set(0, 0.46, 0.46);
+  g.add(flame);
+  const light = new THREE.PointLight(0xffa23a, 28, 20, 2);
+  light.position.copy(flame.position);
+  g.add(light);
+  g.position.copy(point).addScaledVector(normal, 0.06);
+  const up = Math.abs(normal.y) > 0.95 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), normal, up));
+  scene.add(g);
+  placedTorches.push({ light, mat: flame.material, base: 28 });
+}
+function flickerTorches(t) {
+  for (const to of placedTorches) {
+    const f = 0.82 + Math.sin(t * 11 + to.base) * 0.1 + Math.random() * 0.06;
+    to.light.intensity = to.base * f;
+    to.mat.emissiveIntensity = 2.1 + f;
+  }
+}
+// Left-click places the selected item once you're playing (not while paused).
+addEventListener('mousedown', e => { if (e.button === 0) useItem(); });
 
 // ---- Touch controls -------------------------------------------------
 // Left side = virtual joystick (move); the rest of the screen = drag-look.
@@ -202,10 +299,10 @@ if (isTouch && stickBase) {
     el.addEventListener('touchstart', e => { fn(); e.preventDefault(); }, { passive: false });
   };
   hold('btnJump', 'jump');
-  hold('btnSprint', 'sprint');
+  tap('btnSprint', toggleRun);
   tap('btnFly', toggleFly);
   tap('btnLamp', toggleLamp);
-  tap('btnUp', () => {});      // placeholder; up handled via jump while flying
+  tap('btnPlace', useItem);
   tap('btnMap', toggleMenu);
 }
 
@@ -268,8 +365,11 @@ function animate() {
   const delta = clock.getDelta();
   if (isTouch && started) applyLook();      // touch look drives the camera
   const active = started || controls.isLocked;
+  input.sprint = sprintHeld || runToggle;
   player.update(delta, active ? input : ZERO_INPUT);
-  if (world.tick) world.tick(clock.getElapsedTime());
+  const t = clock.getElapsedTime();
+  if (world.tick) world.tick(t);
+  flickerTorches(t);
   updateHUD();
   renderer.render(scene, camera);
 }
@@ -282,7 +382,8 @@ function setStatus(t) {
 }
 
 // Expose a small hook for debugging / automated screenshots.
-window.__giza = { THREE, scene, camera, player, controls, world, look, input };
+window.__giza = { THREE, scene, camera, player, controls, world, look, input,
+  inventory, placedTorches, get runToggle() { return runToggle; } };
 
 // Hide the loader and start once everything is ready.
 setStatus('Ready.');

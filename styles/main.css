@@ -39,6 +39,26 @@ b { color: #ffd98a; }
   text-shadow: 0 1px 3px #000;
 }
 
+/* Inventory hotbar */
+#hotbar {
+  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+  z-index: 7; display: flex; gap: 7px; pointer-events: none;
+}
+#hotbar .slot {
+  position: relative; width: 54px; height: 54px; border-radius: 8px;
+  background: rgba(20, 13, 4, 0.55); border: 2px solid rgba(255, 217, 138, 0.28);
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+  pointer-events: auto; cursor: pointer; user-select: none;
+}
+#hotbar .slot.sel { border-color: #ffd98a; background: rgba(255, 217, 138, 0.22); }
+#hotbar .slot .key {
+  position: absolute; top: 2px; left: 5px; font-size: 0.62rem; opacity: 0.7;
+}
+#hotbar .slot .cnt {
+  position: absolute; bottom: 1px; right: 4px; font-size: 0.72rem; color: #ffd98a;
+  text-shadow: 0 1px 2px #000;
+}
+
 /* Mobile touch controls */
 #mobile { position: fixed; inset: 0; z-index: 8; display: none; pointer-events: none; }
 #joystick {

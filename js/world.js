@@ -425,7 +425,7 @@ export function buildWorld(scene, mats) {
   buildSphinx(mats, collidables, group);
   landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 60,
     pos: { x: SPHINX.center.x, y: 12, z: SPHINX.center.z } });
-  buildEnclosure(SPHINX.center.x - 8, SPHINX.center.z + 2, 47, 45, 9, mats, collidables, group); // Sphinx (Valley) Temple
+  buildEnclosure(SPHINX.center.x + 60, SPHINX.center.z, 38, 52, 9, mats, collidables, group); // Sphinx (Valley) Temple, in front (east)
 
   // Mortuary temples on the east faces + Khafre valley temple
   buildEnclosure(PYRAMIDS.khufu.center.x + 150, PYRAMIDS.khufu.center.z, 52, 40, 7, mats, collidables, group);
@@ -483,9 +483,9 @@ export function buildWorld(scene, mats) {
     group.add(t);
   }
 
-  // Camels near the Sphinx viewing area
-  group.add(buildCamel(deco, SPHINX.center.x + 70, SPHINX.center.z + 18, -2.2, collidables));
-  group.add(buildCamel(deco, SPHINX.center.x + 80, SPHINX.center.z + 4, -1.9, collidables));
+  // Camels in the open viewing area north of the Sphinx
+  group.add(buildCamel(deco, SPHINX.center.x + 6, SPHINX.center.z - 52, 1.0, collidables));
+  group.add(buildCamel(deco, SPHINX.center.x + 24, SPHINX.center.z - 60, 1.4, collidables));
 
   // Surviving casing at the Great Pyramid base + circling birds
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);

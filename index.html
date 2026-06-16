@@ -42,6 +42,7 @@
     <button id="btnLamp" class="tbtn">LAMP</button>
     <button id="btnFly" class="tbtn">FLY</button>
     <button id="btnSprint" class="tbtn">RUN</button>
+    <button id="btnPlace" class="tbtn">PLACE</button>
     <button id="btnJump" class="tbtn big">JUMP</button>
   </div>
 </div>
@@ -57,7 +58,9 @@
       <span><b>W A S D</b> move</span>
       <span><b>Mouse</b> look</span>
       <span><b>Space</b> jump</span>
-      <span><b>Shift</b> sprint</span>
+      <span><b>Shift</b> sprint &middot; <b>R</b> run toggle</span>
+      <span><b>1–6 / wheel</b> select item</span>
+      <span><b>Click / E</b> place torch</span>
       <span><b>F</b> fly / no-clip</span>
       <span><b>L</b> headlamp</span>
       <span><b>M</b> fast travel</span>
@@ -73,10 +76,13 @@
 <div id="hud">
   <div id="pos">&nbsp;</div>
   <div id="states">
-    fly <b id="flyState">off</b> &middot; lamp <b id="lampState">off</b>
-    &middot; <b>M</b> map &middot; <b>H</b> help
+    run <b id="runState">off</b> &middot; fly <b id="flyState">off</b>
+    &middot; lamp <b id="lampState">off</b> &middot; <b>M</b> map &middot; <b>H</b> help
   </div>
 </div>
+
+<!-- Inventory hotbar -->
+<div id="hotbar"></div>
 <div id="lm">
   <div id="lmName"></div>
   <div id="lmBlurb"></div>
