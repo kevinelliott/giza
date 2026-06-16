@@ -432,16 +432,18 @@ export function buildWorld(scene, mats) {
     pos: { x: SPHINX.center.x, y: 12, z: SPHINX.center.z } });
   buildEnclosure(SPHINX.center.x + 60, SPHINX.center.z, 38, 52, 9, mats, collidables, group); // Sphinx (Valley) Temple, in front (east)
 
-  // Mortuary temples on the east faces + Khafre valley temple
-  buildEnclosure(PYRAMIDS.khufu.center.x + 150, PYRAMIDS.khufu.center.z, 52, 40, 7, mats, collidables, group);
-  buildEnclosure(PYRAMIDS.khafre.center.x + 145, PYRAMIDS.khafre.center.z, 60, 45, 8, mats, collidables, group);
-  buildEnclosure(PYRAMIDS.menkaure.center.x + 78, PYRAMIDS.menkaure.center.z, 45, 38, 7, mats, collidables, group);
+  // Mortuary temples on the east faces (kept clear of the queens' pyramids).
+  buildEnclosure(PYRAMIDS.khufu.center.x + 150, PYRAMIDS.khufu.center.z, 50, 26, 7, mats, collidables, group);
+  buildEnclosure(PYRAMIDS.khafre.center.x + 145, PYRAMIDS.khafre.center.z, 56, 42, 8, mats, collidables, group);
+  buildEnclosure(PYRAMIDS.menkaure.center.x + 78, PYRAMIDS.menkaure.center.z, 44, 36, 7, mats, collidables, group);
 
-  // A scatter of fallen casing blocks north of the Great Pyramid
+  // A scatter of fallen casing blocks north of the Great Pyramid (kept off the
+  // entrance stair/ramp corridor so they never block the way in).
   const blockGeoms = [];
   for (let i = 0; i < 60; i++) {
-    const r = 130 + Math.random() * 90, a = (-0.6 + Math.random() * 1.2);
+    const r = 135 + Math.random() * 95, a = (-0.7 + Math.random() * 1.4);
     const x = Math.sin(a) * r, z = -Math.cos(a) * r;
+    if (Math.abs(x - 7) < 11 && z < -95) continue;     // leave the entrance path clear
     const s = 0.9 + Math.random() * 1.8;
     const g = new THREE.BoxGeometry(s * 1.4, s, s * 1.2);
     g.applyMatrix4(new THREE.Matrix4().makeRotationY(Math.random() * Math.PI));
@@ -460,9 +462,10 @@ export function buildWorld(scene, mats) {
   };
   const kc = PYRAMIDS.khufu.center;
 
-  // Cemeteries of mastaba tombs (Eastern + Western fields)
-  buildMastabaField(kc.x + 150, kc.z - 70, 7, 9, 22, 16, mats.bedrock, collidables, group);
-  buildMastabaField(kc.x - 360, kc.z - 110, 10, 13, 22, 17, mats.bedrock, collidables, group);
+  // Cemeteries of mastaba tombs — Eastern field sits well east of the queens'
+  // pyramids; Western field is set back from the west face. Both in tidy rows.
+  buildMastabaField(kc.x + 205, kc.z - 120, 6, 13, 24, 21, mats.bedrock, collidables, group);
+  buildMastabaField(kc.x - 395, kc.z - 120, 9, 13, 23, 20, mats.bedrock, collidables, group);
 
   // Causeways from the mortuary temples toward the valley temples
   orientedBox({ x: PYRAMIDS.khafre.center.x + 175, y: 3, z: PYRAMIDS.khafre.center.z + 6 },

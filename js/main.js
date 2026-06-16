@@ -392,42 +392,50 @@ FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: SPHINX.center.x
 FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
 FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
 
-// Draw the plateau into a 2D context. Returns the world→screen transform.
-function drawMapView(ctx, w, h, cx, cz, scale, labels) {
+// Draw the plateau into a 2D context. On the full map, `collect` gathers
+// marker screen positions for hover tooltips. Returns the world→screen xform.
+function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   const X = wx => w / 2 + (wx - cx) * scale;
   const Y = wz => h / 2 + (wz - cz) * scale;
   ctx.fillStyle = '#c2a468'; ctx.fillRect(0, 0, w, h);
-  ctx.lineWidth = Math.max(2, 7 * scale); ctx.strokeStyle = 'rgba(90,70,40,0.65)';
+  ctx.lineWidth = Math.max(2, 6 * scale); ctx.strokeStyle = 'rgba(90,70,40,0.6)';
   for (const f of FEATURES) if (f.kind === 'cause') {
     ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.z)); ctx.lineTo(X(f.x2), Y(f.z2)); ctx.stroke();
   }
-  ctx.textBaseline = 'middle'; ctx.font = '12px "Trebuchet MS", sans-serif';
+  ctx.textBaseline = 'middle';
   for (const f of FEATURES) {
     const sx = X(f.x), sy = Y(f.z);
     if (f.kind === 'pyr') {
-      const s = Math.max(4, f.base * scale);
+      const s = Math.max(5, f.base * scale);
       ctx.fillStyle = '#e8d199'; ctx.strokeStyle = '#7c6840'; ctx.lineWidth = 1.5;
       ctx.fillRect(sx - s / 2, sy - s / 2, s, s); ctx.strokeRect(sx - s / 2, sy - s / 2, s, s);
-      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText(f.label, sx + s / 2 + 4, sy); }
+      if (full) {
+        ctx.fillStyle = '#2a1d08'; ctx.font = 'bold 12px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText(f.label, sx, sy); ctx.textAlign = 'left';
+        if (collect) collect.push({ sx, sy, name: f.label, r: s / 2 });
+      }
     } else if (f.kind === 'qpyr') {
       const s = Math.max(2.5, f.base * scale);
       ctx.fillStyle = '#c6a76d'; ctx.fillRect(sx - s / 2, sy - s / 2, s, s);
+      if (full && collect) collect.push({ sx, sy, name: "Queen's pyramid", r: Math.max(5, s / 2) });
     } else if (f.kind === 'temple') {
-      ctx.fillStyle = '#9a8a5e'; ctx.fillRect(sx - 5, sy - 4, 10, 8);
-      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText(f.label, sx + 9, sy); }
+      ctx.fillStyle = '#8f7f54'; ctx.strokeStyle = '#5e5234'; ctx.lineWidth = 1;
+      ctx.fillRect(sx - 6, sy - 5, 12, 10); ctx.strokeRect(sx - 6, sy - 5, 12, 10);
+      if (full && collect) collect.push({ sx, sy, name: f.label, r: 9 });
     } else if (f.kind === 'sphinx') {
-      ctx.fillStyle = '#c7a884'; ctx.fillRect(sx - 7, sy - 3, 14, 6);
-      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText('Sphinx', sx + 10, sy); }
+      ctx.fillStyle = '#c7a884'; ctx.fillRect(sx - 8, sy - 4, 16, 8);
+      if (full && collect) collect.push({ sx, sy, name: 'Great Sphinx', r: 10 });
     } else if (f.kind === 'boat') {
-      ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 7); ctx.fill();
-      if (labels) { ctx.fillStyle = '#2a1d08'; ctx.fillText("Solar Boat", sx + 8, sy); }
+      ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 3, 0, 0, 7); ctx.fill();
+      if (full && collect) collect.push({ sx, sy, name: "Khufu's Solar Boat", r: 9 });
     }
   }
-  if (labels) {
+  if (full) {
     for (const t of TELEPORTS) {
       const sx = X(t.pos.x), sy = Y(t.pos.z);
-      ctx.fillStyle = '#3aa0ff'; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#0a3a66'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#3aa0ff'; ctx.strokeStyle = '#0a3a66'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(sx, sy, 4.5, 0, 7); ctx.fill(); ctx.stroke();
+      if (collect) collect.push({ sx, sy, name: t.label, r: 8 });
     }
   }
   // player + heading
@@ -446,7 +454,7 @@ let mmScale = mm.width / 520;          // ~520 m across initially
 function drawMinimap() {
   mmx.save();
   mmx.beginPath(); mmx.rect(0, 0, mm.width, mm.height); mmx.clip();
-  drawMapView(mmx, mm.width, mm.height, player.position.x, player.position.z, mmScale, false);
+  drawMapView(mmx, mm.width, mm.height, player.position.x, player.position.z, mmScale, false, null);
   mmx.fillStyle = '#ffd98a'; mmx.font = '10px sans-serif'; mmx.fillText('N', mm.width / 2 - 3, 9);
   mmx.restore();
 }
@@ -457,10 +465,30 @@ const mapcv = document.getElementById('mapcanvas');
 const mapx = mapcv.getContext('2d');
 const mapView = { cx: -120, cz: 320, scale: 0.5 };
 let mapDrag = null;
+let mapMarkers = [];
+let mapHover = null;     // {x,y} in canvas space, or null
 function fitMapCanvas() { mapcv.width = innerWidth; mapcv.height = innerHeight; }
 function drawFull() {
   if (!mapOpen) return;
-  drawMapView(mapx, mapcv.width, mapcv.height, mapView.cx, mapView.cz, mapView.scale, true);
+  mapMarkers = [];
+  drawMapView(mapx, mapcv.width, mapcv.height, mapView.cx, mapView.cz, mapView.scale, true, mapMarkers);
+  // hover tooltip
+  let best = null, bd = 1e9;
+  if (mapHover) for (const m of mapMarkers) {
+    const d = Math.hypot(m.sx - mapHover.x, m.sy - mapHover.y);
+    if (d < m.r + 6 && d < bd) { bd = d; best = m; }
+  }
+  mapcv.style.cursor = best ? 'pointer' : 'crosshair';
+  if (best) {
+    mapx.font = '13px "Trebuchet MS", sans-serif';
+    const tw = mapx.measureText(best.name).width;
+    let tx = best.sx + 10, ty = best.sy - 16;
+    if (tx + tw + 8 > mapcv.width) tx = best.sx - tw - 16;
+    mapx.fillStyle = 'rgba(20,13,4,0.92)'; mapx.strokeStyle = 'rgba(255,217,138,0.55)'; mapx.lineWidth = 1;
+    mapx.fillRect(tx - 5, ty - 11, tw + 10, 22); mapx.strokeRect(tx - 5, ty - 11, tw + 10, 22);
+    mapx.fillStyle = '#ffd98a'; mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
+    mapx.fillText(best.name, tx, ty);
+  }
 }
 function toggleMap() {
   mapOpen = !mapOpen;
@@ -500,12 +528,15 @@ function travelTo(wx, wz) {
 }
 mapcv.addEventListener('pointerdown', e => { mapDrag = { x: e.clientX, y: e.clientY, moved: 0 }; });
 mapcv.addEventListener('pointermove', e => {
+  const r = mapcv.getBoundingClientRect();
+  mapHover = { x: e.clientX - r.left, y: e.clientY - r.top };
   if (!mapDrag) return;
   const dx = e.clientX - mapDrag.x, dy = e.clientY - mapDrag.y;
   mapDrag.moved += Math.abs(dx) + Math.abs(dy);
   mapView.cx -= dx / mapView.scale; mapView.cz -= dy / mapView.scale;
   mapDrag.x = e.clientX; mapDrag.y = e.clientY;
 });
+mapcv.addEventListener('pointerleave', () => { mapHover = null; });
 mapcv.addEventListener('pointerup', e => {
   const wasClick = mapDrag && mapDrag.moved < 6;
   mapDrag = null;

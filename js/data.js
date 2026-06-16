@@ -60,9 +60,9 @@ export const PYRAMIDS = {
 // (face at x ≈ +115). Bases ~49.5 / 50 / 46.25 m; ~10 m gaps → centres
 // ~60 / 52 m apart (G1-c offset slightly east). Positioned off the SE.
 export const QUEENS_KHUFU = [
-  { base: 49.5, height: 30.25, center: { x: 146, z: 40 } },   // G1-a (Hetepheres I)
-  { base: 50.0, height: 30,    center: { x: 146, z: 100 } },  // G1-b (Meritites I)
-  { base: 46.25, height: 28,   center: { x: 151, z: 152 } }   // G1-c (Henutsen)
+  { base: 49.5, height: 30.25, center: { x: 148, z: 48 } },   // G1-a (Hetepheres I)
+  { base: 50.0, height: 30,    center: { x: 148, z: 108 } },  // G1-b (Meritites I)
+  { base: 46.25, height: 28,   center: { x: 153, z: 162 } }   // G1-c (Henutsen)
 ];
 // Menkaure's three (G3-a/b/c) sit in an E–W row just south of his south
 // face (face at z ≈ 739 + 51 = 790). G3-a (east) is the larger granite-cased
