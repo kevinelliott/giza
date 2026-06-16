@@ -113,22 +113,15 @@ function buildPyramid(p, mats, collidables, group) {
   group.add(interior);
 
   if (isKhufu) {
-    const half = p.base / 2;
-    const ox = p.center.x + def.entrance.x, oz = p.center.z;
-    const baseZ = oz - half - 40;                         // gentle, long run
-    // Deliver the player onto the descending passage FLOOR right at the mouth,
-    // so the ramp surface flows straight into the tunnel floor.
-    const floorY = def.entrance.y - 1.5;                  // passage floor at the mouth (h≈3)
-    const topPt = { x: ox, y: floorY, z: oz + def.entrance.z };
-    // Decorative stepped treads…
-    const stair = new THREE.Mesh(
-      buildStaircase({ x: ox, y: 0, z: baseZ }, topPt, 3.4), mats.wood);
+    // The interior's first corridor segment IS the (collidable) entrance ramp
+    // floor; lay decorative stepped treads over it for looks.
+    const path = def.corridors[0].path;       // [RAMP_BASE, DOOR, ...] (local)
+    const a = path[0], b = path[1];
+    const stair = new THREE.Mesh(buildStaircase(
+      { x: p.center.x + a.x, y: a.y, z: p.center.z + a.z },
+      { x: p.center.x + b.x, y: b.y, z: p.center.z + b.z }, 5.2), mats.wood);
     stair.castShadow = true; stair.receiveShadow = true;
     group.add(stair);
-    // …over a smooth, invisible ramp that actually carries the player up.
-    const ramp = orientedBox({ x: ox, y: -0.3, z: baseZ },
-      { x: ox, y: topPt.y - 0.3, z: topPt.z }, 3.6, 0.6, mats.wood, collidables, group);
-    ramp.visible = false;
   }
   return def;
 }

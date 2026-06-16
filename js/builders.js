@@ -205,25 +205,75 @@ export function buildStaircase(from, to, width = 2.4) {
 }
 
 // ---------------------------------------------------------------------
-//  Assembled interior (passages + chambers + sarcophagi) in local coords
+//  Continuous swept corridor along a polyline path. The floor is the path
+//  itself; the ceiling/walls are offset by the (per-point) height/width.
+//  Consecutive cross-sections share vertex positions, so there are NO lips
+//  or end-cap walls at the internal bends — the whole run is one smooth,
+//  walkable surface. `wallFrom` lets early segments be floor-only (the
+//  open outdoor entrance ramp).
+// ---------------------------------------------------------------------
+export function buildSweptCorridor(path, width, height, wallFrom = 0) {
+  const pts = path.map(p => new THREE.Vector3(p.x, p.y, p.z));
+  const n = pts.length;
+  const W = i => (Array.isArray(width) ? width[i] : width);
+  const H = i => (Array.isArray(height) ? height[i] : height);
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const sec = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    const tan = new THREE.Vector3().subVectors(b, a).normalize();
+    let r = new THREE.Vector3().crossVectors(worldUp, tan);
+    if (r.lengthSq() < 1e-6) r.set(1, 0, 0);
+    r.normalize();
+    // Vertical walls + a ceiling a fixed VERTICAL height above the floor, so
+    // head-room never pinches where the floor changes slope.
+    const P = pts[i], w = W(i) / 2, h = H(i);
+    const bl = P.clone().addScaledVector(r, -w);
+    const br = P.clone().addScaledVector(r, w);
+    sec.push({
+      bl, br,
+      tl: bl.clone().addScaledVector(worldUp, h),
+      tr: br.clone().addScaledVector(worldUp, h)
+    });
+  }
+  const pos = [];
+  const quad = (a, b, c, d) => pos.push(
+    a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z,
+    a.x, a.y, a.z, c.x, c.y, c.z, d.x, d.y, d.z);
+  for (let i = 0; i < n - 1; i++) {
+    const A = sec[i], B = sec[i + 1];
+    quad(A.bl, A.br, B.br, B.bl);                 // floor (always)
+    if (i >= wallFrom) {
+      quad(A.tr, A.tl, B.tl, B.tr);               // ceiling
+      quad(A.tl, A.bl, B.bl, B.tl);               // left wall
+      quad(A.br, A.tr, B.tr, B.br);               // right wall
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// ---------------------------------------------------------------------
+//  Assembled interior (corridors + chambers + sarcophagi) in local coords
 // ---------------------------------------------------------------------
 export function buildInterior(def, mats) {
   const group = new THREE.Group();
   const stoneGeoms = [];
   const graniteGeoms = [];
 
-  for (const p of def.passages) {
-    const g = buildTube(p.a, p.b, p.w, p.h);
-    (p.kind === 'antechamber' || p.kind === 'grandGallery' ? stoneGeoms : stoneGeoms).push(g);
+  for (const c of def.corridors || []) {
+    stoneGeoms.push(buildSweptCorridor(c.path, c.w, c.h, c.wallFrom || 0));
   }
   for (const c of def.chambers) {
     const doors = (def.doors || []).filter(d => d.chamberId === c.id).map(d => d.face);
     const room = buildRoom(c.center, c.sx, c.sy, c.sz, doors,
-      { gabled: !!c.gabled, doorW: 1.8, doorH: 2.2 });
+      { gabled: !!c.gabled, doorW: 2.2, doorH: 2.6 });
     (c.id === 'king' ? graniteGeoms : stoneGeoms).push(room);
     if (c.sarcophagus) {
       const sarc = buildSarcophagus({
-        x: c.center.x, y: c.center.y - c.sy / 2, z: c.center.z
+        x: c.center.x + (c.sarcOffsetX || 0), y: c.center.y - c.sy / 2, z: c.center.z
       });
       sarc.traverse(m => {
         if (m.isMesh) { m.material = mats.interiorGranite; m.userData.collidable = true; }
@@ -232,15 +282,19 @@ export function buildInterior(def, mats) {
     }
   }
 
-  if (stoneGeoms.length) {
-    const mesh = new THREE.Mesh(mergeGeometries(stoneGeoms, false), mats.interior);
+  const finish = (geoms, mat) => {
+    if (!geoms.length) return;
+    // Normalise to non-indexed, position+normal only, so the merge succeeds.
+    const prepared = geoms.map(g => {
+      const x = g.index ? g.toNonIndexed() : g;
+      if (x.getAttribute('uv')) x.deleteAttribute('uv');
+      return x;
+    });
+    const mesh = new THREE.Mesh(mergeGeometries(prepared, false), mat);
     mesh.userData.collidable = true;
     group.add(mesh);
-  }
-  if (graniteGeoms.length) {
-    const mesh = new THREE.Mesh(mergeGeometries(graniteGeoms, false), mats.interiorGranite);
-    mesh.userData.collidable = true;
-    group.add(mesh);
-  }
+  };
+  finish(stoneGeoms, mats.interior);
+  finish(graniteGeoms, mats.interiorGranite);
   return group;
 }

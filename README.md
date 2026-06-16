@@ -49,11 +49,12 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 
 - **Great Pyramid of Khufu** — base 230.4 m, original height 146.6 m, face
   slope 51°50′.
-  - Full interior: original north-face entrance (~17 m up, reached by a stair) →
+  - Full interior: original north-face entrance (reached by a stair/ramp) →
     **Descending Passage** → **Ascending Passage** → **Grand Gallery**
     (46.7 m long, 8.6 m tall) → **King's Chamber** (red granite, 10.47 × 5.23 m
-    with the granite sarcophagus). Branches lead to the **Queen's Chamber**
-    (gabled roof) and the **Subterranean Chamber** cut into the bedrock.
+    with the granite sarcophagus) — all **walkable end-to-end on foot** as one
+    continuous corridor. Branches lead to the **Queen's Chamber** and the
+    **Subterranean Chamber** cut into the bedrock.
 - **Pyramid of Khafre** — base 215.25 m, slope 53°, with surviving casing
   near the apex; descending passage to a burial chamber.
 - **Pyramid of Menkaure** — base 102.2 m, with its red-granite lower courses;

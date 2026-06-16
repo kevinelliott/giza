@@ -100,88 +100,90 @@ function along(p, dir, len) {
   return { x: p.x, y: p.y + dir.y * len, z: p.z + dir.z * len };
 }
 
-const ENTRANCE = { x: OFF, y: ENT_Y, z: ENT_Z };
-// A short LEVEL corridor just inside the doorway so you can walk straight in
-// off the entrance ramp before the passage starts to descend.
-const ENTRY_IN = { x: OFF, y: ENT_Y, z: ENT_Z + 9 };
-const J1 = along(ENTRY_IN, dDown, 26);          // descending/ascending junction
-const SUBT = along(J1, dDown, 78);              // subterranean chamber mouth
-const J2 = along(J1, dUp, 39);                  // foot of the Grand Gallery
-const QUEEN = { x: OFF, y: J2.y - 1.2, z: J2.z + 20.5 }; // horizontal run south
-const GALLERY_TOP = along(J2, dUp, 46.7);       // top of the Grand Gallery
-const KING = { x: OFF, y: GALLERY_TOP.y, z: GALLERY_TOP.z + 9.5 }; // via antechamber
+// Interior is defined as continuous corridors whose path points are the
+// FLOOR centre-line the player walks on. Chambers are placed so their floors
+// line up with the corridor arrival height (no lips, no steps).
+const RAMP_BASE = { x: OFF, y: 0, z: ENT_Z - 40 };   // ground, north of the base
+const DOOR = { x: OFF, y: 15.0, z: ENT_Z };          // floor at the doorway
+const LVL = { x: OFF, y: 15.0, z: ENT_Z + 9 };       // level run just inside
+const J1a = along(LVL, dDown, 26);                   // foot of the descent
+const J1b = { x: OFF, y: J1a.y, z: J1a.z + 4 };     // short flat junction buffer
+const J2 = along(J1b, dUp, 39);                      // foot of the Grand Gallery
+const GTOP = along(J2, dUp, 46.7);                   // top of the Grand Gallery
+const KINGC = { x: OFF, y: GTOP.y, z: GTOP.z + 8 };  // King's Chamber arrival (floor)
+const SUBT = along(J1a, dDown, 70);                  // subterranean chamber floor
+const QUEEN = { x: OFF + 18, y: J1b.y, z: J1b.z };   // queen's branch end (off to the east, clear of the gallery)
 
 export const KHUFU_INTERIOR = {
-  entrance: ENTRANCE,
-  // Passages: list of {a,b,w,h,kind}
-  passages: [
-    { a: ENTRANCE, b: ENTRY_IN, w: 1.8, h: 3.0, kind: 'entry' },
-    { a: ENTRY_IN, b: J1,   w: 1.8, h: 3.0, kind: 'descending' },
-    { a: J1,       b: SUBT, w: 1.8, h: 2.8, kind: 'descending' },
-    { a: J1,       b: J2,   w: 1.8, h: 2.8, kind: 'ascending' },
-    { a: J2,       b: { x: QUEEN.x, y: QUEEN.y, z: QUEEN.z - 2.0 }, w: 1.8, h: 2.6, kind: 'queenPassage' },
-    { a: J2,       b: GALLERY_TOP, w: 2.1, h: 6.0, kind: 'grandGallery' },
-    { a: GALLERY_TOP, b: { x: KING.x, y: KING.y, z: KING.z - 2.0 }, w: 1.8, h: 2.6, kind: 'antechamber' }
+  entrance: DOOR,
+  corridors: [
+    // Entrance ramp (floor-only, segment 0) → level → descent → ascent →
+    // Grand Gallery → King's Chamber, as one continuous surface.
+    {
+      path: [RAMP_BASE, DOOR, LVL, J1a, J1b, J2, GTOP, KINGC],
+      w: [5, 5, 2.8, 2.6, 2.6, 3.0, 3.0, 2.6],
+      h: [3.4, 3.4, 3.2, 3.2, 3.2, 5.0, 5.0, 3.2],
+      wallFrom: 1
+    },
+    // Branches are floor-only (wallFrom huge) so their walls can't seal off the
+    // main route where they meet it at the junctions.
+    { path: [J1a, SUBT], w: 2.6, h: 3.2, wallFrom: 99 },  // branch to subterranean
+    { path: [J1b, QUEEN], w: 2.6, h: 3.2, wallFrom: 99 }  // branch (east) to queen's chamber
   ],
   chambers: [
     {
-      id: 'king', name: "King's Chamber", center: KING,
-      sx: 10.47, sy: 5.85, sz: 5.23, sarcophagus: true,
+      id: 'king', name: "King's Chamber",
+      center: { x: OFF, y: KINGC.y + 2.925, z: KINGC.z + 1.5 },
+      sx: 10.47, sy: 5.85, sz: 5.23, sarcophagus: true, sarcOffsetX: 2.6,
       blurb: "King's Chamber — red Aswan granite, 10.47 x 5.23 m, " +
              '5.85 m high. Holds a lidless granite sarcophagus. Five ' +
              'stress-relieving chambers sit above the flat ceiling.'
     },
     {
-      id: 'queen', name: "Queen's Chamber", center: QUEEN,
+      id: 'queen', name: "Queen's Chamber",
+      center: { x: QUEEN.x + 1.4, y: QUEEN.y + 3.13, z: QUEEN.z },
       sx: 5.74, sy: 6.26, sz: 5.23, sarcophagus: false, gabled: true,
       blurb: "Queen's Chamber — limestone with a gabled roof, " +
              '5.23 x 5.74 m. A niche in the east wall and two narrow ' +
              '"air shafts" lead from it.'
     },
     {
-      id: 'subterranean', name: 'Subterranean Chamber', center: SUBT2(SUBT),
+      id: 'subterranean', name: 'Subterranean Chamber',
+      center: { x: OFF, y: SUBT.y + 1.75, z: SUBT.z + 1.5 },
       sx: 8.0, sy: 3.5, sz: 14.0, sarcophagus: false, rough: true,
       blurb: 'Subterranean Chamber — cut roughly into the bedrock ~30 m ' +
              'below the base and left unfinished.'
     }
   ],
-  // Door openings to cut where a passage meets a chamber wall.
-  // {chamber, face, w, h}
   doors: [
-    { chamberId: 'king',  face: 'north', w: 1.8, h: 2.2 },
-    { chamberId: 'queen', face: 'north', w: 1.8, h: 2.2 },
-    { chamberId: 'subterranean', face: 'north', w: 1.8, h: 2.2 }
+    { chamberId: 'king', face: 'north' },
+    { chamberId: 'queen', face: 'west' },
+    { chamberId: 'subterranean', face: 'north' }
   ]
 };
-
-// Place the subterranean chamber so its north wall meets the passage mouth.
-function SUBT2(mouth) {
-  return { x: mouth.x, y: mouth.y - 3.5 / 2 + 0.2, z: mouth.z + 14.0 / 2 - 0.4 };
-}
 
 // ---- Simple interiors for Khafre & Menkaure -------------------------
 // A descending passage from the north base down to a burial chamber that
 // stays at/above the base level (so it never clips the terrain surface).
 export function simpleInterior(p) {
   const half = p.base / 2;
-  const mouth = { x: 0, y: 1.4, z: -half + 0.5 };          // north face, near base
-  // Descend gently south to a chamber roughly under the centre.
-  const angle = 22 * DEG;
+  const door = { x: 0, y: 0.6, z: -half + 1 };             // floor at the north base
+  const angle = 20 * DEG;
   const dir = { y: -Math.sin(angle), z: Math.cos(angle) };
-  const end = along(mouth, dir, (half - 12) / Math.cos(angle));
+  const end = along(door, dir, (half - 16) / Math.cos(angle)); // descend to chamber
   const chamber = {
     id: p.id + '-burial',
     name: p.name + ' — Burial Chamber',
-    center: { x: 0, y: end.y - 1.6, z: end.z + 5 },
+    center: { x: 0, y: end.y + 2, z: end.z + 2.5 },
     sx: 7, sy: 4, sz: 9, sarcophagus: true,
     blurb: p.name + ': descending passage to a granite-lined burial ' +
            'chamber containing the royal sarcophagus.'
   };
   return {
-    entrance: mouth,
-    passages: [{ a: mouth, b: end, w: 1.7, h: 2.2, kind: 'descending' }],
+    entrance: door,
+    corridors: [{ path: [door, end], w: 2.4, h: 3.0 }],
     chambers: [chamber],
-    doors: [{ chamberId: chamber.id, face: 'north', w: 1.8, h: 2.2 }]
+    doors: [{ chamberId: chamber.id, face: 'north' }]
   };
 }
 
@@ -189,10 +191,10 @@ export function simpleInterior(p) {
 export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: { x: 230, y: 6, z: -220 } },
   { label: 'Great Pyramid — base, north face', pos: { x: OFF, y: 2, z: ENT_Z - 25 } },
-  { label: 'Great Pyramid — original entrance', pos: { x: OFF, y: ENT_Y + 1.2, z: ENT_Z - 3 } },
-  { label: "Great Pyramid — King's Chamber", pos: { x: KING.x - 3.2, y: KING.y - 2.5, z: KING.z } },
-  { label: "Great Pyramid — Queen's Chamber", pos: { x: QUEEN.x, y: QUEEN.y - 1.8, z: QUEEN.z } },
-  { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT2(SUBT).y - 1.4, z: SUBT2(SUBT).z } },
+  { label: 'Great Pyramid — original entrance', pos: { x: OFF, y: DOOR.y + 0.3, z: ENT_Z - 4 } },
+  { label: "Great Pyramid — King's Chamber", pos: { x: KINGC.x, y: KINGC.y + 0.3, z: KINGC.z } },
+  { label: "Great Pyramid — Queen's Chamber", pos: { x: QUEEN.x, y: QUEEN.y + 0.3, z: QUEEN.z } },
+  { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
   { label: 'Pyramid of Khafre — north base', pos: { x: -340, y: 2, z: 340 - 120 } },
   { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
   { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } }
