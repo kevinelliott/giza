@@ -1,45 +1,97 @@
 import * as THREE from 'three';
 
-// Procedural canvas of stacked, eroded stone courses. Used as both colour
-// map and bump map so the millions of blocks read as relief without
-// modelling each one. Returns a THREE.CanvasTexture.
-function blockTexture(base, line, hi, courses = 24, seed = 1) {
+// ---------------------------------------------------------------------
+//  Procedural stone-course texture (colour + matching bump). Models the
+//  stacked masonry of the pyramids: mortar joints, per-block colour
+//  variation, weathering streaks and erosion speckle.
+// ---------------------------------------------------------------------
+function blockTexture(opts) {
+  const {
+    base = '#cbb083', dark = '#7c6840', light = '#e4cf9e',
+    courses = 12, perCourse = 12, streaks = true, seed = 1
+  } = opts;
   const S = 512;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = base; g.fillRect(0, 0, S, S);
-  const rh = S / courses;
   let rng = seed;
   const rand = () => (rng = (rng * 9301 + 49297) % 233280) / 233280;
+
+  g.fillStyle = base; g.fillRect(0, 0, S, S);
+  const rh = S / courses, bw0 = S / perCourse;
   for (let i = 0; i < courses; i++) {
     const y = i * rh;
-    const off = (i % 2) * (S / 12);
-    const blocks = 12;
-    const bw = S / blocks;
-    for (let b = -1; b < blocks + 1; b++) {
-      const x = b * bw - off;
-      // per-block tint (lighter top edge, darker base = weathering)
+    const off = (i % 2) * (bw0 / 2);                 // running-bond offset
+    // gentle per-course shade band
+    g.fillStyle = `rgba(0,0,0,${0.03 + rand() * 0.04})`;
+    g.fillRect(0, y, S, rh);
+    for (let b = -1; b <= perCourse; b++) {
+      const x = b * bw0 - off;
       const t = rand();
-      g.fillStyle = t > 0.5 ? hi : base;
-      g.globalAlpha = 0.18 + rand() * 0.22;
-      g.fillRect(x + 1, y + 1, bw - 2, rh - 2);
+      // block face: blend between dark/base/light by random
+      g.fillStyle = t > 0.72 ? light : (t < 0.22 ? dark : base);
+      g.globalAlpha = 0.30 + rand() * 0.30;
+      g.fillRect(x + 1.5, y + 1.5, bw0 - 3, rh - 3);
       g.globalAlpha = 1;
-      // mortar / shadow gaps
-      g.fillStyle = line;
-      g.fillRect(x, y, bw, 1.6);              // horizontal joint
-      g.fillRect(x, y, 1.6, rh);              // vertical joint
-      // erosion speckle
-      if (rand() > 0.7) {
-        g.fillStyle = 'rgba(0,0,0,0.10)';
-        g.fillRect(x + rand() * bw, y + rand() * rh, 3, 2);
+      // occasional dark eroded / missing block
+      if (rand() > 0.93) {
+        g.fillStyle = 'rgba(40,30,18,0.45)';
+        g.fillRect(x + 1.5, y + 1.5, bw0 - 3, rh - 3);
       }
+      // chips / speckle
+      for (let s = 0; s < 3; s++) {
+        g.fillStyle = `rgba(0,0,0,${0.05 + rand() * 0.08})`;
+        g.fillRect(x + rand() * bw0, y + rand() * rh, 2, 1.5);
+      }
+    }
+    // mortar joints (recessed → dark, used by the bump map too)
+    g.strokeStyle = dark; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke();
+    for (let b = -1; b <= perCourse; b++) {
+      const x = b * bw0 - off;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + rh); g.stroke();
+    }
+  }
+  // vertical weathering streaks
+  if (streaks) {
+    for (let s = 0; s < 26; s++) {
+      const x = rand() * S, w = 3 + rand() * 10;
+      const grd = g.createLinearGradient(x, 0, x, S);
+      grd.addColorStop(0, 'rgba(60,45,25,0)');
+      grd.addColorStop(1, `rgba(50,38,20,${0.05 + rand() * 0.10})`);
+      g.fillStyle = grd; g.fillRect(x, 0, w, S);
     }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Red Aswan granite: warm reddish ground with pink/grey/black mineral flecks.
+function graniteTexture() {
+  const S = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, S, S);
+  grd.addColorStop(0, '#8a564a'); grd.addColorStop(1, '#7a4a40');
+  g.fillStyle = grd; g.fillRect(0, 0, S, S);
+  const cols = ['#c98f7a', '#9c6253', '#6e4338', '#3a2a24', '#b0a39a', '#caa890'];
+  for (let i = 0; i < 24000; i++) {
+    g.fillStyle = cols[(Math.random() * cols.length) | 0];
+    g.globalAlpha = 0.25 + Math.random() * 0.4;
+    const x = Math.random() * S, y = Math.random() * S, r = 1 + Math.random() * 2.6;
+    g.fillRect(x, y, r, r);
+  }
+  g.globalAlpha = 1;
+  // faint horizontal joints (granite ashlar)
+  g.strokeStyle = 'rgba(30,20,16,0.5)'; g.lineWidth = 2;
+  for (let y = 0; y < S; y += S / 6) { g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke(); }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 16; tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -49,18 +101,14 @@ function sandTexture() {
   c.width = c.height = S;
   const g = c.getContext('2d');
   const grad = g.createLinearGradient(0, 0, S, S);
-  grad.addColorStop(0, '#cdac6e');
-  grad.addColorStop(1, '#c2a062');
+  grad.addColorStop(0, '#cdac6e'); grad.addColorStop(1, '#c09d60');
   g.fillStyle = grad; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 26000; i++) {
-    const x = Math.random() * S, y = Math.random() * S;
+  for (let i = 0; i < 30000; i++) {
     const v = Math.random();
-    g.fillStyle = `rgba(${v > 0.5 ? 170 : 120},${v > 0.5 ? 138 : 96},${v > 0.5 ? 86 : 56},0.22)`;
-    g.fillRect(x, y, 1.6, 1.6);
+    g.fillStyle = `rgba(${v > 0.5 ? 175 : 120},${v > 0.5 ? 142 : 96},${v > 0.5 ? 88 : 56},0.22)`;
+    g.fillRect(Math.random() * S, Math.random() * S, 1.6, 1.6);
   }
-  // faint wind ripples
-  g.strokeStyle = 'rgba(120,95,55,0.08)';
-  g.lineWidth = 2;
+  g.strokeStyle = 'rgba(120,95,55,0.07)'; g.lineWidth = 2;
   for (let y = 0; y < S; y += 9) {
     g.beginPath();
     for (let x = 0; x <= S; x += 16) g.lineTo(x, y + Math.sin(x * 0.05 + y) * 3);
@@ -68,47 +116,47 @@ function sandTexture() {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(160, 160);
-  tex.anisotropy = 8;
-  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.repeat.set(180, 180);
+  tex.anisotropy = 16; tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
 export function makeMaterials() {
-  const limestoneTex = blockTexture('#cbb083', '#7c6840', '#e4cf9e', 80, 7);
-  limestoneTex.repeat.set(10, 16);
-  const limestoneBump = limestoneTex.clone();
-  limestoneBump.needsUpdate = true;
+  // Weathered core masonry (exposed, casing-stripped pyramid) — fine courses.
+  const limestoneTex = blockTexture({ base: '#c7ad80', dark: '#6f5c39', light: '#e0cb98', courses: 13, perCourse: 13, seed: 7 });
+  limestoneTex.repeat.set(14, 14);
 
-  const casingTex = blockTexture('#e7d9b2', '#cabd92', '#f5ecd2', 48, 3);
-  casingTex.repeat.set(12, 18);
+  // Smooth Tura limestone casing — near-white, tight joints.
+  const casingTex = blockTexture({ base: '#e9dcbb', dark: '#cdbf93', light: '#f6efd8', courses: 16, perCourse: 10, streaks: false, seed: 3 });
+  casingTex.repeat.set(12, 16);
 
-  const graniteTex = blockTexture('#8a564a', '#5f3a30', '#a06b5c', 16, 11);
-  graniteTex.repeat.set(5, 4);
+  const graniteTex = graniteTexture();
+  graniteTex.repeat.set(4, 3);
+
+  const bedrockTex = blockTexture({ base: '#bda876', dark: '#8a774c', light: '#cdbb8c', courses: 8, perCourse: 8, seed: 11 });
+  bedrockTex.repeat.set(3, 3);
 
   const sandTex = sandTexture();
 
-  const lime = new THREE.MeshStandardMaterial({
-    map: limestoneTex, bumpMap: limestoneTex, bumpScale: 0.6,
-    color: 0xffffff, roughness: 0.97, metalness: 0.0, side: THREE.DoubleSide
-  });
-
   return {
-    limestone: lime,
+    limestone: new THREE.MeshStandardMaterial({
+      map: limestoneTex, bumpMap: limestoneTex, bumpScale: 1.1,
+      color: 0xffffff, roughness: 0.96, metalness: 0.0, side: THREE.DoubleSide
+    }),
     casing: new THREE.MeshStandardMaterial({
-      map: casingTex, bumpMap: casingTex, bumpScale: 0.35,
-      color: 0xffffff, roughness: 0.55, metalness: 0.0, side: THREE.DoubleSide
+      map: casingTex, bumpMap: casingTex, bumpScale: 0.5,
+      color: 0xffffff, roughness: 0.5, metalness: 0.0, side: THREE.DoubleSide
     }),
     granite: new THREE.MeshStandardMaterial({
-      map: graniteTex, bumpMap: graniteTex, bumpScale: 0.4,
-      color: 0xffffff, roughness: 0.5, metalness: 0.06, side: THREE.DoubleSide
+      map: graniteTex, bumpMap: graniteTex, bumpScale: 0.35,
+      color: 0xffffff, roughness: 0.55, metalness: 0.08, side: THREE.DoubleSide
     }),
     sand: new THREE.MeshStandardMaterial({
-      map: sandTex, color: 0xffffff, roughness: 1.0, metalness: 0.0,
-      side: THREE.DoubleSide
+      map: sandTex, color: 0xffffff, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide
     }),
     bedrock: new THREE.MeshStandardMaterial({
-      color: 0xbfa978, roughness: 0.98, metalness: 0.0
+      map: bedrockTex, bumpMap: bedrockTex, bumpScale: 0.7,
+      color: 0xffffff, roughness: 0.97, metalness: 0.0
     }),
     interior: new THREE.MeshStandardMaterial({
       color: 0x9b8e70, roughness: 0.9, metalness: 0.0, side: THREE.DoubleSide

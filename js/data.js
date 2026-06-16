@@ -33,7 +33,9 @@ export const PYRAMIDS = {
     base: 215.25,
     height: 143.5,
     slopeDeg: 53.13,        // 53 deg 10'
-    center: { x: -340, z: 340 },
+    // ~300 m west, 339 m south of Khufu — its SE corner sits on the famous
+    // Giza diagonal that joins the SE corners of all three pyramids.
+    center: { x: -300, z: 339 },
     casing: 'cap',          // retains casing near the apex
     blurb: 'Built c. 2570 BC for Khafre. Appears taller than Khufu\'s ' +
            'pyramid only because it stands on higher bedrock. Keeps its ' +
@@ -45,7 +47,8 @@ export const PYRAMIDS = {
     base: 102.2,
     height: 65,
     slopeDeg: 51.34,
-    center: { x: -581, z: 740 },
+    // ~562 m west, 739 m south of Khufu (centre-to-centre diagonal ≈ 928.7 m).
+    center: { x: -562, z: 739 },
     casing: 'lowerGranite', // lowest 16 courses were red Aswan granite
     blurb: 'Built c. 2510 BC for Menkaure, the smallest of the three. ' +
            'Its lowest courses were clad in red Aswan granite.'
@@ -53,24 +56,27 @@ export const PYRAMIDS = {
 };
 
 // ---- Subsidiary "queens'" pyramids ----------------------------------
-// Khufu's three (G1-a/b/c) stand in a row on the east side.
+// Khufu's three (G1-a/b/c) stand in a N–S row just east of his pyramid's
+// east face, toward the south end (east face is at x ≈ +115).
 export const QUEENS_KHUFU = [
-  { base: 49.5, height: 30.25, center: { x: 132, z: -38 } },
-  { base: 49.0, height: 30,    center: { x: 132, z: 12 } },
-  { base: 46.25, height: 28,   center: { x: 132, z: 62 } }
+  { base: 49.5, height: 30.25, center: { x: 143, z: 18 } },
+  { base: 49.0, height: 30,    center: { x: 143, z: 65 } },
+  { base: 46.25, height: 28,   center: { x: 143, z: 112 } }
 ];
-// Menkaure's three (G3-a/b/c) stand in a row on the south side.
+// Menkaure's three (G3-a/b/c) stand in an E–W row along his south side
+// (south face at z ≈ 739 + 51 = 790).
 export const QUEENS_MENKAURE = [
-  { base: 44, height: 28, center: { x: -628, z: 815 } },
-  { base: 31, height: 21, center: { x: -588, z: 818 } },
-  { base: 31, height: 21, center: { x: -548, z: 818 } }
+  { base: 44, height: 28, center: { x: -608, z: 812 } },
+  { base: 31, height: 21, center: { x: -562, z: 815 } },
+  { base: 31, height: 21, center: { x: -518, z: 812 } }
 ];
 
 // ---- The Great Sphinx -----------------------------------------------
 // Carved from a single limestone outcrop, faces due east (+X).
 export const SPHINX = {
   name: 'The Great Sphinx',
-  center: { x: 332, z: 432 },
+  // ~327 m east, 432 m south of Khufu, in front of Khafre's valley temple.
+  center: { x: 327, z: 432 },
   length: 73,
   height: 20,
   width: 19,
