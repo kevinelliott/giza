@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -391,13 +391,26 @@ FEATURES.push({ kind: 'temple', label: 'Sphinx (Valley) Temple', x: SPHINX.cente
 FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: SPHINX.center.x - 20, z2: SPHINX.center.z });
 FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
 FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
+FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
+FEATURES.push({ kind: 'village', label: WORKERS_VILLAGE.name, x: WORKERS_VILLAGE.center.x, z: WORKERS_VILLAGE.center.z });
 
 // Draw the plateau into a 2D context. On the full map, `collect` gathers
 // marker screen positions for hover tooltips. Returns the world→screen xform.
 function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   const X = wx => w / 2 + (wx - cx) * scale;
   const Y = wz => h / 2 + (wz - cz) * scale;
-  ctx.fillStyle = '#c2a468'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#c2a468'; ctx.fillRect(-w, -h, w * 3, h * 3);   // oversized (rotation-safe)
+  // individual mastaba tombs + workers' town buildings
+  ctx.fillStyle = '#9c7c4c';
+  for (const m of world.mastabas) {
+    const mw = Math.max(1.5, m.w * scale), md = Math.max(1.5, m.d * scale);
+    ctx.fillRect(X(m.x) - mw / 2, Y(m.z) - md / 2, mw, md);
+  }
+  ctx.fillStyle = '#8a6b46';
+  for (const b of world.buildings) {
+    const bw = Math.max(1.5, b.w * scale), bd = Math.max(1.5, b.d * scale);
+    ctx.fillRect(X(b.x) - bw / 2, Y(b.z) - bd / 2, bw, bd);
+  }
   ctx.lineWidth = Math.max(2, 6 * scale); ctx.strokeStyle = 'rgba(90,70,40,0.6)';
   for (const f of FEATURES) if (f.kind === 'cause') {
     ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.z)); ctx.lineTo(X(f.x2), Y(f.z2)); ctx.stroke();
@@ -428,6 +441,15 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
     } else if (f.kind === 'boat') {
       ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 3, 0, 0, 7); ctx.fill();
       if (full && collect) collect.push({ sx, sy, name: "Khufu's Solar Boat", r: 9 });
+    } else if (f.kind === 'khent') {
+      const s = Math.max(5, f.base * scale);
+      ctx.fillStyle = '#cdbb8c'; ctx.strokeStyle = '#7c6840'; ctx.lineWidth = 1.5;
+      ctx.fillRect(sx - s / 2, sy - s / 2, s, s); ctx.strokeRect(sx - s / 2, sy - s / 2, s, s);
+      if (full && collect) collect.push({ sx, sy, name: f.label, r: Math.max(8, s / 2) });
+    } else if (f.kind === 'village') {
+      ctx.fillStyle = '#8a6b46'; ctx.fillRect(sx - 9, sy - 7, 18, 14);
+      ctx.strokeStyle = '#5e4a30'; ctx.lineWidth = 1; ctx.strokeRect(sx - 9, sy - 7, 18, 14);
+      if (full && collect) collect.push({ sx, sy, name: f.label, r: 12 });
     }
   }
   if (full) {
@@ -451,12 +473,24 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
 const mm = document.getElementById('minimap');
 const mmx = mm.getContext('2d');
 let mmScale = mm.width / 520;          // ~520 m across initially
+let mmHeadingUp = false;               // false = north-up, true = heading-up (O)
 function drawMinimap() {
+  const cx = mm.width / 2, cy = mm.height / 2;
   mmx.save();
   mmx.beginPath(); mmx.rect(0, 0, mm.width, mm.height); mmx.clip();
+  if (mmHeadingUp) {
+    mmx.translate(cx, cy); mmx.rotate(-player.headingDeg() * Math.PI / 180); mmx.translate(-cx, -cy);
+  }
   drawMapView(mmx, mm.width, mm.height, player.position.x, player.position.z, mmScale, false, null);
-  mmx.fillStyle = '#ffd98a'; mmx.font = '10px sans-serif'; mmx.fillText('N', mm.width / 2 - 3, 9);
   mmx.restore();
+  // North marker (rotates to point to true north in heading-up mode)
+  mmx.fillStyle = '#ffd98a'; mmx.font = 'bold 10px sans-serif';
+  if (mmHeadingUp) {
+    const hh = player.headingDeg() * Math.PI / 180, rr = cx - 11;
+    mmx.fillText('N', cx - Math.sin(hh) * rr - 3, cy - Math.cos(hh) * rr + 4);
+  } else {
+    mmx.fillText('N', cx - 3, 11);
+  }
 }
 
 // Full-screen map: pan (drag), zoom (wheel), click to fast-travel.
@@ -556,6 +590,7 @@ mapcv.addEventListener('wheel', e => {
 addEventListener('keydown', e => {
   if (e.code === 'Minus') mmScale = Math.max(mmScale * 0.8, mm.width / 3000);
   if (e.code === 'Equal') mmScale = Math.min(mmScale * 1.25, mm.width / 120);
+  if (e.code === 'KeyO') mmHeadingUp = !mmHeadingUp;     // minimap orientation
   if (e.code === 'Escape' && mapOpen) toggleMap();
 });
 

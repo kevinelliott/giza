@@ -195,6 +195,25 @@ export function simpleInterior(p) {
   };
 }
 
+// ---- Other monuments -------------------------------------------------
+// Khentkaus I — the "Fourth Pyramid": a two-tiered rock-cut tomb at the head
+// of the Central Field, between the Khafre and Menkaure complexes.
+export const KHENTKAUS = {
+  name: 'Tomb of Khentkaus I',
+  center: { x: -40, z: 505 },
+  base: 45, base2: 30, height1: 10, height2: 8,
+  blurb: 'The "Fourth Pyramid of Giza" — the two-tiered rock-cut tomb of ' +
+         'Queen Khentkaus I, at the head of the Central Field.'
+};
+// Heit el-Ghurab, the "Lost City of the Pyramids" — the workers' town south
+// of the Wall of the Crow that housed and fed the building crews.
+export const WORKERS_VILLAGE = {
+  name: "Workers' Town (Heit el-Ghurab)",
+  center: { x: 270, z: 835 },
+  blurb: 'Heit el-Ghurab, the "Lost City of the Pyramids": barracks, bakeries ' +
+         'and long galleries that housed the crews who built Giza.'
+};
+
 // ---- Fast travel destinations (eye position, label) -----------------
 export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: { x: 230, y: 6, z: -220 } },
@@ -205,5 +224,7 @@ export const TELEPORTS = [
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
   { label: 'Pyramid of Khafre — north base', pos: { x: -340, y: 2, z: 340 - 120 } },
   { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
-  { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } }
+  { label: 'The Great Sphinx', pos: { x: 332, y: 4, z: 432 - 58 } },
+  { label: 'Tomb of Khentkaus I', pos: { x: -40, y: 3, z: 505 - 40 } },
+  { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } }
 ];

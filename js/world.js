@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
-  KHUFU_INTERIOR, simpleInterior, DEG
+  KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -205,7 +205,7 @@ function orientedBox(a, b, w, h, mat, collidables, group) {
 
 // A field of mastaba tombs (flat-topped, battered) in a regular street grid —
 // the real plateau is densely covered with these around the Great Pyramid.
-function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, skip) {
+function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, skip, out) {
   const geoms = [];
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
@@ -215,16 +215,47 @@ function buildMastabaField(cx, cz, cols, rows, dx, dz, mat, collidables, group, 
       const L = dx * 0.62 + Math.random() * 3;      // E–W length
       const W = dz * 0.6 + Math.random() * 2;       // N–S width
       const H = 4 + Math.random() * 3.5;
-      // base course
       const b = new THREE.BoxGeometry(L, H, W); b.translate(x, H / 2, z);
       geoms.push(b);
-      // slightly inset top course = battered profile
       const t = new THREE.BoxGeometry(L * 0.9, H * 0.18, W * 0.9);
       t.translate(x, H + H * 0.09 - 0.1, z);
       geoms.push(t);
+      if (out) out.push({ x, z, w: L, d: W });
     }
   }
   if (!geoms.length) return;
+  const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
+  mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
+  group.add(mesh); collidables.push(mesh);
+}
+
+// Two-tiered rock-cut monument (the tomb of Khentkaus I).
+function buildKhentkaus(km, mats, collidables, group) {
+  const c = km.center;
+  const lower = new THREE.Mesh(new THREE.BoxGeometry(km.base, km.height1, km.base + 2), mats.bedrock);
+  lower.position.set(c.x, km.height1 / 2, c.z);
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(km.base2, km.height2, km.base2), mats.limestone);
+  upper.position.set(c.x, km.height1 + km.height2 / 2, c.z);
+  for (const m of [lower, upper]) {
+    m.userData.collidable = true; m.castShadow = true; m.receiveShadow = true;
+    group.add(m); collidables.push(m);
+  }
+}
+
+// Workers' town: rows of long low mud-brick galleries/buildings.
+function buildVillage(v, mat, collidables, group, out) {
+  const c = v.center, geoms = [];
+  const cols = 7, rows = 5, dx = 19, dz = 17;
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const x = c.x - (cols - 1) * dx / 2 + i * dx + (Math.random() - 0.5) * 2;
+      const z = c.z - (rows - 1) * dz / 2 + j * dz + (Math.random() - 0.5) * 2;
+      const w = 13 + Math.random() * 3, d = 9 + Math.random() * 2, hh = 2.6 + Math.random();
+      const g = new THREE.BoxGeometry(w, hh, d); g.translate(x, hh / 2, z);
+      geoms.push(g);
+      if (out) out.push({ x, z, w, d });
+    }
+  }
   const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
   mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
   group.add(mesh); collidables.push(mesh);
@@ -458,14 +489,24 @@ export function buildWorld(scene, mats) {
   const deco = {
     trunk: new THREE.MeshStandardMaterial({ color: 0x6e4a26, roughness: 0.9 }),
     frond: new THREE.MeshStandardMaterial({ color: 0x55732f, roughness: 0.8, side: THREE.DoubleSide }),
-    camel: new THREE.MeshStandardMaterial({ color: 0xb18752, roughness: 0.85 })
+    camel: new THREE.MeshStandardMaterial({ color: 0xb18752, roughness: 0.85 }),
+    mud: new THREE.MeshStandardMaterial({ color: 0x9a7850, roughness: 0.98 })
   };
   const kc = PYRAMIDS.khufu.center;
+  const mastabas = [], buildings = [];
 
   // Cemeteries of mastaba tombs — Eastern field sits well east of the queens'
   // pyramids; Western field is set back from the west face. Both in tidy rows.
-  buildMastabaField(kc.x + 205, kc.z - 120, 6, 13, 24, 21, mats.bedrock, collidables, group);
-  buildMastabaField(kc.x - 395, kc.z - 120, 9, 13, 23, 20, mats.bedrock, collidables, group);
+  buildMastabaField(kc.x + 205, kc.z - 120, 6, 13, 24, 21, mats.bedrock, collidables, group, null, mastabas);
+  buildMastabaField(kc.x - 395, kc.z - 120, 9, 13, 23, 20, mats.bedrock, collidables, group, null, mastabas);
+
+  // Tomb of Khentkaus I + the workers' town
+  buildKhentkaus(KHENTKAUS, mats, collidables, group);
+  landmarks.push({ name: KHENTKAUS.name, blurb: KHENTKAUS.blurb, radius: 40,
+    pos: { x: KHENTKAUS.center.x, y: 8, z: KHENTKAUS.center.z } });
+  buildVillage(WORKERS_VILLAGE, deco.mud, collidables, group, buildings);
+  landmarks.push({ name: WORKERS_VILLAGE.name, blurb: WORKERS_VILLAGE.blurb, radius: 90,
+    pos: { x: WORKERS_VILLAGE.center.x, y: 4, z: WORKERS_VILLAGE.center.z } });
 
   // Causeways from the mortuary temples toward the valley temples
   orientedBox({ x: PYRAMIDS.khafre.center.x + 175, y: 3, z: PYRAMIDS.khafre.center.z + 6 },
@@ -499,7 +540,7 @@ export function buildWorld(scene, mats) {
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
   const tick = buildBirds(group);
 
-  return { group, collidables, landmarks, sunDir, tick };
+  return { group, collidables, landmarks, sunDir, tick, mastabas, buildings };
 }
 
 function pyrApex(p) {
