@@ -8,6 +8,8 @@ const ctxStub = new Proxy({}, {
   get: (_t, k) => {
     if (k === 'createLinearGradient' || k === 'createRadialGradient' ||
         k === 'createPattern') return () => gradientStub;
+    if (k === 'createImageData' || k === 'getImageData')
+      return (w, h) => ({ data: new Uint8ClampedArray((w || 1) * (h || 1) * 4), width: w, height: h });
     return () => {};
   },
   set: () => true

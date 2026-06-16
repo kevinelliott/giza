@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -398,6 +398,56 @@ function updateHUD() {
   }
 }
 
+// ---- Overhead minimap (north-up) ------------------------------------
+const mm = document.getElementById('minimap');
+const mmx = mm.getContext('2d');
+const MM = { x0: -740, x1: 440, z0: -280, z1: 900 };   // world bounds shown
+const MS = mm.width;
+const mX = x => (x - MM.x0) / (MM.x1 - MM.x0) * MS;
+const mY = z => (z - MM.z0) / (MM.z1 - MM.z0) * MS;
+const mW = d => d / (MM.x1 - MM.x0) * MS;
+const mH = d => d / (MM.z1 - MM.z0) * MS;
+function mmSquare(c, base, fill, label) {
+  mmx.fillStyle = fill;
+  mmx.fillRect(mX(c.x) - mW(base) / 2, mY(c.z) - mH(base) / 2, mW(base), mH(base));
+  if (label) {
+    mmx.fillStyle = '#1a1206';
+    mmx.fillText(label, mX(c.x) - mmx.measureText(label).width / 2, mY(c.z) + 3);
+  }
+}
+function drawMinimap() {
+  mmx.clearRect(0, 0, MS, MS);
+  mmx.fillStyle = 'rgba(28, 19, 7, 0.62)';
+  mmx.fillRect(0, 0, MS, MS);
+  mmx.font = '8px "Trebuchet MS", sans-serif';
+  // monuments
+  mmSquare(PYRAMIDS.khufu.center, PYRAMIDS.khufu.base, '#e6cf94', 'Khufu');
+  mmSquare(PYRAMIDS.khafre.center, PYRAMIDS.khafre.base, '#e6cf94', 'Khafre');
+  mmSquare(PYRAMIDS.menkaure.center, PYRAMIDS.menkaure.base, '#e6cf94', 'Menk.');
+  for (const q of QUEENS_KHUFU) mmSquare(q.center, q.base, '#b89b66');
+  for (const q of QUEENS_MENKAURE) mmSquare(q.center, q.base, '#b89b66');
+  // sphinx
+  mmx.fillStyle = '#d8b48a';
+  mmx.fillRect(mX(SPHINX.center.x) - 4, mY(SPHINX.center.z) - 2, 8, 4);
+  mmx.fillStyle = '#1a1206';
+  mmx.fillText('Sphinx', mX(SPHINX.center.x) + 6, mY(SPHINX.center.z) + 3);
+  // player position + heading
+  const p = player.position;
+  const px = THREE.MathUtils.clamp(mX(p.x), 4, MS - 4);
+  const py = THREE.MathUtils.clamp(mY(p.z), 4, MS - 4);
+  mmx.save();
+  mmx.translate(px, py);
+  mmx.rotate(player.headingDeg() * Math.PI / 180);
+  mmx.fillStyle = '#54e081';
+  mmx.strokeStyle = '#0b3d1f'; mmx.lineWidth = 1;
+  mmx.beginPath(); mmx.moveTo(0, -7); mmx.lineTo(5, 6); mmx.lineTo(0, 3); mmx.lineTo(-5, 6); mmx.closePath();
+  mmx.fill(); mmx.stroke();
+  mmx.restore();
+  // north marker
+  mmx.fillStyle = '#ffd98a';
+  mmx.fillText('N', MS / 2 - 3, 10);
+}
+
 // ---- Resize + loop --------------------------------------------------
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -417,6 +467,7 @@ function animate() {
   if (world.tick) world.tick(t);
   flickerTorches(t);
   updateHUD();
+  drawMinimap();
   renderer.render(scene, camera);
 }
 const ZERO_INPUT = { forward: false, back: false, left: false, right: false,

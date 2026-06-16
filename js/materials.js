@@ -95,29 +95,38 @@ function graniteTexture() {
   return tex;
 }
 
+// Seamless, line-free desert sand. Built with wrapping sine harmonics (so it
+// tiles with no visible grid) plus fine per-pixel grain via ImageData.
 function sandTexture() {
-  const S = 512;
+  const S = 256;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, S, S);
-  grad.addColorStop(0, '#cdac6e'); grad.addColorStop(1, '#c09d60');
-  g.fillStyle = grad; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 30000; i++) {
-    const v = Math.random();
-    g.fillStyle = `rgba(${v > 0.5 ? 175 : 120},${v > 0.5 ? 142 : 96},${v > 0.5 ? 88 : 56},0.22)`;
-    g.fillRect(Math.random() * S, Math.random() * S, 1.6, 1.6);
+  const img = g.createImageData(S, S);
+  const d = img.data;
+  const TAU = Math.PI * 2;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S, v = y / S;
+      // large-scale tonal variation — integer harmonics wrap seamlessly
+      let n = 0.5 * Math.sin(TAU * u) * Math.cos(TAU * v)
+            + 0.25 * Math.sin(TAU * (2 * u + 0.3)) * Math.cos(TAU * (3 * v + 0.7))
+            + 0.15 * Math.sin(TAU * (4 * u + 1.1)) * Math.cos(TAU * (2 * v + 0.2));
+      const grain = (Math.random() - 0.5) * 0.16;
+      const t = THREE.MathUtils.clamp(0.5 + 0.42 * n + grain, 0, 1);
+      const i = (y * S + x) * 4;
+      d[i] = 196 + t * 38;            // R
+      d[i + 1] = 166 + t * 34;        // G
+      d[i + 2] = 112 + t * 30;        // B
+      d[i + 3] = 255;
+    }
   }
-  g.strokeStyle = 'rgba(120,95,55,0.07)'; g.lineWidth = 2;
-  for (let y = 0; y < S; y += 9) {
-    g.beginPath();
-    for (let x = 0; x <= S; x += 16) g.lineTo(x, y + Math.sin(x * 0.05 + y) * 3);
-    g.stroke();
-  }
+  g.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(180, 180);
-  tex.anisotropy = 16; tex.colorSpace = THREE.SRGBColorSpace;
+  tex.repeat.set(70, 70);
+  tex.anisotropy = 16;
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
