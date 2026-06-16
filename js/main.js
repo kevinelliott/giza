@@ -118,6 +118,18 @@ function toggleRun() {
   runToggle = !runToggle;
   const el = document.getElementById('runState'); if (el) el.textContent = runToggle ? 'ON' : 'off';
 }
+// Performance mode: drop shadows + pixel ratio for low-end devices.
+let perfMode = false;
+function togglePerf() {
+  perfMode = !perfMode;
+  renderer.shadowMap.enabled = !perfMode;
+  renderer.setPixelRatio(perfMode ? 1 : Math.min(devicePixelRatio, 1.5));
+  scene.traverse(o => {
+    if (!o.material) return;
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; });
+  });
+  const el = document.getElementById('perfState'); if (el) el.textContent = perfMode ? 'ON' : 'off';
+}
 
 // ---- Map state (full map + minimap defined further below) -----------
 let mapOpen = false;
@@ -378,9 +390,9 @@ function updateHUD() {
 // Plottable features (derived from the same data the world is built from).
 const kc = PYRAMIDS.khufu.center, khf = PYRAMIDS.khafre.center, men = PYRAMIDS.menkaure.center;
 const FEATURES = [];
-FEATURES.push({ kind: 'pyr', label: 'Khufu', x: kc.x, z: kc.z, base: PYRAMIDS.khufu.base });
-FEATURES.push({ kind: 'pyr', label: 'Khafre', x: khf.x, z: khf.z, base: PYRAMIDS.khafre.base });
-FEATURES.push({ kind: 'pyr', label: 'Menkaure', x: men.x, z: men.z, base: PYRAMIDS.menkaure.base });
+FEATURES.push({ kind: 'pyr', label: 'Khufu', x: kc.x, z: kc.z, base: PYRAMIDS.khufu.base, entX: 7 });
+FEATURES.push({ kind: 'pyr', label: 'Khafre', x: khf.x, z: khf.z, base: PYRAMIDS.khafre.base, entX: 0 });
+FEATURES.push({ kind: 'pyr', label: 'Menkaure', x: men.x, z: men.z, base: PYRAMIDS.menkaure.base, entX: 0 });
 for (const q of QUEENS_KHUFU) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
 for (const q of QUEENS_MENKAURE) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
 FEATURES.push({ kind: 'sphinx', label: 'Sphinx', x: SPHINX.center.x, z: SPHINX.center.z });
@@ -427,13 +439,25 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   for (const f of FEATURES) {
     const sx = X(f.x), sy = Y(f.z);
     if (f.kind === 'pyr') {
-      const s = Math.max(5, f.base * scale);
+      const s = Math.max(5, f.base * scale), hs = s / 2;
       ctx.fillStyle = '#e8d199'; ctx.strokeStyle = '#7c6840'; ctx.lineWidth = 1.5;
-      ctx.fillRect(sx - s / 2, sy - s / 2, s, s); ctx.strokeRect(sx - s / 2, sy - s / 2, s, s);
+      ctx.fillRect(sx - hs, sy - hs, s, s); ctx.strokeRect(sx - hs, sy - hs, s, s);
+      // diagonals = the four faces rising to the apex (pyramid map symbol)
+      ctx.strokeStyle = '#b89b66'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx - hs, sy - hs); ctx.lineTo(sx + hs, sy + hs);
+      ctx.moveTo(sx + hs, sy - hs); ctx.lineTo(sx - hs, sy + hs);
+      ctx.stroke();
+      // entrance marker on the north (top) face
+      if (s > 14) {
+        const ex = sx + (f.entX || 0) * scale;
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath(); ctx.moveTo(ex, sy - hs); ctx.lineTo(ex - 3.5, sy - hs - 6); ctx.lineTo(ex + 3.5, sy - hs - 6); ctx.closePath(); ctx.fill();
+      }
       if (full) {
         ctx.fillStyle = '#2a1d08'; ctx.font = 'bold 12px "Trebuchet MS", sans-serif';
         ctx.textAlign = 'center'; ctx.fillText(f.label, sx, sy); ctx.textAlign = 'left';
-        if (collect) collect.push({ sx, sy, name: f.label, r: s / 2 });
+        if (collect) collect.push({ sx, sy, name: f.label + ' (▲ = entrance)', r: hs });
       }
     } else if (f.kind === 'qpyr') {
       const s = Math.max(2.5, f.base * scale);
@@ -509,6 +533,8 @@ const mapView = { cx: -120, cz: 320, scale: 0.5 };
 let mapDrag = null;
 let mapMarkers = [];
 let mapHover = null;     // {x,y} in canvas space, or null
+let legendCollapsed = false;
+let legendRect = { x: 0, y: 0, w: 0, h: 0 };
 function fitMapCanvas() { mapcv.width = innerWidth; mapcv.height = innerHeight; }
 function drawFull() {
   if (!mapOpen) return;
@@ -555,8 +581,18 @@ function drawFull() {
   drawScaleBar();
 }
 
-// Legend explaining the map symbols (top-left of the full map).
+// Legend explaining the map symbols (top-left of the full map; collapsible).
 function drawLegend() {
+  if (legendCollapsed) {
+    legendRect = { x: 8, y: 14, w: 116, h: 26 };
+    mapx.fillStyle = 'rgba(20,13,4,0.78)'; mapx.strokeStyle = 'rgba(255,217,138,0.4)'; mapx.lineWidth = 1;
+    mapx.fillRect(legendRect.x, legendRect.y, legendRect.w, legendRect.h);
+    mapx.strokeRect(legendRect.x, legendRect.y, legendRect.w, legendRect.h);
+    mapx.fillStyle = '#ffd98a'; mapx.font = 'bold 13px "Trebuchet MS", sans-serif';
+    mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
+    mapx.fillText('▸ Legend (G)', legendRect.x + 8, legendRect.y + 13);
+    return;
+  }
   const x = 14, y0 = 40, rh = 21, bw = 188;
   const rows = [
     ['pyr', 'Pyramid'], ['qpyr', 'Subsidiary pyramid'], ['temple', 'Temple'],
@@ -564,12 +600,13 @@ function drawLegend() {
     ['cause', 'Causeway'], ['wall', 'Wall of the Crow'],
     ['boat', 'Solar boat'], ['tp', 'Fast-travel point'], ['you', 'You (facing)']
   ];
+  legendRect = { x: x - 6, y: y0 - 22, w: bw, h: rows.length * rh + 28 };
   mapx.fillStyle = 'rgba(20,13,4,0.78)'; mapx.strokeStyle = 'rgba(255,217,138,0.4)'; mapx.lineWidth = 1;
-  mapx.fillRect(x - 6, y0 - 22, bw, rows.length * rh + 28);
-  mapx.strokeRect(x - 6, y0 - 22, bw, rows.length * rh + 28);
+  mapx.fillRect(legendRect.x, legendRect.y, legendRect.w, legendRect.h);
+  mapx.strokeRect(legendRect.x, legendRect.y, legendRect.w, legendRect.h);
   mapx.fillStyle = '#ffd98a'; mapx.font = 'bold 13px "Trebuchet MS", sans-serif';
   mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
-  mapx.fillText('Legend', x, y0 - 9);
+  mapx.fillText('▾ Legend (G)', x, y0 - 9);
   mapx.font = '12px "Trebuchet MS", sans-serif';
   rows.forEach(([k, label], i) => {
     const cyl = y0 + 12 + i * rh, sxc = x + 7;
@@ -655,7 +692,14 @@ mapcv.addEventListener('pointerleave', () => { mapHover = null; });
 mapcv.addEventListener('pointerup', e => {
   const wasClick = mapDrag && mapDrag.moved < 6;
   mapDrag = null;
-  if (wasClick) { const w = mapScreenToWorld(e); travelTo(w.x, w.z); }
+  if (!wasClick) return;
+  const r = mapcv.getBoundingClientRect();
+  const cxp = e.clientX - r.left, cyp = e.clientY - r.top;
+  const L = legendRect;
+  if (cxp >= L.x && cxp <= L.x + L.w && cyp >= L.y && cyp <= L.y + L.h) {
+    legendCollapsed = !legendCollapsed; return;     // click the legend to fold/unfold
+  }
+  const w = mapScreenToWorld(e); travelTo(w.x, w.z);
 });
 mapcv.addEventListener('wheel', e => {
   e.preventDefault();
@@ -672,6 +716,8 @@ addEventListener('keydown', e => {
   if (e.code === 'Minus') mmScale = Math.max(mmScale * 0.8, mm.width / 3000);
   if (e.code === 'Equal') mmScale = Math.min(mmScale * 1.25, mm.width / 120);
   if (e.code === 'KeyO') mmHeadingUp = !mmHeadingUp;     // minimap orientation
+  if (e.code === 'KeyG') legendCollapsed = !legendCollapsed;  // fold/unfold map legend
+  if (e.code === 'KeyP') togglePerf();                  // performance mode
   if (e.code === 'Escape' && mapOpen) toggleMap();
 });
 
@@ -698,6 +744,17 @@ function animate() {
   drawMinimap();
   drawFull();
   renderer.render(scene, camera);
+  updateFPS(delta);
+}
+// Rolling FPS readout (updated ~3×/sec).
+let fpsAcc = 0, fpsFrames = 0;
+const fpsEl = document.getElementById('fps');
+function updateFPS(delta) {
+  fpsAcc += delta; fpsFrames++;
+  if (fpsAcc >= 0.33) {
+    if (fpsEl) fpsEl.textContent = Math.round(fpsFrames / fpsAcc);
+    fpsAcc = 0; fpsFrames = 0;
+  }
 }
 const ZERO_INPUT = { forward: false, back: false, left: false, right: false,
   jump: false, crouch: false, sprint: false, moveX: 0, moveY: 0 };
