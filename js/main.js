@@ -18,6 +18,15 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 6000);
 scene.add(camera);
 
+// Persisted user settings (perf mode, minimap orientation/zoom, legend).
+const SAVED = (() => { try { return JSON.parse(localStorage.getItem('giza.settings.v1')) || {}; } catch { return {}; } })();
+function saveSettings() {
+  try {
+    localStorage.setItem('giza.settings.v1', JSON.stringify(
+      { perf: perfMode, headingUp: mmHeadingUp, mmScale, legend: legendCollapsed }));
+  } catch { /* storage unavailable */ }
+}
+
 // ---- Build the plateau ----------------------------------------------
 setStatus('Quarrying limestone and raising the pyramids…');
 const mats = makeMaterials();
@@ -129,6 +138,7 @@ function togglePerf() {
     (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; });
   });
   const el = document.getElementById('perfState'); if (el) el.textContent = perfMode ? 'ON' : 'off';
+  saveSettings();
 }
 
 // ---- Map state (full map + minimap defined further below) -----------
@@ -495,6 +505,12 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   // player + heading
   const p = player.position, px = X(p.x), py = Y(p.z);
   ctx.save(); ctx.translate(px, py); ctx.rotate(player.headingDeg() * Math.PI / 180);
+  // field-of-view cone (forward = up after rotation)
+  const fov = 36 * Math.PI / 180, rc = 32;
+  ctx.fillStyle = 'rgba(84,224,129,0.18)';
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.arc(0, 0, rc, -Math.PI / 2 - fov, -Math.PI / 2 + fov); ctx.closePath(); ctx.fill();
+  // heading arrow
   ctx.fillStyle = '#54e081'; ctx.strokeStyle = '#0b3d1f'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath();
   ctx.fill(); ctx.stroke(); ctx.restore();
@@ -504,8 +520,8 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
 // Minimap (corner): centred on the player, north-up, zoomable.
 const mm = document.getElementById('minimap');
 const mmx = mm.getContext('2d');
-let mmScale = mm.width / 520;          // ~520 m across initially
-let mmHeadingUp = false;               // false = north-up, true = heading-up (O)
+let mmScale = SAVED.mmScale || mm.width / 520;   // ~520 m across initially
+let mmHeadingUp = !!SAVED.headingUp;             // false = north-up, true = heading-up (O)
 function drawMinimap() {
   const cx = mm.width / 2, cy = mm.height / 2;
   mmx.save();
@@ -533,7 +549,7 @@ const mapView = { cx: -120, cz: 320, scale: 0.5 };
 let mapDrag = null;
 let mapMarkers = [];
 let mapHover = null;     // {x,y} in canvas space, or null
-let legendCollapsed = false;
+let legendCollapsed = !!SAVED.legend;
 let legendRect = { x: 0, y: 0, w: 0, h: 0 };
 function fitMapCanvas() { mapcv.width = innerWidth; mapcv.height = innerHeight; }
 function drawFull() {
@@ -579,6 +595,27 @@ function drawFull() {
   }
   drawLegend();
   drawScaleBar();
+  drawOrientation();
+}
+
+// Orientation accuracy indicator: how far each pyramid's sides sit off true
+// north — the builders' astonishing precision (arc-minutes).
+function drawOrientation() {
+  const W = mapcv.width, H = mapcv.height;
+  const bw = 232, bh = 70, bx = W - bw - 14, by = H - bh - 16;
+  mapx.fillStyle = 'rgba(20,13,4,0.78)'; mapx.strokeStyle = 'rgba(255,217,138,0.4)'; mapx.lineWidth = 1;
+  mapx.fillRect(bx, by, bw, bh); mapx.strokeRect(bx, by, bw, bh);
+  mapx.fillStyle = '#ffd98a'; mapx.font = 'bold 12px "Trebuchet MS", sans-serif';
+  mapx.textAlign = 'left'; mapx.textBaseline = 'middle';
+  mapx.fillText('Sides off true north', bx + 12, by + 15);
+  mapx.font = '12px "Trebuchet MS", sans-serif'; mapx.fillStyle = '#f3e9d2';
+  mapx.fillText(`Khufu ${PYRAMIDS.khufu.align}   ·   Khafre ${PYRAMIDS.khafre.align}`, bx + 12, by + 36);
+  mapx.fillText(`Menkaure ${PYRAMIDS.menkaure.align}`, bx + 12, by + 54);
+  // small true-north tick
+  mapx.strokeStyle = '#ffd98a'; mapx.lineWidth = 1.5;
+  mapx.beginPath(); mapx.moveTo(bx + bw - 18, by + 52); mapx.lineTo(bx + bw - 18, by + 30); mapx.stroke();
+  mapx.beginPath(); mapx.moveTo(bx + bw - 22, by + 36); mapx.lineTo(bx + bw - 18, by + 30); mapx.lineTo(bx + bw - 14, by + 36); mapx.stroke();
+  mapx.fillStyle = '#ffd98a'; mapx.textAlign = 'center'; mapx.fillText('N', bx + bw - 18, by + 60); mapx.textAlign = 'left';
 }
 
 // Legend explaining the map symbols (top-left of the full map; collapsible).
@@ -697,7 +734,7 @@ mapcv.addEventListener('pointerup', e => {
   const cxp = e.clientX - r.left, cyp = e.clientY - r.top;
   const L = legendRect;
   if (cxp >= L.x && cxp <= L.x + L.w && cyp >= L.y && cyp <= L.y + L.h) {
-    legendCollapsed = !legendCollapsed; return;     // click the legend to fold/unfold
+    legendCollapsed = !legendCollapsed; saveSettings(); return;   // click the legend to fold/unfold
   }
   const w = mapScreenToWorld(e); travelTo(w.x, w.z);
 });
@@ -713,10 +750,10 @@ mapcv.addEventListener('wheel', e => {
 
 // Minimap zoom on the keyboard (- / =), and Esc closes the full map.
 addEventListener('keydown', e => {
-  if (e.code === 'Minus') mmScale = Math.max(mmScale * 0.8, mm.width / 3000);
-  if (e.code === 'Equal') mmScale = Math.min(mmScale * 1.25, mm.width / 120);
-  if (e.code === 'KeyO') mmHeadingUp = !mmHeadingUp;     // minimap orientation
-  if (e.code === 'KeyG') legendCollapsed = !legendCollapsed;  // fold/unfold map legend
+  if (e.code === 'Minus') { mmScale = Math.max(mmScale * 0.8, mm.width / 3000); saveSettings(); }
+  if (e.code === 'Equal') { mmScale = Math.min(mmScale * 1.25, mm.width / 120); saveSettings(); }
+  if (e.code === 'KeyO') { mmHeadingUp = !mmHeadingUp; saveSettings(); }     // minimap orientation
+  if (e.code === 'KeyG') { legendCollapsed = !legendCollapsed; saveSettings(); }  // fold/unfold legend
   if (e.code === 'KeyP') togglePerf();                  // performance mode
   if (e.code === 'Escape' && mapOpen) toggleMap();
 });
@@ -768,7 +805,9 @@ function setStatus(t) {
 window.__giza = { THREE, scene, camera, player, controls, world, look, input,
   inventory, placedTorches, get runToggle() { return runToggle; } };
 
-// Hide the loader and start once everything is ready.
+// Apply saved settings, hide the loader, and start.
+if (SAVED.perf) togglePerf();
+document.getElementById('perfState').textContent = perfMode ? 'ON' : 'off';
 setStatus('Ready.');
 document.getElementById('loading').style.display = 'none';
 overlay.style.display = 'flex';

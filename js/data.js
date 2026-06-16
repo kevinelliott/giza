@@ -23,6 +23,7 @@ export const PYRAMIDS = {
     height: 146.6,
     slopeDeg: 51.84,        // 51 deg 50' 40"
     center: { x: 0, z: 0 },
+    align: '3′26″',         // sides off true north (W of N)
     casing: 'none',
     blurb: 'Built c. 2560 BC for Pharaoh Khufu. 2.3 million blocks, ' +
            'originally 146.6 m tall — the tallest human structure for ~3,800 years.'
@@ -36,6 +37,7 @@ export const PYRAMIDS = {
     // ~300 m west, 339 m south of Khufu — its SE corner sits on the famous
     // Giza diagonal that joins the SE corners of all three pyramids.
     center: { x: -300, z: 339 },
+    align: '6′13″',
     casing: 'cap',          // retains casing near the apex
     blurb: 'Built c. 2570 BC for Khafre. Appears taller than Khufu\'s ' +
            'pyramid only because it stands on higher bedrock. Keeps its ' +
@@ -49,6 +51,7 @@ export const PYRAMIDS = {
     slopeDeg: 51.34,
     // ~562 m west, 739 m south of Khufu (centre-to-centre diagonal ≈ 928.7 m).
     center: { x: -562, z: 739 },
+    align: '14′03″',
     casing: 'lowerGranite', // lowest 16 courses were red Aswan granite
     blurb: 'Built c. 2510 BC for Menkaure, the smallest of the three. ' +
            'Its lowest courses were clad in red Aswan granite.'
