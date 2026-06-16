@@ -8,7 +8,7 @@ import { TELEPORTS, PYRAMIDS } from './data.js';
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -188,12 +188,28 @@ addEventListener('wheel', e => {
 const _ray = new THREE.Raycaster();
 const _rp = new THREE.Vector3();
 const _rd = new THREE.Vector3();
+const torchGroup = new THREE.Group();
+scene.add(torchGroup);
 const placedTorches = [];
+const TORCH_MAT_STICK = new THREE.MeshStandardMaterial({ color: 0x5a3a1c, roughness: 0.9 });
+
+// Aim + click: pick up a torch you're looking at, otherwise place one.
 function useItem() {
   if (!(started || controls.isLocked) || menuOpen) return;
+  _ray.set(camera.getWorldPosition(_rp), camera.getWorldDirection(_rd));
+  _ray.far = 5;
+  // 1) Pick up a placed torch under the crosshair.
+  if (placedTorches.length) {
+    const hits = _ray.intersectObjects(placedTorches.map(t => t.group), true);
+    if (hits.length) {
+      let o = hits[0].object, idx = -1;
+      while (o) { idx = placedTorches.findIndex(t => t.group === o); if (idx >= 0) break; o = o.parent; }
+      if (idx >= 0) { pickUpTorch(idx); return; }
+    }
+  }
+  // 2) Otherwise place the selected torch on whatever surface we're facing.
   const it = inventory[selSlot];
   if (!it || it.count <= 0 || it.id !== 'torch') return;
-  _ray.set(camera.getWorldPosition(_rp), camera.getWorldDirection(_rd));
   _ray.far = 6;
   const hit = _ray.intersectObject(collider, true)[0];
   if (!hit) return;
@@ -203,26 +219,55 @@ function useItem() {
   placeTorch(hit.point, normal);
   it.count--; renderHotbar();
 }
+
 function placeTorch(point, normal) {
   const g = new THREE.Group();
-  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, 0.85, 6),
-    new THREE.MeshStandardMaterial({ color: 0x5a3a1c, roughness: 0.9 }));
-  stick.rotation.x = Math.PI / 2.5;
-  stick.position.set(0, 0.12, 0.28);
-  g.add(stick);
-  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8),
+  // Orient a local frame: +Z points out of the wall, +Y is world-up.
+  const out = normal.clone().normalize();
+  const up = Math.abs(out.y) > 0.95 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+  const right = new THREE.Vector3().crossVectors(up, out).normalize();
+  const up2 = new THREE.Vector3().crossVectors(out, right).normalize();
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up2, out));
+  g.position.copy(point).addScaledVector(out, 0.04);
+
+  // Wall mount + a shaft that leans up-and-out, with the flame at the top.
+  const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 8), TORCH_MAT_STICK);
+  mount.rotation.x = Math.PI / 2;           // lie flat against the wall (along +Z)
+  mount.position.set(0, 0, 0.08);
+  g.add(mount);
+
+  const tilt = 0.62;                         // ~35° from vertical, leaning outward
+  const L = 0.95;
+  const dir = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt)); // up + out
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, L, 7), TORCH_MAT_STICK);
+  shaft.rotation.x = tilt;                   // tip +Y toward up-and-out
+  shaft.position.copy(dir).multiplyScalar(L / 2);
+  g.add(shaft);
+
+  const tip = dir.clone().multiplyScalar(L + 0.02);
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8),
     new THREE.MeshStandardMaterial({ color: 0xffc24a, emissive: 0xff7a18, emissiveIntensity: 2.6 }));
-  flame.position.set(0, 0.46, 0.46);
+  flame.position.copy(tip).add(new THREE.Vector3(0, 0.06, 0));
+  flame.scale.y = 1.4;
   g.add(flame);
+
   const light = new THREE.PointLight(0xffa23a, 28, 20, 2);
   light.position.copy(flame.position);
   g.add(light);
-  g.position.copy(point).addScaledVector(normal, 0.06);
-  const up = Math.abs(normal.y) > 0.95 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), normal, up));
-  scene.add(g);
-  placedTorches.push({ light, mat: flame.material, base: 28 });
+
+  torchGroup.add(g);
+  placedTorches.push({ group: g, light, mat: flame.material, base: 28 });
 }
+
+function pickUpTorch(idx) {
+  const t = placedTorches[idx];
+  torchGroup.remove(t.group);
+  t.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  placedTorches.splice(idx, 1);
+  const slot = inventory.find(s => s && s.id === 'torch') || (inventory[selSlot] = { id: 'torch', count: 0 });
+  slot.count++; renderHotbar();
+}
+
 function flickerTorches(t) {
   for (const to of placedTorches) {
     const f = 0.82 + Math.sin(t * 11 + to.base) * 0.1 + Math.random() * 0.06;
@@ -230,7 +275,7 @@ function flickerTorches(t) {
     to.mat.emissiveIntensity = 2.1 + f;
   }
 }
-// Left-click places the selected item once you're playing (not while paused).
+// Left-click places/picks up once you're playing (not while paused).
 addEventListener('mousedown', e => { if (e.button === 0) useItem(); });
 
 // ---- Touch controls -------------------------------------------------

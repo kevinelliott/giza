@@ -23,10 +23,10 @@ export function buildCollider(scene, collidables) {
 }
 
 const GRAVITY = -24;
-const SPEED_WALK = 4.5;
-const SPEED_RUN = 9.5;
-const JUMP = 8.2;
-const FLY_SPEED = 45;
+const SPEED_WALK = 7.0;
+const SPEED_RUN = 16.0;
+const JUMP = 8.6;
+const FLY_SPEED = 60;
 const STEP_HEIGHT = 0.6;     // max ledge/stair the player auto-steps over
 
 export class Player {
@@ -129,7 +129,7 @@ export class Player {
 
     // Smoothly accelerate horizontal velocity toward the desired direction.
     this._target.copy(this._wish).multiplyScalar(speed);
-    const lambda = this._wish.lengthSq() > 0 ? 11 : 16;   // accel vs. braking
+    const lambda = this._wish.lengthSq() > 0 ? 14 : 18;   // accel vs. braking
     this.vXZ.x = THREE.MathUtils.damp(this.vXZ.x, this._target.x, lambda, delta);
     this.vXZ.z = THREE.MathUtils.damp(this.vXZ.z, this._target.z, lambda, delta);
 

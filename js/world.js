@@ -382,7 +382,7 @@ export function buildWorld(scene, mats) {
   const sun = new THREE.DirectionalLight(0xfff0d2, 3.1);
   sun.position.copy(sunDir).multiplyScalar(900);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 1.2;
   const sc = sun.shadow.camera;
