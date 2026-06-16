@@ -203,18 +203,23 @@ export function buildWorld(scene, mats) {
 
   // Sky + lighting
   const sunDir = buildSky(scene);
-  const sun = new THREE.DirectionalLight(0xfff1d6, 2.6);
-  sun.position.copy(sunDir).multiplyScalar(800);
+  const sun = new THREE.DirectionalLight(0xfff0d2, 3.1);
+  sun.position.copy(sunDir).multiplyScalar(900);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.bias = -0.0006;
-  sun.shadow.normalBias = 1.0;
+  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 1.2;
   const sc = sun.shadow.camera;
-  sc.near = 1; sc.far = 3200; sc.left = -950; sc.right = 950; sc.top = 950; sc.bottom = -950;
+  sc.near = 1; sc.far = 3600; sc.left = -1000; sc.right = 1000; sc.top = 1000; sc.bottom = -1000;
   scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0xbcd3ff, 0xb08a55, 0.55));
-  scene.add(new THREE.AmbientLight(0xffffff, 0.12));
-  scene.fog = new THREE.FogExp2(0xd8c79a, 0.00018);
+  // Sky fill + warm bounce off the sand so shadowed faces aren't black.
+  scene.add(new THREE.HemisphereLight(0xbcd3ff, 0xcaa56a, 0.95));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.22));
+  // Cool fill from the opposite side to model skylight on the shadow faces.
+  const fill = new THREE.DirectionalLight(0x9fb6e0, 0.5);
+  fill.position.set(-sunDir.x, 0.4, -sunDir.z).multiplyScalar(900);
+  scene.add(fill);
+  scene.fog = new THREE.FogExp2(0xcdb98a, 0.00016);
 
   // Terrain
   const terrain = buildTerrain(mats.sand);

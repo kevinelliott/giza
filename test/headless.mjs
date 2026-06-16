@@ -3,7 +3,15 @@
 import * as THREE from 'three';
 
 // --- Minimal DOM stubs so CanvasTexture etc. work under Node ----------
-const ctxStub = new Proxy({}, { get: () => () => {} });
+const gradientStub = { addColorStop() {} };
+const ctxStub = new Proxy({}, {
+  get: (_t, k) => {
+    if (k === 'createLinearGradient' || k === 'createRadialGradient' ||
+        k === 'createPattern') return () => gradientStub;
+    return () => {};
+  },
+  set: () => true
+});
 globalThis.document = {
   createElement() {
     return { width: 0, height: 0, getContext: () => ctxStub };

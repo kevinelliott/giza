@@ -37,6 +37,11 @@ Then open <http://localhost:8080>.
 | `H` | Help / real-world facts |
 | `Esc` | Release the mouse |
 
+**On phones/tablets** (no pointer lock): tap **Tap to start**, then use the
+on-screen **joystick** (left) to move, **drag** anywhere on the right to look,
+and the **JUMP / RUN / FLY / LAMP / MAP** buttons. A compass shows your heading,
+and your **headlamp turns on automatically** whenever you go inside a pyramid.
+
 ## What's modelled
 
 **To scale, from real GPS-derived relative positions:**

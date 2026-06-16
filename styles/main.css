@@ -23,12 +23,50 @@ b { color: #ffd98a; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Crosshair */
+/* Crosshair (shown only once playing) */
 #crosshair {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-size: 20px; color: rgba(255, 255, 255, 0.65); z-index: 5;
-  pointer-events: none; text-shadow: 0 0 3px #000;
+  pointer-events: none; text-shadow: 0 0 3px #000; display: none;
 }
+
+/* Compass */
+#compass {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 6; font-size: 0.95rem; letter-spacing: 0.12em; color: #ffd98a;
+  background: rgba(20, 13, 4, 0.5); padding: 4px 14px; border-radius: 20px;
+  border: 1px solid rgba(255, 217, 138, 0.25); pointer-events: none;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* Mobile touch controls */
+#mobile { position: fixed; inset: 0; z-index: 8; display: none; pointer-events: none; }
+#joystick {
+  position: fixed; left: 26px; bottom: 26px; width: 132px; height: 132px;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 217, 138, 0.35); pointer-events: auto;
+  touch-action: none;
+}
+#stick {
+  position: absolute; left: 50%; top: 50%; width: 56px; height: 56px;
+  margin: -28px 0 0 -28px; border-radius: 50%;
+  background: rgba(255, 217, 138, 0.55); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+#touchbtns {
+  position: fixed; right: 22px; bottom: 26px; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 12px; pointer-events: none;
+}
+.tbtn {
+  pointer-events: auto; touch-action: none; font: inherit; font-size: 0.8rem;
+  color: #f3e9d2; background: rgba(24, 16, 6, 0.7);
+  border: 1px solid rgba(255, 217, 138, 0.4); border-radius: 50%;
+  width: 64px; height: 64px; letter-spacing: 0.04em;
+}
+.tbtn.big {
+  width: 94px; height: 94px; font-size: 1rem; color: #ffd98a;
+  background: rgba(255, 217, 138, 0.18);
+}
+.tbtn:active { background: rgba(255, 217, 138, 0.35); }
 
 /* Overlay */
 #overlay {
