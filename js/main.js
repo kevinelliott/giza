@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { makeMaterials } from './materials.js';
 import { buildWorld } from './world.js';
 import { buildCollider, Player } from './player.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY } from './data.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -413,7 +413,10 @@ FEATURES.push({ kind: 'temple', label: 'Sphinx Temple', x: SPHINX.center.x + 60,
 FEATURES.push({ kind: 'temple', label: KHAFRE_VALLEY.name, x: KHAFRE_VALLEY.center.x, z: KHAFRE_VALLEY.center.z });
 FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: KHAFRE_VALLEY.center.x - 12, z2: KHAFRE_VALLEY.center.z - 14 });
 FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
-FEATURES.push({ kind: 'boat', label: "Khufu's Solar Boat", x: kc.x + 10, z: kc.z + 150 });
+FEATURES.push({ kind: 'cause', x: kc.x + 180, z: kc.z + 6, x2: KHUFU_VALLEY.center.x - 20, z2: KHUFU_VALLEY.center.z - 6 });
+for (const b of BOAT_PITS) FEATURES.push({ kind: 'boat', label: b.name, x: b.x, z: b.z });
+for (const s of SATELLITES) FEATURES.push({ kind: 'qpyr', name: s.name, x: s.center.x, z: s.center.z, base: s.base });
+FEATURES.push({ kind: 'temple', label: KHUFU_VALLEY.name, x: KHUFU_VALLEY.center.x, z: KHUFU_VALLEY.center.z });
 FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
 FEATURES.push({ kind: 'village', label: WORKERS_VILLAGE.name, x: WORKERS_VILLAGE.center.x, z: WORKERS_VILLAGE.center.z });
 FEATURES.push({ kind: 'temple', label: MENKAURE_VALLEY.name, x: MENKAURE_VALLEY.center.x, z: MENKAURE_VALLEY.center.z });
@@ -472,7 +475,7 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
     } else if (f.kind === 'qpyr') {
       const s = Math.max(2.5, f.base * scale);
       ctx.fillStyle = '#c6a76d'; ctx.fillRect(sx - s / 2, sy - s / 2, s, s);
-      if (full && collect) collect.push({ sx, sy, name: "Queen's pyramid", r: Math.max(5, s / 2) });
+      if (full && collect) collect.push({ sx, sy, name: f.name || "Queen's pyramid", r: Math.max(5, s / 2) });
     } else if (f.kind === 'temple') {
       ctx.fillStyle = '#8f7f54'; ctx.strokeStyle = '#5e5234'; ctx.lineWidth = 1;
       ctx.fillRect(sx - 6, sy - 5, 12, 10); ctx.strokeRect(sx - 6, sy - 5, 12, 10);

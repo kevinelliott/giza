@@ -4,7 +4,8 @@ import { Sky } from 'three/addons/objects/Sky.js';
 import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
   KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
-  WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY
+  WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY,
+  SATELLITES, BOAT_PITS, KHUFU_VALLEY
 } from './data.js';
 import {
   buildPyramidGeometry, buildInterior, buildStaircase
@@ -278,10 +279,14 @@ function buildVillage(v, mat, collidables, group, out) {
   group.add(mesh); collidables.push(mesh);
 }
 
-// A reconstructed wooden boat (like Khufu's solar barque) inside a stone pit.
-function buildBoatPit(cx, cz, mats, collidables, group) {
-  // pit rim
-  buildEnclosure(cx, cz, 46, 9, 1.6, mats, collidables, group);
+// A stone-lined boat pit, optionally holding the reconstructed solar barque.
+// `pit` = { x, z, ew (long axis east-west), boat }.
+function buildBoatPit(pit, mats, collidables, group) {
+  const cx = pit.x, cz = pit.z;
+  // pit rim, oriented along the long axis
+  if (pit.ew) buildEnclosure(cx, cz, 44, 9, 1.6, mats, collidables, group);
+  else buildEnclosure(cx, cz, 9, 44, 1.6, mats, collidables, group);
+  if (!pit.boat) return { x: cx, y: 3, z: cz };
   const boat = new THREE.Group();
   const wood = mats.wood;
   // hull: a scaled, capped half-cylinder
@@ -541,14 +546,30 @@ export function buildWorld(scene, mats) {
   orientedBox({ x: PYRAMIDS.menkaure.center.x + 100, y: 2.5, z: PYRAMIDS.menkaure.center.z + 4 },
     { x: PYRAMIDS.menkaure.center.x + 360, y: 1.2, z: PYRAMIDS.menkaure.center.z + 120 },
     7, 2.5, mats.bedrock, collidables, group);
+  // Khufu's causeway, running east to his (buried) valley temple
+  orientedBox({ x: kc.x + 180, y: 3, z: kc.z + 6 },
+    { x: KHUFU_VALLEY.center.x - 20, y: 1.5, z: KHUFU_VALLEY.center.z - 6 }, 9, 3, mats.bedrock, collidables, group);
+  buildEnclosure(KHUFU_VALLEY.center.x, KHUFU_VALLEY.center.z, 48, 40, 6, mats, collidables, group);
+  landmarks.push({ name: KHUFU_VALLEY.name, blurb: KHUFU_VALLEY.blurb, radius: 36,
+    pos: { x: KHUFU_VALLEY.center.x, y: 5, z: KHUFU_VALLEY.center.z } });
 
-  // Khufu's reconstructed solar boat in a pit on the south side
-  const boatPos = buildBoatPit(kc.x + 10, kc.z + 150, mats, collidables, group);
-  landmarks.push({
-    name: "Khufu's Solar Boat", radius: 26, pos: { x: boatPos.x, y: 5, z: boatPos.z },
-    blurb: 'A nod to the 43 m cedar "solar barque" found dismantled in a sealed ' +
-      'pit beside the Great Pyramid in 1954 and painstakingly reassembled.'
-  });
+  // Satellite / cult pyramids
+  for (const s of SATELLITES) {
+    buildSmallPyramid(s, mats, collidables, group);
+    landmarks.push({ name: s.name, radius: s.base * 0.8 + 8,
+      pos: { x: s.center.x, y: s.height, z: s.center.z },
+      blurb: 'A small satellite (cult) pyramid for the king\'s ka.' });
+  }
+
+  // Khufu's boat pits (two south, two east) — one holds the reconstructed ship
+  for (const pit of BOAT_PITS) {
+    const bp = buildBoatPit(pit, mats, collidables, group);
+    if (pit.boat) landmarks.push({
+      name: "Khufu's Solar Boat", radius: 26, pos: { x: bp.x, y: 5, z: bp.z },
+      blurb: 'A nod to the 43 m cedar "solar barque" found dismantled in a sealed ' +
+        'pit beside the Great Pyramid in 1954 and painstakingly reassembled.'
+    });
+  }
 
   // Palm groves near the valley temples and the plateau edge
   const palmSpots = [[380, 500], [392, 512], [372, 520], [405, 495], [360, 508],

@@ -241,6 +241,27 @@ export const MENKAURE_VALLEY = {
          'stone and finished in mud brick after his death.'
 };
 
+// Satellite / cult pyramids beside the main pyramids.
+export const SATELLITES = [
+  { name: 'Khufu Satellite Pyramid (G1-d)', base: 21.75, height: 13.8, center: { x: 95, z: 130 } },
+  { name: 'Khafre Satellite Pyramid (G II-a)', base: 20.1, height: 12.4, center: { x: -300, z: 462 } }
+];
+// Khufu's boat pits: two rectangular pits parallel to the south face (one held
+// the reconstructed "Khufu Ship") and two parallel to the east face.
+export const BOAT_PITS = [
+  { x: -30, z: 156, ew: true, boat: true, name: "Khufu's Solar Boat (south pit)" },
+  { x: 40, z: 156, ew: true, boat: false, name: 'South boat pit' },
+  { x: 135, z: -34, ew: false, boat: false, name: 'East boat pit' },
+  { x: 135, z: 34, ew: false, boat: false, name: 'East boat pit' }
+];
+// Khufu's valley temple, at the far east end of his (lost) causeway.
+export const KHUFU_VALLEY = {
+  name: 'Khufu Valley Temple',
+  center: { x: 520, z: 50 },
+  blurb: 'Khufu\'s valley temple at the east end of his causeway — its remains ' +
+         'lie buried beneath the modern village of Nazlet el-Samman.'
+};
+
 // ---- Fast travel destinations (eye position, label) -----------------
 export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: { x: 230, y: 6, z: -220 } },
@@ -256,5 +277,6 @@ export const TELEPORTS = [
   { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } },
   { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
   { label: 'Khafre Valley Temple', pos: { x: 366, y: 2, z: 482 - 30 } },
-  { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } }
+  { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } },
+  { label: 'Khufu Valley Temple', pos: { x: 520, y: 2, z: 50 - 28 } }
 ];
