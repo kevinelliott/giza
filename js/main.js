@@ -42,13 +42,25 @@ const controls = new PointerLockControls(camera, renderer.domElement);
 const overlay = document.getElementById('overlay');
 const instructions = document.getElementById('instructions');
 
-renderer.domElement.addEventListener('click', () => {
-  if (!menuOpen) controls.lock();
-});
+// The start/pause overlay sits on top of the canvas, so it (not the canvas)
+// receives the click. Lock the pointer from whichever element is clicked.
+const requestLock = () => {
+  if (menuOpen) return;
+  const p = controls.lock();
+  // Some browsers (and older three builds) don't return a promise here.
+  if (p && typeof p.catch === 'function') p.catch(() => {});
+};
+overlay.addEventListener('click', requestLock);
+renderer.domElement.addEventListener('click', requestLock);
 controls.addEventListener('lock', () => { overlay.style.display = 'none'; });
 controls.addEventListener('unlock', () => {
   if (!menuOpen) overlay.style.display = 'flex';
 });
+// Surface a clear message if the browser refuses pointer lock (e.g. iOS).
+document.addEventListener('pointerlockerror', () => {
+  const big = overlay.querySelector('.big');
+  if (big) big.textContent = 'Your browser blocked mouse-look — try desktop Chrome/Firefox/Edge';
+}, false);
 
 // ---- Input ----------------------------------------------------------
 const input = { forward: false, back: false, left: false, right: false,
