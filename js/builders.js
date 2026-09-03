@@ -132,8 +132,10 @@ export function buildSteppedPyramidGeometry(b, h, opts = {}) {
       for (const [s0, s1] of spans) {
         if (s1 - s0 < 0.01) continue;
         const u0 = (s0 + Wr) / blockW + co.uoff, u1 = (s1 + Wr) / blockW + co.uoff;
+        // v carries the course index in its integer part (the texture wraps
+        // per unit, and the shader uses floor(v) to vary each course).
         quad(rp, ru, rn, f.pos(s0, Wr, co.y0), f.pos(s1, Wr, co.y0), f.pos(s1, Wr, co.y1), f.pos(s0, Wr, co.y1),
-          [u0, 0], [u1, 0], [u1, 1], [u0, 1], f.n);
+          [u0, c], [u1, c], [u1, c + 1], [u0, c + 1], f.n);
       }
       // tread: ring segment at y1 from d=Wr (outer) to d=Wn (inner)
       if (Wr - Wn < 0.005) continue;

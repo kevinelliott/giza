@@ -70,6 +70,8 @@
       <span><b>M</b> map / fast travel</span>
       <span><b>&minus; / =</b> zoom minimap &middot; <b>O</b> rotate</span>
       <span><b>P</b> performance mode &middot; <b>G</b> map legend &middot; <b>V</b> sound</span>
+      <span><b>T</b> time of day &middot; <b>[ ]</b> &plusmn;1 hour &middot; <b>K</b> sandstorm</span>
+      <span>Climb the pyramids course by course (jump the tall ones) &middot; collect the <b>gold stars</b> on the map</span>
       <span><b>H</b> help / facts</span>
       <span><b>Esc</b> release mouse</span>
     </div>
@@ -85,8 +87,11 @@
     run <b id="runState">off</b> &middot; fly <b id="flyState">off</b>
     &middot; lamp <b id="lampState">off</b> &middot; perf <b id="perfState">off</b> &middot; sound <b id="soundState">ON</b>
     &middot; <b id="fps">--</b> fps &middot; <b>M</b> map &middot; <b>H</b> help
+    <br>🏺 artifacts <b id="artState">0/0</b> &middot; 📍 sites <b id="siteState">0/0</b>
   </div>
 </div>
+<div id="clock">16:00 · clear</div>
+<div id="toast"></div>
 
 <!-- Inventory hotbar -->
 <div id="hotbar"></div>
@@ -104,6 +109,8 @@
 
 <!-- Help / facts -->
 <div id="help">
+  <h2>Achievements</h2>
+  <ul id="achList"></ul>
   <h2>Giza Plateau — the real numbers</h2>
   <ul>
     <li><b>Great Pyramid (Khufu)</b>: base 230.4 m, original height 146.6 m,

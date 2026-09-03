@@ -26,17 +26,17 @@ const POINT_VERT = /* glsl */`
     gl_Position = projectionMatrix * mv;
   }`;
 const POINT_FRAG = /* glsl */`
-  uniform vec3 uColor;
+  uniform vec3 uColor; uniform float uAlpha;
   varying float vAlpha;
   void main() {
     vec2 c = gl_PointCoord - 0.5;
     float d = length(c);
-    float a = smoothstep(0.5, 0.12, d) * vAlpha;
+    float a = smoothstep(0.5, 0.12, d) * vAlpha * uAlpha;
     if (a < 0.01) discard;
     gl_FragColor = vec4(uColor, a);
   }`;
 
-function makePoints(max, color, bright = 2.6) {
+export function makePoints(max, color, bright = 2.6) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(max * 3), alpha = new Float32Array(max), size = new Float32Array(max);
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
@@ -45,7 +45,7 @@ function makePoints(max, color, bright = 2.6) {
   // ShaderMaterial skips lighting, so pre-scale the colour to roughly what
   // sunlit sand comes out as after tone mapping.
   const mat = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(color).multiplyScalar(bright) } },
+    uniforms: { uColor: { value: new THREE.Color(color).multiplyScalar(bright) }, uAlpha: { value: 1 } },
     vertexShader: POINT_VERT, fragmentShader: POINT_FRAG,
     transparent: true, depthWrite: false
   });
@@ -117,45 +117,56 @@ export class Dust {
 }
 
 // ---- Wind-blown sand drifting across the plateau -----------------------
+// Also used (with different options) for the slow dust motes drifting in
+// the passages. setStorm(k) ramps it into a sandstorm: faster, denser.
 export class BlowingSand {
-  constructor(scene, count = 1400, radius = 95) {
+  constructor(scene, count = 1400, radius = 95, opts = {}) {
     this.n = count; this.r = radius;
-    const p = makePoints(count, 0xe2cba2);
+    this.h = opts.height ?? 22;
+    const p = makePoints(count, opts.color ?? 0xe2cba2, opts.bright ?? 2.6);
     Object.assign(this, p);
     this.jit = new Float32Array(count * 3);
+    const [a0, a1] = opts.alpha ?? [0.10, 0.24], [s0, s1] = opts.size ?? [0.10, 0.32];
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
       this.pos[i3] = (Math.random() - 0.5) * 2 * radius;
-      this.pos[i3 + 1] = 0.2 + Math.random() * 22;
+      this.pos[i3 + 1] = 0.2 + Math.random() * this.h;
       this.pos[i3 + 2] = (Math.random() - 0.5) * 2 * radius;
       this.jit[i3] = (Math.random() - 0.5) * 1.5; this.jit[i3 + 1] = Math.random() * 2;
       this.jit[i3 + 2] = (Math.random() - 0.5) * 1.5;
-      this.alpha[i] = 0.10 + Math.random() * 0.14;
-      this.size[i] = 0.10 + Math.random() * 0.22;
+      this.alpha[i] = a0 + Math.random() * (a1 - a0);
+      this.size[i] = s0 + Math.random() * (s1 - s0);
     }
     this.geo.attributes.aAlpha.needsUpdate = true;
     this.geo.attributes.aSize.needsUpdate = true;
-    this.wind = new THREE.Vector3(4.5, 0, 1.2);
+    this.wind = new THREE.Vector3(...(opts.wind ?? [4.5, 0, 1.2]));
+    this.jitScale = opts.jitter ?? 1;
+    this.storm = 0;
     this.cx = 0; this.cz = 0;
     scene.add(this.pts);
   }
-  update(dt, t, playerPos, outdoors) {
-    this.pts.visible = outdoors;
-    if (!outdoors) return;
-    const gust = 0.7 + 0.5 * Math.sin(t * 0.35) + 0.25 * Math.sin(t * 1.7 + 1.3);
-    const wx = this.wind.x * gust, wz = this.wind.z * gust, r = this.r;
+  setStorm(k) { this.storm = k; }
+  update(dt, t, playerPos, visible) {
+    this.pts.visible = visible;
+    if (!visible) return;
+    const k = this.storm;
+    const gust = 0.7 + 0.5 * Math.sin(t * 0.35) + 0.25 * Math.sin(t * 1.7 + 1.3) + 0.6 * k * Math.sin(t * 2.3);
+    const wx = this.wind.x * gust * (1 + 6 * k), wz = this.wind.z * gust * (1 + 6 * k), r = this.r;
+    const js = this.jitScale * (1 + 3 * k);
+    this.pts.material.uniforms.uAlpha.value = 1 + 2.2 * k;
     this.cx = playerPos.x; this.cz = playerPos.z;
     for (let i = 0; i < this.n; i++) {
       const i3 = i * 3;
-      this.pos[i3] += (wx + this.jit[i3]) * dt;
-      this.pos[i3 + 1] += Math.sin(t * this.jit[i3 + 1] + i) * 0.35 * dt;
-      this.pos[i3 + 2] += (wz + this.jit[i3 + 2]) * dt;
+      this.pos[i3] += (wx + this.jit[i3] * js) * dt;
+      this.pos[i3 + 1] += Math.sin(t * this.jit[i3 + 1] + i) * 0.35 * dt * js;
+      this.pos[i3 + 2] += (wz + this.jit[i3 + 2] * js) * dt;
       // keep the cloud wrapped around the player
       if (this.pos[i3] > r) this.pos[i3] -= 2 * r; else if (this.pos[i3] < -r) this.pos[i3] += 2 * r;
       if (this.pos[i3 + 2] > r) this.pos[i3 + 2] -= 2 * r; else if (this.pos[i3 + 2] < -r) this.pos[i3 + 2] += 2 * r;
-      if (this.pos[i3 + 1] < 0.2) this.pos[i3 + 1] = 0.2 + Math.random() * 20;
+      if (this.pos[i3 + 1] < 0.2) this.pos[i3 + 1] = 0.2 + Math.random() * this.h;
+      if (this.pos[i3 + 1] > this.h + 1) this.pos[i3 + 1] = 0.2 + Math.random() * this.h;
     }
-    this.pts.position.set(this.cx, 0, this.cz);
+    this.pts.position.set(this.cx, playerPos.y - (this.h > 10 ? 0 : 1.2), this.cz);
     this.geo.attributes.position.needsUpdate = true;
   }
 }
@@ -276,14 +287,14 @@ const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, tDepth: { value: null }, uTime: { value: 0 },
     uVignette: { value: 0.38 }, uGrain: { value: 0.025 }, uWarm: { value: 0.018 },
-    uHaze: { value: 0 }, cameraNear: { value: 0.05 }, cameraFar: { value: 6000 }
+    uHaze: { value: 0 }, uDust: { value: 0 }, cameraNear: { value: 0.05 }, cameraFar: { value: 6000 }
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     #include <packing>
-    uniform sampler2D tDiffuse, tDepth; uniform float uTime, uVignette, uGrain, uWarm, uHaze, cameraNear, cameraFar;
+    uniform sampler2D tDiffuse, tDepth; uniform float uTime, uVignette, uGrain, uWarm, uHaze, uDust, cameraNear, cameraFar;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     float vnoise(vec2 p) {
@@ -302,6 +313,12 @@ const GradeShader = {
         uv += n * haze * vec2(0.0045, 0.0065);
       }
       vec4 c = texture2D(tDiffuse, uv);
+      // sandstorm: dust veil that flattens contrast and tints everything ochre
+      if (uDust > 0.001) {
+        float dl = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+        vec3 veil = vec3(0.86, 0.72, 0.50) * (0.55 + 0.45 * dl);
+        c.rgb = mix(c.rgb, veil, uDust * 0.6);
+      }
       // warm desert grade + a touch of contrast/saturation
       c.rgb += vec3(uWarm, uWarm * 0.45, -uWarm * 0.7);
       float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
@@ -333,6 +350,7 @@ export function createPost(renderer, scene, camera) {
     setEnabled(v) { enabled = v; },
     get enabled() { return enabled; },
     setHaze(v) { hazeTarget = v; },
+    setDust(v) { grade.uniforms.uDust.value = v; },
     resize(w, h) { composer.setSize(w, h); bloom.resolution.set(w, h); depthRT.setSize(w >> 2, h >> 2); },
     setPixelRatio(r) { composer.setPixelRatio(r); },
     render(t, dt = 0.016) {
@@ -388,11 +406,12 @@ export class AudioFX {
   // Wind level follows gusts, player speed and whether we're inside.
   update(t, speed, indoors, flying) {
     if (!this.ctx) return;
+    const storm = this.storm || 0;
     const gust = 0.16 + 0.07 * Math.sin(t * 0.35) + 0.04 * Math.sin(t * 1.7 + 1.3);
-    let target = gust + Math.min(0.12, speed * 0.006) + (flying ? 0.08 : 0);
+    let target = gust + Math.min(0.12, speed * 0.006) + (flying ? 0.08 : 0) + 0.5 * storm * (0.8 + 0.2 * Math.sin(t * 2.1));
     if (indoors) target *= 0.25;
     this.windGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.4);
-    this.windFilter.frequency.setTargetAtTime(380 + speed * 20, this.ctx.currentTime, 0.4);
+    this.windFilter.frequency.setTargetAtTime(380 + speed * 20 + 700 * storm, this.ctx.currentTime, 0.4);
   }
   footstep(indoors, run) {
     if (!this.ctx || this.muted) return;

@@ -4,6 +4,8 @@ import { makeMaterials } from './materials.js';
 import { buildWorld, terrainHeight, inPit } from './world.js';
 import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
+import { DayCycle, Sandstorm, Stars } from './atmosphere.js';
+import { Quest } from './quest.js';
 import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY } from './data.js';
 
 const canvas = document.getElementById('game');
@@ -24,7 +26,7 @@ const SAVED = (() => { try { return JSON.parse(localStorage.getItem('giza.settin
 function saveSettings() {
   try {
     localStorage.setItem('giza.settings.v1', JSON.stringify(
-      { perf: perfMode, headingUp: mmHeadingUp, mmScale, legend: legendCollapsed, muted: audio.muted }));
+      { perf: perfMode, headingUp: mmHeadingUp, mmScale, legend: legendCollapsed, muted: audio.muted, hour: day.hour }));
   } catch { /* storage unavailable */ }
 }
 
@@ -47,11 +49,33 @@ const dust = new Dust(scene);
 const sand = new BlowingSand(scene);
 createRocks(scene, terrainHeight, inPit, { x0: -820, x1: 560, z0: -320, z1: 960 });
 const debris = new NearDebris(scene, terrainHeight, inPit);
-createLensflare(scene, world.sunDir);
+const flare = createLensflare(scene, world.sunDir);
 const audio = new AudioFX();
 audio.muted = !!SAVED.muted;
 world.applyCSM(scene);            // every lit material joins the cascaded-shadow shader
 const BASE_FOV = 72, SPRINT_FOV = 80;
+
+// ---- Atmosphere: time of day, stars, sandstorms, interior motes --------
+const stars = new Stars(scene);
+const day = new DayCycle({ scene, renderer, sky: world.sky, csm: world.csm, hemi: world.hemi, flare, stars });
+day.setHour(typeof SAVED.hour === 'number' ? SAVED.hour : 16);
+const storm = new Sandstorm({ scene, sand, post, audio, csm: world.csm, day });
+const motes = new BlowingSand(scene, 320, 7, { height: 3.2, wind: [0.12, 0, 0.05], jitter: 0.12, alpha: [0.12, 0.3], size: [0.03, 0.09], color: 0xe8dcc0, bright: 1.4 });
+
+// ---- Exploration goals: artifacts, discoveries, achievements ------------
+const toastEl = document.getElementById('toast');
+let toastTimer = 0;
+function toast(html, ms = 4200) {
+  if (!toastEl) return;
+  toastEl.innerHTML = html; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+}
+const quest = new Quest({ scene, world, player, toast, setupMaterial: world.setupMaterial, onChange: () => refreshProgress() });
+function refreshProgress() {
+  const a = document.getElementById('artState'); if (a) a.textContent = `${quest.found}/${quest.total}`;
+  const s = document.getElementById('siteState'); if (s) s.textContent = `${quest.progress.sites.length}/${world.landmarks.length}`;
+  const l = document.getElementById('achList'); if (l) l.innerHTML = quest.achievementsHTML();
+}
 
 // ---- Player headlamp (auto-on inside the pyramids) ------------------
 const lamp = new THREE.SpotLight(0xfff0d0, 0.0, 80, Math.PI / 3.2, 0.5, 1.0);
@@ -127,6 +151,10 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleMap();
   if (e.code === 'KeyH') toggleHelp();
   if (e.code === 'KeyV') toggleSound();
+  if (e.code === 'KeyT') { day.cyclePreset(); toast(`🕒 Time set to ${day.label()}`, 1800); saveSettings(); }
+  if (e.code === 'BracketLeft') { day.shift(-1); saveSettings(); }
+  if (e.code === 'BracketRight') { day.shift(1); saveSettings(); }
+  if (e.code === 'KeyK') { storm.toggle(); toast(storm.active ? '🌪 A sandstorm is rolling in…' : '☀ The storm is passing.', 2500); }
   if (e.code === 'KeyE') useItem();
   if (/^Digit[1-9]$/.test(e.code)) selectSlot(+e.code.slice(5) - 1);
 });
@@ -463,6 +491,7 @@ const posEl = document.getElementById('pos');
 const nameEl = document.getElementById('lmName');
 const blurbEl = document.getElementById('lmBlurb');
 const compassEl = document.getElementById('compass');
+const clockEl = document.getElementById('clock');
 const lampStateEl = document.getElementById('lampState');
 const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
@@ -470,7 +499,9 @@ function insidePyramid(p) {
   for (const k in PYRAMIDS) {
     const py = PYRAMIDS[k];
     const dx = p.x - py.center.x, dz = p.z - py.center.z;
-    const W = (py.base / 2) * (1 - Math.max(0, p.y) / py.height) + 1;
+    // 1.2 m inside the face plane, so standing on the outer course treads
+    // (climbing) still counts as outdoors.
+    const W = (py.base / 2) * (1 - Math.max(0, p.y) / py.height) - 1.2;
     if (Math.abs(dx) < W && Math.abs(dz) < W) return true;       // within the solid envelope
     if (p.y < -1 && Math.hypot(dx, dz) < py.base * 0.5) return true; // subterranean below it
   }
@@ -492,10 +523,12 @@ function updateHUD() {
   const hd = player.headingDeg();
   if (compassEl) compassEl.textContent = `${DIRS[Math.round(hd / 45) % 8]}  ${hd.toFixed(0)}°`;
 
-  // Auto headlamp when inside / underground, with manual override (L).
+  // Auto headlamp when inside / underground or out at night, with manual override (L).
   const inside = isUnderground(p);
-  lamp.intensity = (forceLamp || inside) ? 42 : 0;
-  if (lampStateEl) lampStateEl.textContent = forceLamp ? 'ON' : (inside ? 'auto' : 'off');
+  const auto = inside || (day.isNight && !player.fly);
+  lamp.intensity = (forceLamp || auto) ? (inside ? 42 : 28) : 0;
+  if (lampStateEl) lampStateEl.textContent = forceLamp ? 'ON' : (auto ? 'auto' : 'off');
+  if (clockEl) clockEl.textContent = `${day.label()} · ${storm.k > 0.3 ? 'sandstorm' : (day.isNight ? 'clear night' : 'clear')}`;
 
   let best = null, bestD = Infinity;
   for (const lm of world.landmarks) {
@@ -629,6 +662,15 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
       ctx.fillStyle = '#3aa0ff'; ctx.strokeStyle = '#0a3a66'; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.arc(sx, sy, 4.5, 0, 7); ctx.fill(); ctx.stroke();
       if (collect) collect.push({ sx, sy, name: t.label, r: 8 });
+    }
+    // undiscovered artifacts: a treasure map of gold stars
+    for (const a of quest.remaining()) {
+      const sx = X(a.pos.x), sy = Y(a.pos.z);
+      ctx.fillStyle = '#ffd24a'; ctx.strokeStyle = '#6b4a00'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) { const r = k % 2 ? 2.6 : 6, an = -Math.PI / 2 + k * Math.PI / 5; ctx.lineTo(sx + Math.cos(an) * r, sy + Math.sin(an) * r); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (collect) collect.push({ sx, sy, name: `★ Artifact: ${a.name}`, r: 8 });
     }
   }
   // player + heading
@@ -911,9 +953,15 @@ function animate() {
   updateStones(delta);
   // Immersion: dust at the feet, drifting sand, wind + footsteps, sprint FOV.
   const outdoors = !isUnderground(player.position);
+  day.update(delta, camera.position);
+  storm.update(delta, outdoors);
   dust.update(delta, player, outdoors);
   debris.update(player.position);
   if (!perfMode) sand.update(delta, t, player.position, outdoors);
+  motes.update(delta, t, player.position, !outdoors && !perfMode);
+  const pp = player.position;
+  quest.update(t, delta, { outdoors, night: day.isNight, storm: storm.k > 0.5,
+    sphinx: Math.abs(pp.x - (SPHINX.center.x + 30)) < 8 && Math.abs(pp.z - SPHINX.center.z) < 8 && pp.y < -3 });
   audio.update(t, player.speedXZ, !outdoors, player.fly);
   audio.steps(delta, player, !outdoors);
   const wantFov = (input.sprint && player.speedXZ > 9 && !player.fly) ? SPRINT_FOV : BASE_FOV;
@@ -951,13 +999,14 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
-  inventory, placedTorches, stones, useItem, selectSlot, dust, sand, audio, post, get runToggle() { return runToggle; },
+  inventory, placedTorches, stones, useItem, selectSlot, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.
 if (SAVED.perf) togglePerf();
 document.getElementById('perfState').textContent = perfMode ? 'ON' : 'off';
 { const el = document.getElementById('soundState'); if (el) el.textContent = audio.muted ? 'off' : 'ON'; }
+refreshProgress();
 setStatus('Ready.');
 document.getElementById('loading').style.display = 'none';
 overlay.style.display = 'flex';

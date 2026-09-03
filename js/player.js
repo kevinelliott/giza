@@ -25,9 +25,9 @@ export function buildCollider(scene, collidables) {
 const GRAVITY = -24;
 const SPEED_WALK = 7.0;
 const SPEED_RUN = 16.0;
-const JUMP = 8.6;
+const JUMP = 9.0;            // ~1.7 m: enough to mantle the tallest pyramid courses
 const FLY_SPEED = 60;
-const STEP_HEIGHT = 0.6;     // max ledge/stair the player auto-steps over
+const STEP_HEIGHT = 0.75;    // max ledge/stair the player auto-steps over (most pyramid courses)
 const STAND_H = 1.8;
 const CROUCH_H = 1.05;
 

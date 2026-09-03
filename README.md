@@ -38,6 +38,8 @@ Then open <http://localhost:8080>.
 | `1`–`6` / wheel | Select an inventory slot |
 | Click / `E` | **Use item**: place or pick up a torch; pick up a stone from the ground / throw it |
 | `V` | Toggle sound (wind, footsteps, stone impacts) |
+| `T` / `[` `]` | Cycle time of day (dawn → night) / shift by an hour. Time also passes on its own (1 h ≈ 5 min) |
+| `K` | Call up (or dismiss) a sandstorm — they also roll in on their own every few minutes |
 | `P` | Performance mode (no shadows / post-processing) |
 | `H` | Help / real-world facts |
 | `Esc` | Release the mouse |
@@ -46,6 +48,19 @@ Then open <http://localhost:8080>.
 on-screen **joystick** (left) to move, **drag** anywhere on the right to look,
 and the **JUMP / RUN / FLY / LAMP / MAP** buttons. A compass shows your heading,
 and your **headlamp turns on automatically** whenever you go inside a pyramid.
+
+## Things to do
+
+- **Climb the Great Pyramid.** The stepped core is real collision geometry:
+  walk up the smaller courses, jump the tall ones, and stand on the flat
+  summit 139 m up. (Please don't do this in real life.)
+- **The artifact hunt.** Seventeen artifacts — each a real class of object
+  associated with that spot — glow at sites all over the plateau, from the
+  King's Chamber to the workers' bakeries. Walk over one to collect it and
+  read what it is. The full map (`M`) shows undiscovered ones as gold stars.
+- **Discover every site**, earn the achievements (`H` lists them), watch the
+  sun set over Khafre, see the Milky Way come out, and get caught in a
+  sandstorm. Progress is saved in your browser.
 
 ## What's modelled
 

@@ -311,3 +311,63 @@ export const TELEPORTS = [
   { label: "Workers' Cemetery", pos: { x: 120, y: 2, z: 700 - 35 } },
   { label: 'Central Field Quarry', pos: { x: -10, y: 2, z: 250 } }
 ];
+
+// ---------------------------------------------------------------------
+//  Collectible artifacts — a scavenger hunt across the plateau. Each is a
+//  real class of object found at (or associated with) that spot.
+// ---------------------------------------------------------------------
+const tpPos = label => TELEPORTS.find(t => t.label.includes(label)).pos;
+const at = (p, dx, dy, dz) => ({ x: p.x + dx, y: p.y + dy, z: p.z + dz });
+export const ARTIFACTS = [
+  { id: 'lid', type: 'fragment', name: 'Sarcophagus lid fragment',
+    blurb: "A corner of the red-granite lid that was already gone when Caliph al-Ma'mun's men forced their way in (AD 820).",
+    pos: at(tpPos("King's Chamber"), 2.6, 0.35, 0.9) },
+  { id: 'copper', type: 'tool', name: 'Copper fitting from the shaft',
+    blurb: "Like the copper 'handles' found on the door-slab at the top of the Queen's Chamber shaft by the Upuaut robot in 1993.",
+    pos: at(tpPos("Queen's Chamber"), 1.6, 0.35, -0.8) },
+  { id: 'lamp', type: 'jar', name: "Tomb robber's oil lamp",
+    blurb: 'A pottery saucer lamp of the kind carried by the medieval explorers who scrambled down to the unfinished Subterranean Chamber.',
+    pos: at(tpPos('Subterranean'), 1.2, 0.35, 1.2) },
+  { id: 'chisel', type: 'tool', name: "Quarryman's copper chisel",
+    blurb: 'Copper chisels and dolerite pounders were the only metal tools available; they were resharpened constantly.',
+    pos: at(tpPos('original entrance'), 0.5, 0.3, 3.0) },
+  { id: 'ushabti', type: 'ushabti', name: 'Ushabti of Thutmose IV',
+    blurb: 'Thutmose IV cleared the Sphinx of sand around 1400 BC after a dream, and raised the Dream Stele between its paws.',
+    pos: { x: SPHINX.center.x + 30, y: -5.55, z: SPHINX.center.z + 1.5 } },
+  { id: 'diorite', type: 'scarab', name: 'Diorite chip from a Khafre statue',
+    blurb: "Khafre's famous seated statue (Cairo Museum) was found buried in a pit in this valley temple in 1860.",
+    pos: at(tpPos('Khafre Valley'), 4, 0.35, 2) },
+  { id: 'triad', type: 'fragment', name: 'Greywacke triad fragment',
+    blurb: "Reisner found Menkaure's triad statues — the king with Hathor and a nome goddess — here in 1908.",
+    pos: at(tpPos('Menkaure Valley'), 3, 0.35, -2) },
+  { id: 'bedja', type: 'jar', name: 'Bread mould (bedja)',
+    blurb: 'Thousands of these conical bread pots were found in the bakeries of the workers\' town beyond the Wall of the Crow.',
+    pos: at(tpPos('Wall of the Crow'), 3, 0.35, 4) },
+  { id: 'beer', type: 'jar', name: 'Beer jar',
+    blurb: "Workers were paid in bread and beer — roughly ten loaves and a jug or two a day.",
+    pos: at(tpPos("Workers' Town"), 4, 0.35, 3) },
+  { id: 'amulet', type: 'amulet', name: 'Faience amulet',
+    blurb: "Blue-green faience amulets were buried with the priests who served Queen Khentkaus' cult.",
+    pos: at(tpPos('Khentkaus'), 3, 0.35, 5) },
+  { id: 'square', type: 'tool', name: 'Wooden set-square',
+    blurb: "The Trial Passages were the builders' full-size mock-up; set-squares and plumb lines kept the angles true.",
+    pos: at(tpPos('Trial Passages'), 2, 0.35, 3) },
+  { id: 'basalt', type: 'fragment', name: 'Basalt paving block',
+    blurb: 'Black basalt from the Fayum paved the floors of Khufu\'s temples — the same stone as the causeway pavement.',
+    pos: at(tpPos('Khufu Valley'), -4, 0.35, 3) },
+  { id: 'pounder', type: 'scarab', name: 'Dolerite pounder',
+    blurb: 'Hard dolerite balls were used to bash out the limestone blocks in the Central Field quarry.',
+    pos: at(tpPos('Central Field Quarry'), 5, 0.35, -4) },
+  { id: 'door', type: 'stele', name: 'Painted false-door fragment',
+    blurb: 'The workers\' tombs had tiny false doors so the dead could receive offerings — same idea as the nobles\' mastabas.',
+    pos: at(tpPos("Workers' Cemetery"), 3, 0.35, 2) },
+  { id: 'casing', type: 'fragment', name: 'Tura casing chip',
+    blurb: 'Khafre still keeps its fine white Tura limestone casing near the summit; the rest was stripped for medieval Cairo.',
+    pos: at(tpPos('Khafre — north'), 2, 0.35, -4) },
+  { id: 'granite', type: 'fragment', name: 'Aswan granite spall',
+    blurb: "Menkaure's lower sixteen courses were cased in red granite shipped 900 km down the Nile from Aswan.",
+    pos: at(tpPos('Menkaure — north'), -3, 0.35, -4) },
+  { id: 'pyramidion', type: 'amulet', name: 'Pyramidion fragment',
+    blurb: 'The Great Pyramid lost its capstone long ago; today the summit is a flat platform ~8 m below the original apex.',
+    pos: { x: 0, y: 139.3, z: 0 } }
+];

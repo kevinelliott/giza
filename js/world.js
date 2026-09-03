@@ -97,13 +97,10 @@ function buildPyramid(p, mats, collidables, group) {
   const truncate = p.id === 'khufu' ? 138.8 : (p.id === 'menkaure' ? 62 : null);
   const core = buildPyramidGeometry(p.base, p.height,
     truncate ? { hole, truncate } : { hole });
-  // Smooth faces = collider only (invisible); the visible body is the
-  // stepped core of real block courses (inscribed in the smooth solid).
-  const mesh = new THREE.Mesh(core, mats.limestone);
+  // The visible body is the stepped core of real block courses, and it is
+  // also the collider — so the pyramids can be climbed course by course.
+  const mesh = new THREE.Mesh(core, mats.limestone);   // smooth reference solid (unused visually)
   mesh.position.set(p.center.x, 0, p.center.z);
-  mesh.userData.collidable = true;
-  mesh.visible = false;
-  group.add(mesh); collidables.push(mesh);
   const stepped = new THREE.Mesh(buildSteppedPyramidGeometry(p.base, p.height, {
     truncate, hole,
     yRange: p.casing === 'cap' ? [0, p.height * 0.78 + 0.6] : null,
@@ -111,7 +108,8 @@ function buildPyramid(p, mats, collidables, group) {
   }), [mats.course, mats.courseTop]);
   stepped.position.copy(mesh.position);
   stepped.castShadow = true; stepped.receiveShadow = true;
-  group.add(stepped);
+  stepped.userData.collidable = true;
+  group.add(stepped); collidables.push(stepped);
 
   // Surviving casing
   if (p.casing === 'cap') {
@@ -153,16 +151,13 @@ function buildPyramid(p, mats, collidables, group) {
 
 let smallSeed = 17;
 function buildSmallPyramid(q, mats, collidables, group) {
-  const mesh = new THREE.Mesh(buildPyramidGeometry(q.base, q.height, {}), mats.limestone);
-  mesh.position.set(q.center.x, 0, q.center.z);
-  mesh.userData.collidable = true; mesh.visible = false;
-  group.add(mesh); collidables.push(mesh);
   // Ruined stepped cores (all the subsidiary pyramids have lost their casing).
   const stepped = new THREE.Mesh(buildSteppedPyramidGeometry(q.base, q.height,
     { courseScale: 0.8, seed: smallSeed++ }), [mats.course, mats.courseTop]);
-  stepped.position.copy(mesh.position);
+  stepped.position.set(q.center.x, 0, q.center.z);
   stepped.castShadow = true; stepped.receiveShadow = true;
-  group.add(stepped);
+  stepped.userData.collidable = true;
+  group.add(stepped); collidables.push(stepped);
 }
 
 // A detailed Great Sphinx (recumbent lion, nemes headdress, outstretched
@@ -435,11 +430,13 @@ function buildCamel(deco, x, z, rot, collidables) {
   part(1.0, 0.8, 1.0, 0.7, 2.9, 0);                      // hump 2
   part(0.7, 2.0, 0.7, 2.0, 2.6, 0);                      // neck
   part(0.9, 0.7, 0.6, 2.4, 3.6, 0);                      // head
-  for (const [lx, lz] of [[-1.2, 0.5], [-1.2, -0.5], [1.2, 0.5], [1.2, -0.5]])
-    part(0.35, 2.0, 0.35, lx, 1.0, lz);                  // legs
+  for (const [lx, lz] of [[-1.2, 0.5], [-1.2, -0.5], [1.2, 0.5], [1.2, -0.5]]) {
+    const leg = part(0.35, 2.0, 0.35, lx, 2.0, lz);      // legs, pivoted at the hip
+    leg.geometry.translate(0, -1.0, 0);
+  }
   g.position.set(x, 0, z); g.rotation.y = rot;
   g.updateMatrixWorld(true);
-  collidables.push(body);
+  if (collidables) collidables.push(body);
   return g;
 }
 
@@ -529,7 +526,7 @@ function buildSky(scene, renderer) {
     u.mieCoefficient.value = mie;
   }
   scene.add(sky);
-  return sun;
+  return { sun, sky };
 }
 
 export function buildWorld(scene, mats, { renderer, camera } = {}) {
@@ -541,7 +538,7 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   // Sky + lighting: sun via cascaded shadow maps (crisp shadows from the
   // horizon to your feet), skylight from the environment map, plus a little
   // warm bounce off the sand.
-  const sunDir = buildSky(scene, renderer);
+  const { sun: sunDir, sky } = buildSky(scene, renderer);
   let csm = null;
   const csmMaterials = new Set();
   if (camera) {
@@ -558,7 +555,8 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
     sun.position.copy(sunDir).multiplyScalar(900);
     scene.add(sun);
   }
-  scene.add(new THREE.HemisphereLight(0xc4d6ff, 0xcaa56a, 0.25));
+  const hemi = new THREE.HemisphereLight(0xc4d6ff, 0xcaa56a, 0.25);
+  scene.add(hemi);
   scene.fog = new THREE.FogExp2(0xd7c7a6, 0.00013);
   // Hook a material into the cascade shader (and re-apply any custom
   // shader patch the material carries, since CSM replaces onBeforeCompile).
@@ -741,11 +739,29 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   group.add(buildCamel(deco, SPHINX.center.x + 6, SPHINX.center.z - 52, 1.0, collidables));
   group.add(buildCamel(deco, SPHINX.center.x + 24, SPHINX.center.z - 60, 1.4, collidables));
 
+  // A small camel caravan plodding a loop on the open sand north-east of
+  // the Sphinx (not collidable — it moves).
+  const caravan = [];
+  for (let i = 0; i < 4; i++) { const c = buildCamel(deco, 0, 0, 0, null); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
+  const cc = { x: SPHINX.center.x + 70, z: SPHINX.center.z - 130 }, cr = 55;
+
   // Surviving casing at the Great Pyramid base + circling birds
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
-  const tick = buildBirds(group);
+  const birdTick = buildBirds(group);
+  const tick = t => {
+    birdTick(t);
+    for (const c of caravan) {
+      const s = (t * 1.1 + c.off) / cr;
+      const x = cc.x + Math.cos(s) * cr, z = cc.z + Math.sin(s) * cr;
+      c.g.position.set(x, terrainHeight(x, z), z);
+      c.g.rotation.y = -s - Math.PI / 2;
+      const legs = c.g.children;
+      for (let k = 5; k < 9; k++) legs[k].rotation.z = Math.sin(t * 3.2 + c.ph + (k % 2 ? Math.PI : 0) + (k > 6 ? 0.6 : 0)) * 0.28;
+      legs[4].rotation.z = Math.sin(t * 1.6 + c.ph) * 0.08;   // head bob
+    }
+  };
 
-  return { group, collidables, landmarks, sunDir, tick, mastabas, buildings, csm, setupMaterial, applyCSM };
+  return { group, collidables, landmarks, sunDir, sky, hemi, tick, mastabas, buildings, csm, setupMaterial, applyCSM };
 }
 
 function pyrApex(p) {

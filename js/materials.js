@@ -86,6 +86,15 @@ function grayCanvas(vals, w, h) {
   return c;
 }
 
+// Packed data texture: R = per-block id, G = roughness, B = block mask (0 in joints).
+function rgbCanvas(r, g, b, w, h) {
+  const c = makeCanvas(w, h), ctx = c.getContext('2d');
+  const img = ctx.createImageData(w, h), d = img.data;
+  for (let i = 0; i < w * h; i++) { d[i * 4] = clamp01(r[i]) * 255; d[i * 4 + 1] = clamp01(g[i]) * 255; d[i * 4 + 2] = clamp01(b[i]) * 255; d[i * 4 + 3] = 255; }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
 function hexToRgb(hex) {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -103,6 +112,7 @@ function masonry({ w = 1024, h = 1024, courses = 12, perCourse = 10, seed = 1,
   roughBase = 0.9 }) {
   const rand = mulberry(seed);
   const hgt = new Float32Array(w * h), col = new Float32Array(w * h * 3), rough = new Float32Array(w * h);
+  const bid = new Float32Array(w * h), mask = new Float32Array(w * h);
   const baseC = hexToRgb(base), darkC = hexToRgb(dark), lightC = hexToRgb(light), jointC = hexToRgb(joint);
   const grain = fbm(w, h, 16, 4, rand);         // fine surface texture
   const macro = fbm(w, h, 3, 3, rand);          // broad tonal drift
@@ -123,6 +133,7 @@ function masonry({ w = 1024, h = 1024, courses = 12, perCourse = 10, seed = 1,
       const t = rand();
       const tint = t > 0.75 ? mixRgb(baseC, lightC, 0.7) : (t < 0.2 ? mixRgb(baseC, darkC, 0.7) : mixRgb(baseC, t > 0.5 ? lightC : darkC, (rand() - 0.5) * 0.5 + 0.25));
       const bh = 0.85 + rand() * 0.15;            // block face height (some sit proud)
+      const blockId = rand();
       const chipN = rand() < chips ? 1 + (rand() * 3 | 0) : 0;
       const chipList = [];
       for (let k = 0; k < chipN; k++) chipList.push([rand() < 0.5 ? bx0 : bx1, rand() < 0.5 ? y0 : y1, 6 + rand() * 22]);
@@ -152,7 +163,8 @@ function masonry({ w = 1024, h = 1024, courses = 12, perCourse = 10, seed = 1,
           const g = 0.85 + 0.3 * grain[idx] + 0.1 * (macro[idx] - 0.5);
           col[idx * 3] = cr[0] * g * (1 - dirt); col[idx * 3 + 1] = cr[1] * g * (1 - dirt * 1.1); col[idx * 3 + 2] = cr[2] * g * (1 - dirt * 1.3);
           hgt[idx] = clamp01(hv);
-          rough[idx] = roughBase + 0.1 * grain[idx] - (e < jointPx / 2 ? 0 : 0.05 * (1 - u) * 0);
+          rough[idx] = roughBase + 0.1 * grain[idx];
+          bid[idx] = blockId; mask[idx] = e < jointPx / 2 ? 0 : 1;
         }
       }
     }
@@ -161,7 +173,7 @@ function masonry({ w = 1024, h = 1024, courses = 12, perCourse = 10, seed = 1,
   const img = g.createImageData(w, h), d = img.data;
   for (let i = 0; i < w * h; i++) { d[i * 4] = col[i * 3]; d[i * 4 + 1] = col[i * 3 + 1]; d[i * 4 + 2] = col[i * 3 + 2]; d[i * 4 + 3] = 255; }
   g.putImageData(img, 0, 0);
-  return { map: c, normal: normalFromHeight(hgt, w, h, normalStrength), rough: grayCanvas(rough, w, h) };
+  return { map: c, normal: normalFromHeight(hgt, w, h, normalStrength), rough: rgbCanvas(bid, rough, mask, w, h) };
 }
 
 // One course of blocks (for the stepped pyramid risers): 1024×128, joints
@@ -169,6 +181,7 @@ function masonry({ w = 1024, h = 1024, courses = 12, perCourse = 10, seed = 1,
 function courseStrip({ w = 1024, h = 128, seed = 5, base = '#c8ad80', dark = '#94794f', light = '#e3cfa2', joint = '#5e4c31' }) {
   const rand = mulberry(seed);
   const hgt = new Float32Array(w * h), col = new Float32Array(w * h * 3), rough = new Float32Array(w * h);
+  const bid = new Float32Array(w * h), mask = new Float32Array(w * h);
   const baseC = hexToRgb(base), darkC = hexToRgb(dark), lightC = hexToRgb(light), jointC = hexToRgb(joint);
   const grain = fbm(w, h, 24, 4, rand), macro = fbm(w, h, 4, 2, rand);
   let widths = [], sum = 0; const n = 7;
@@ -178,8 +191,9 @@ function courseStrip({ w = 1024, h = 128, seed = 5, base = '#c8ad80', dark = '#9
   for (let i = 0; i < n; i++) {
     const bx0 = x, bx1 = x + widths[i]; x += widths[i];
     const t = rand();
-    const tint = t > 0.7 ? mixRgb(baseC, lightC, 0.6) : (t < 0.25 ? mixRgb(baseC, darkC, 0.6) : mixRgb(baseC, lightC, (rand() - 0.5) * 0.4));
+    const tint = t > 0.8 ? mixRgb(baseC, lightC, 0.35) : (t < 0.15 ? mixRgb(baseC, darkC, 0.35) : mixRgb(baseC, lightC, (rand() - 0.5) * 0.25));
     const proud = 0.8 + rand() * 0.2, topRound = 6 + rand() * 18, botRound = 3 + rand() * 8;
+    const blockId = rand();
     const chipX = bx0 + rand() * widths[i], chipR = rand() < 0.5 ? 10 + rand() * 28 : 0, chipTop = rand() < 0.7;
     for (let yy = 0; yy < h; yy++) {
       for (let xx = Math.floor(bx0); xx < Math.ceil(bx1); xx++) {
@@ -203,6 +217,7 @@ function courseStrip({ w = 1024, h = 128, seed = 5, base = '#c8ad80', dark = '#9
         col[idx * 3] = cr[0] * g * (1 - dirt); col[idx * 3 + 1] = cr[1] * g * (1 - dirt * 1.1); col[idx * 3 + 2] = cr[2] * g * (1 - dirt * 1.3);
         hgt[idx] = clamp01(hv);
         rough[idx] = 0.9 + 0.1 * grain[idx];
+        bid[idx] = blockId; mask[idx] = ex < 3 ? 0 : 1;
       }
     }
   }
@@ -210,7 +225,7 @@ function courseStrip({ w = 1024, h = 128, seed = 5, base = '#c8ad80', dark = '#9
   const img = g.createImageData(w, h), d = img.data;
   for (let i = 0; i < w * h; i++) { d[i * 4] = col[i * 3]; d[i * 4 + 1] = col[i * 3 + 1]; d[i * 4 + 2] = col[i * 3 + 2]; d[i * 4 + 3] = 255; }
   g.putImageData(img, 0, 0);
-  return { map: c, normal: normalFromHeight(hgt, w, h, 2.6), rough: grayCanvas(rough, w, h) };
+  return { map: c, normal: normalFromHeight(hgt, w, h, 2.6), rough: rgbCanvas(bid, rough, mask, w, h) };
 }
 
 // Red Aswan granite: warm reddish ground with pink/grey/black flecks.
@@ -268,24 +283,42 @@ function sand({ w = 512, h = 512, seed = 21, tint = [200, 170, 118], ripples = t
   return { map: c, normal: normalFromHeight(hgt, w, h, 1.6), rough: grayCanvas(rough, w, h) };
 }
 
-// Fragment-shader patch for the ground: blends two tiling scales so the
-// repeat never shows, and adds broad tonal patches + darker gravel areas
-// driven by world position.
+// Shared GLSL: hashes, value noise and stochastic (non-repeating) texture
+// sampling — three samples on a triangle grid, each with a random offset,
+// blended with sharpened weights so tiling never lines up.
+const GZ_GLSL = /* glsl */`
+float gzHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec2 gzHash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+float gzNoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(gzHash(i), gzHash(i + vec2(1, 0)), f.x), mix(gzHash(i + vec2(0, 1)), gzHash(i + vec2(1, 1)), f.x), f.y);
+}
+vec4 gzStoch(sampler2D tex, vec2 uv) {
+  vec2 sk = mat2(1.0, 0.0, -0.57735027, 1.15470054) * uv * 3.4641;
+  vec2 base = floor(sk); vec3 tmp = vec3(fract(sk), 0.0); tmp.z = 1.0 - tmp.x - tmp.y;
+  float w1, w2, w3; vec2 v1, v2, v3;
+  if (tmp.z > 0.0) { w1 = tmp.z; w2 = tmp.y; w3 = tmp.x; v1 = base; v2 = base + vec2(0.0, 1.0); v3 = base + vec2(1.0, 0.0); }
+  else { w1 = -tmp.z; w2 = 1.0 - tmp.y; w3 = 1.0 - tmp.x; v1 = base + vec2(1.0, 1.0); v2 = base + vec2(1.0, 0.0); v3 = base + vec2(0.0, 1.0); }
+  vec2 ddx = dFdx(uv), ddy = dFdy(uv);
+  vec4 c1 = textureGrad(tex, uv + gzHash2(v1), ddx, ddy);
+  vec4 c2 = textureGrad(tex, uv + gzHash2(v2), ddx, ddy);
+  vec4 c3 = textureGrad(tex, uv + gzHash2(v3), ddx, ddy);
+  vec3 w = pow(vec3(w1, w2, w3), vec3(4.0)); w /= (w.x + w.y + w.z);
+  return c1 * w.x + c2 * w.y + c3 * w.z;
+}`;
+
+// Fragment-shader patch for the ground: stochastic sampling of the detail
+// tile blended with a coarse tile, plus broad tonal patches and gravel
+// areas driven by world position — no visible repetition at any range.
 export function sandShaderPatch(shader) {
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vWp;')
     .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>
-      varying vec3 vWp;
-      float gzHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float gzNoise(vec2 p) {
-        vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
-        return mix(mix(gzHash(i), gzHash(i + vec2(1, 0)), f.x), mix(gzHash(i + vec2(0, 1)), gzHash(i + vec2(1, 1)), f.x), f.y);
-      }`)
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWp;\n' + GZ_GLSL)
     .replace('#include <map_fragment>', `
       #ifdef USE_MAP
-        vec4 texA = texture2D(map, vMapUv);
+        vec4 texA = gzStoch(map, vMapUv);
         vec4 texB = texture2D(map, vMapUv * 0.171 + vec2(0.37, 0.61));
         float mixK = smoothstep(0.3, 0.7, gzNoise(vWp.xz * 0.045));
         vec4 sampledDiffuseColor = mix(texA, texB, mixK);
@@ -297,7 +330,7 @@ export function sandShaderPatch(shader) {
       #endif`)
     .replace('#include <normal_fragment_maps>', `
       #ifdef USE_NORMALMAP_TANGENTSPACE
-        vec3 mapN = mix(texture2D(normalMap, vNormalMapUv), texture2D(normalMap, vNormalMapUv * 0.171 + vec2(0.37, 0.61)), mixK).xyz * 2.0 - 1.0;
+        vec3 mapN = mix(gzStoch(normalMap, vNormalMapUv), texture2D(normalMap, vNormalMapUv * 0.171 + vec2(0.37, 0.61)), mixK).xyz * 2.0 - 1.0;
         mapN.xy *= normalScale;
         normal = normalize(tbn * mapN);
       #else
@@ -305,20 +338,62 @@ export function sandShaderPatch(shader) {
       #endif`);
 }
 
+// Pyramid course strips (standard UVs: u = blocks, v = course index +
+// fraction). Every block instance gets its own tint from a hash of its
+// tile/course, plus broad weathering and drifted sand on the lowest courses.
+export function coursePatch(shader) {
+  const [head, tail] = shader.fragmentShader.split('void main() {');
+  shader.fragmentShader = head.replace('#include <common>', '#include <common>\n' + GZ_GLSL) + 'void main() {' + tail.replace('#include <map_fragment>', `
+    #ifdef USE_MAP
+      vec4 sampledDiffuseColor = texture2D(map, vMapUv);
+      vec3 cP = cameraPosition + ((-vViewPosition) * mat3(viewMatrix));
+      #ifdef USE_ROUGHNESSMAP
+        vec4 cR = texture2D(roughnessMap, vRoughnessMapUv);
+        vec2 cCell = vec2(floor(vMapUv.x) + cR.r * 17.0, floor(vMapUv.y));
+        float cH1 = gzHash(cCell), cH2 = gzHash(cCell + 5.3), cH3 = gzHash(cCell + 9.1);
+        float cTint = mix(0.9, 1.1, cH1) * (cH2 > 0.95 ? 0.82 : 1.0);
+        sampledDiffuseColor.rgb *= mix(1.0, cTint, cR.b);
+        sampledDiffuseColor.rgb *= mix(vec3(1.0), vec3(1.05, 1.0, 0.93), (cH3 - 0.5) * cR.b);
+      #endif
+      float cW = gzNoise(cP.xz * 0.015 + cP.y * 0.03);
+      sampledDiffuseColor.rgb *= mix(0.94, 1.05, cW);
+      sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, vec3(0.84, 0.74, 0.54), smoothstep(5.0, 0.3, cP.y) * 0.3);
+      diffuseColor *= sampledDiffuseColor;
+    #endif`);
+}
+
 // World-space planar mapping picked per dominant normal axis, so blocks are
 // the same real size on every wall/floor no matter how the mesh is UV'd.
-export function triplanarPatch(scale) {
+export function triplanarPatch(scale, courses = 0) {
   // Fragment-only: world position/normal are rebuilt from the view-space
   // varyings three already provides, so no extra varyings are needed.
+  // With `courses`, each course row is shifted sideways by a hash so the
+  // bond pattern never repeats vertically, and every block instance gets
+  // its own tint (block id from the packed roughness texture's R channel).
   return shader => {
     const [head, tail] = shader.fragmentShader.split('void main() {');
-    shader.fragmentShader = head + 'void main() {\n' + `
+    shader.fragmentShader = head.replace('#include <common>', '#include <common>\n' + GZ_GLSL) + 'void main() {\n' + `
         vec3 tpP = cameraPosition + ((-vViewPosition) * mat3(viewMatrix));
         vec3 tpA = abs(normalize(vNormal) * mat3(viewMatrix));
         int tpAxis = (tpA.y > 0.6) ? 1 : ((tpA.x > tpA.z) ? 0 : 2);
         vec2 tpUv = (tpAxis == 1) ? tpP.xz : ((tpAxis == 0) ? tpP.zy : tpP.xy);
-        tpUv *= ${(1 / scale).toFixed(5)};\n`
+        tpUv *= ${(1 / scale).toFixed(5)};
+        ${courses ? `tpUv.x += gzHash(vec2(floor(tpUv.y * ${courses.toFixed(1)}), 3.7)) * 0.73;` : ''}\n`
       + tail.replace(/vMapUv|vNormalMapUv|vRoughnessMapUv/g, 'tpUv')
+        .replace('#include <map_fragment>', `
+        #ifdef USE_MAP
+          vec4 sampledDiffuseColor = texture2D(map, tpUv);
+          #ifdef USE_ROUGHNESSMAP
+            vec4 tpR = texture2D(roughnessMap, tpUv);
+            vec2 tpCell = floor(tpUv) + tpR.r * 17.0;
+            float tpH1 = gzHash(tpCell), tpH2 = gzHash(tpCell + 5.3);
+            float tpTint = mix(0.88, 1.12, tpH1) * (tpH2 > 0.94 ? 0.8 : 1.0);
+            sampledDiffuseColor.rgb *= mix(1.0, tpTint, tpR.b);
+            sampledDiffuseColor.rgb *= mix(vec3(1.0), vec3(1.05, 1.0, 0.93), (tpH2 - 0.5) * tpR.b);
+          #endif
+          sampledDiffuseColor.rgb *= mix(0.94, 1.04, gzNoise(tpP.xz * 0.05 + tpP.y * 0.1));
+          diffuseColor *= sampledDiffuseColor;
+        #endif`)
         // Analytic tangent frame for the planar projection (the derivative-based
         // frame is unreliable for world-space UVs on large merged meshes).
         .replace('#include <normal_fragment_maps>', `
@@ -356,12 +431,13 @@ export function makeMaterials() {
 
   // Weathered core masonry (Sphinx body, small structures) — coursed blocks.
   const limestone = tex(masonry({ courses: 10, perCourse: 9, seed: 7, base: '#c0a473', dark: '#876c45', light: '#dbc48e', edgeRound: 0.05, normalStrength: 1.5 }), [1, 1]);
-  // One course of core blocks for the stepped pyramids (u repeats per block).
-  const course = tex(courseStrip({ seed: 5, base: '#bda06e', dark: '#8a7048', light: '#d6bd8b' }), [1, 1]);
+  // One course of 7 core blocks for the stepped pyramids: u is in blocks, so
+  // the 7-block strip repeats every 7 u units.
+  const course = tex(courseStrip({ seed: 5, base: '#bda06e', dark: '#8a7048', light: '#d6bd8b' }), [1 / 7, 1]);
   // Tura limestone casing: pale, tight joints, gently undulating.
   const casing = tex(masonry({ courses: 14, perCourse: 9, seed: 3, base: '#d8cba8', dark: '#b7a67e', light: '#ebe2c8', joint: '#a89a74', jointPx: 3, chips: 0.15, streaks: 0.15, normalStrength: 1.0, roughBase: 0.55 }), [10, 14]);
   const gran = tex(granite({}), [4, 3]);
-  const bedrock = tex(masonry({ courses: 6, perCourse: 6, seed: 11, base: '#b9a171', dark: '#84714a', light: '#cbb787', joint: '#74623f', jointPx: 8, edgeRound: 0.06, normalStrength: 1.4 }), [1, 1]);
+  const bedrock = tex(masonry({ courses: 6, perCourse: 6, seed: 11, base: '#c4a874', dark: '#917850', light: '#d6bf8e', joint: '#7a664a', jointPx: 8, edgeRound: 0.06, normalStrength: 1.4 }), [1, 1]);
   const sandT = tex(sand({ w: 1024, h: 1024 }), [180, 180]);
   // Dusty rubble on the course tops (treads) — a greyer, ripple-free sand.
   const rubble = tex(sand({ seed: 33, tint: [178, 158, 122], ripples: false }), [1, 1]);
@@ -371,11 +447,14 @@ export function makeMaterials() {
   sandMat.customProgramCacheKey = () => 'giza-sand';
 
   const limestoneMat = std(limestone, { side: THREE.DoubleSide, normalScale: new THREE.Vector2(1.2, 1.2) });
-  limestoneMat.userData.shaderPatch = triplanarPatch(11);      // ~1.1 m blocks
+  limestoneMat.userData.shaderPatch = triplanarPatch(11, 10);      // ~1.1 m blocks, 10 courses per tile
   limestoneMat.customProgramCacheKey = () => 'giza-limestone-tp';
   const bedrockMat = std(bedrock, { normalScale: new THREE.Vector2(1.0, 1.0) });
-  bedrockMat.userData.shaderPatch = triplanarPatch(8);
+  bedrockMat.userData.shaderPatch = triplanarPatch(8, 6);
   bedrockMat.customProgramCacheKey = () => 'giza-bedrock-tp';
+  const courseMat = std(course, { side: THREE.DoubleSide, normalScale: new THREE.Vector2(1.3, 1.3) });
+  courseMat.userData.shaderPatch = coursePatch;
+  courseMat.customProgramCacheKey = () => 'giza-course';
 
   // Passage/chamber geometry carries no UVs, so the interiors are mapped in
   // world space too (and get no skylight — only your lamp and torches).
@@ -383,7 +462,7 @@ export function makeMaterials() {
     map: limestone.map, normalMap: limestone.normal, roughnessMap: limestone.rough, normalScale: new THREE.Vector2(0.9, 0.9),
     color: 0xb3a586, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide, envMapIntensity: 0.0
   });
-  interiorMat.userData.shaderPatch = triplanarPatch(9);
+  interiorMat.userData.shaderPatch = triplanarPatch(9, 10);
   interiorMat.customProgramCacheKey = () => 'giza-interior-tp';
   const interiorGraniteMat = new THREE.MeshStandardMaterial({
     map: gran.map, normalMap: gran.normal, roughnessMap: gran.rough, normalScale: new THREE.Vector2(0.5, 0.5),
@@ -394,7 +473,7 @@ export function makeMaterials() {
 
   return {
     limestone: limestoneMat,
-    course: std(course, { side: THREE.DoubleSide, normalScale: new THREE.Vector2(1.3, 1.3) }),
+    course: courseMat,
     courseTop: std(rubble, { side: THREE.DoubleSide, normalScale: new THREE.Vector2(0.6, 0.6), color: 0xd9c6a0 }),
     casing: std(casing, { roughness: 0.6, side: THREE.DoubleSide, normalScale: new THREE.Vector2(0.6, 0.6), envMapIntensity: 0.35 }),
     granite: std(gran, { roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide, normalScale: new THREE.Vector2(0.5, 0.5), envMapIntensity: 0.4 }),
