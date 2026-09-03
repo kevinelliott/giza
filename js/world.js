@@ -701,4 +701,4 @@ function pyrApex(p) {
   return { x: p.center.x, y: p.height, z: p.center.z };
 }
 
-export { terrainHeight };
+export { terrainHeight, inPit };

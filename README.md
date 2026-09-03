@@ -34,7 +34,11 @@ Then open <http://localhost:8080>.
 | `C` / `Ctrl` | Descend while flying |
 | `F` | Toggle **fly / no-clip** (great for covering the 230 m pyramids) |
 | `L` | Toggle **headlamp** (needed inside the passages) |
-| `M` | **Fast-travel** menu (entrances, King's/Queen's/Subterranean Chambers, Sphinx…) |
+| `M` | **Full map** — click anywhere to fast-travel |
+| `1`–`6` / wheel | Select an inventory slot |
+| Click / `E` | **Use item**: place or pick up a torch; pick up a stone from the ground / throw it |
+| `V` | Toggle sound (wind, footsteps, stone impacts) |
+| `P` | Performance mode (no shadows / post-processing) |
 | `H` | Help / real-world facts |
 | `Esc` | Release the mouse |
 
@@ -71,6 +75,19 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
   scattered fallen casing blocks, **palm groves**, **camels** by the Sphinx,
   and **birds** circling overhead.
 
+**Immersion:**
+
+- **Dust** kicks up at your feet when you walk or run on the open plateau,
+  with **wind-blown sand** drifting across the site in gusts.
+- **Pebbles and rocks** litter the ground everywhere (a dense field follows
+  you around, with larger rocks and boulders scattered plateau-wide).
+- **Throwable stones** — pick them up off the ground, throw them, watch them
+  bounce off the monuments and raise a puff of dust, then collect them again.
+- Cinematic **post-processing** (bloom, warm colour grade, vignette, film
+  grain), a **sun lens flare**, and a subtle sprint field-of-view kick.
+- Procedural **audio**: gusting wind, footsteps that echo inside the
+  passages, and stone impacts.
+
 ### Notes on accuracy
 
 - Monument **positions, sizes, orientations and slope angles** are accurate.
@@ -98,6 +115,7 @@ js/materials.js    # procedural stone / sand textures + materials
 js/builders.js     # geometry: pyramid faces, tunnels, rooms, stairs, sarcophagi
 js/world.js        # assembles the plateau, terrain, sky and lighting
 js/player.js       # collider/BVH build + capsule character controller
+js/fx.js           # dust/sand particles, ground debris, lens flare, post-processing, audio
 js/main.js         # bootstrap, input, HUD, fast-travel, game loop
 test/headless.mjs  # Node smoke test for the geometry/physics build
 ```

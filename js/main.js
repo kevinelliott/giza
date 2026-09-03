@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { makeMaterials } from './materials.js';
-import { buildWorld } from './world.js';
+import { buildWorld, terrainHeight, inPit } from './world.js';
 import { buildCollider, Player } from './player.js';
+import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY } from './data.js';
 
 const canvas = document.getElementById('game');
@@ -23,7 +24,7 @@ const SAVED = (() => { try { return JSON.parse(localStorage.getItem('giza.settin
 function saveSettings() {
   try {
     localStorage.setItem('giza.settings.v1', JSON.stringify(
-      { perf: perfMode, headingUp: mmHeadingUp, mmScale, legend: legendCollapsed }));
+      { perf: perfMode, headingUp: mmHeadingUp, mmScale, legend: legendCollapsed, muted: audio.muted }));
   } catch { /* storage unavailable */ }
 }
 
@@ -38,6 +39,18 @@ const collider = buildCollider(scene, world.collidables);
 const player = new Player(camera, collider);
 player.teleport(TELEPORTS[0].pos);
 camera.lookAt(0, 30, 0);          // face the pyramids from the overlook
+
+// ---- Immersion FX: particles, ground debris, flare, post, audio -----
+setStatus('Scattering debris and raising the wind…');
+const post = createPost(renderer, scene, camera);
+const dust = new Dust(scene);
+const sand = new BlowingSand(scene);
+createRocks(scene, terrainHeight, inPit, { x0: -820, x1: 560, z0: -320, z1: 960 });
+const debris = new NearDebris(scene, terrainHeight, inPit);
+createLensflare(scene, world.sunDir);
+const audio = new AudioFX();
+audio.muted = !!SAVED.muted;
+const BASE_FOV = 72, SPRINT_FOV = 80;
 
 // ---- Player headlamp (auto-on inside the pyramids) ------------------
 const lamp = new THREE.SpotLight(0xfff0d0, 0.0, 80, Math.PI / 3.2, 0.5, 1.0);
@@ -68,6 +81,7 @@ function showCrosshair(v) { crosshair.style.display = v ? 'block' : 'none'; }
 function startMobile() {
   if (mapOpen) return;
   started = true;
+  audio.start();                    // audio needs a user gesture to begin
   overlay.style.display = 'none';
   if (mobileUI) mobileUI.style.display = 'block';
   showCrosshair(true);
@@ -75,6 +89,7 @@ function startMobile() {
 }
 const requestLock = () => {
   if (mapOpen) return;
+  audio.start();
   const p = controls.lock();
   if (p && typeof p.catch === 'function') p.catch(() => {});
 };
@@ -110,6 +125,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyL') toggleLamp();
   if (e.code === 'KeyM') toggleMap();
   if (e.code === 'KeyH') toggleHelp();
+  if (e.code === 'KeyV') toggleSound();
   if (e.code === 'KeyE') useItem();
   if (/^Digit[1-9]$/.test(e.code)) selectSlot(+e.code.slice(5) - 1);
 });
@@ -123,6 +139,11 @@ function toggleFly() {
   document.getElementById('flyState').textContent = player.fly ? 'ON' : 'off';
 }
 function toggleLamp() { forceLamp = !forceLamp; }
+function toggleSound() {
+  audio.toggleMute();
+  const el = document.getElementById('soundState'); if (el) el.textContent = audio.muted ? 'off' : 'ON';
+  saveSettings();
+}
 function toggleRun() {
   runToggle = !runToggle;
   const el = document.getElementById('runState'); if (el) el.textContent = runToggle ? 'ON' : 'off';
@@ -132,7 +153,11 @@ let perfMode = false;
 function togglePerf() {
   perfMode = !perfMode;
   renderer.shadowMap.enabled = !perfMode;
-  renderer.setPixelRatio(perfMode ? 1 : Math.min(devicePixelRatio, 1.5));
+  const pr = perfMode ? 1 : Math.min(devicePixelRatio, 1.5);
+  renderer.setPixelRatio(pr);
+  post.setPixelRatio(pr);
+  post.setEnabled(!perfMode);       // perf mode skips bloom/grade entirely
+  sand.pts.visible = !perfMode;
   scene.traverse(o => {
     if (!o.material) return;
     (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; });
@@ -149,9 +174,10 @@ function toggleHelp() { help.style.display = help.style.display === 'block' ? 'n
 // ---- Inventory + placeable torches ---------------------------------
 const inventory = [
   { id: 'torch', name: 'Torch', count: 12 },
-  null, null, null, null, null
+  { id: 'stone', name: 'Stone', count: 0 },
+  null, null, null, null
 ];
-const ICONS = { torch: '🔥' };
+const ICONS = { torch: '🔥', stone: '🪨' };
 let selSlot = 0;
 const hotbar = document.getElementById('hotbar');
 const slotEls = [];
@@ -205,8 +231,10 @@ function useItem() {
       if (idx >= 0) { pickUpTorch(idx); return; }
     }
   }
-  // 2) Otherwise place the selected torch on whatever surface we're facing.
+  // 2) Stones: pick one up off the ground (or a thrown one) — otherwise throw.
   const it = inventory[selSlot];
+  if (it && it.id === 'stone') { useStone(it); return; }
+  // 3) Otherwise place the selected torch on whatever surface we're facing.
   if (!it || it.count <= 0 || it.id !== 'torch') return;
   _ray.far = 6;
   const hit = _ray.intersectObject(collider, true)[0];
@@ -275,6 +303,82 @@ function flickerTorches(t) {
 }
 // Left-click places/picks up once you're playing (not while paused).
 addEventListener('mousedown', e => { if (e.button === 0) useItem(); });
+
+// ---- Throwable stones ------------------------------------------------
+// With the stone slot selected: aim at the ground (or a stone you threw)
+// within reach to pick one up; aim anywhere else to throw. Thrown stones
+// fly under gravity, bounce off the world collider, kick up dust and
+// come to rest where you can collect them again.
+const STONE_MAX_CARRY = 20, STONE_MAX_WORLD = 40, STONE_R = 0.09;
+const stoneGeo = new THREE.DodecahedronGeometry(STONE_R, 0);
+const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a7654, roughness: 1 });
+const stones = [];                 // { mesh, vel, spin, rest }
+const _sv = new THREE.Vector3(), _sp = new THREE.Vector3();
+function useStone(it) {
+  _ray.far = 3;
+  // pick up a resting/moving stone under the crosshair
+  if (stones.length) {
+    const hit = _ray.intersectObjects(stones.map(s => s.mesh))[0];
+    if (hit && it.count < STONE_MAX_CARRY) {
+      const i = stones.findIndex(s => s.mesh === hit.object);
+      scene.remove(stones[i].mesh); stones.splice(i, 1);
+      it.count++; renderHotbar(); audio.click(); return;
+    }
+  }
+  // pick a fresh stone off the ground when looking down at it nearby
+  const ground = _ray.intersectObject(collider, true)[0];
+  if (ground && it.count < STONE_MAX_CARRY) {
+    const n = ground.face ? ground.face.normal : _sv.set(0, 1, 0);
+    if (n.y > 0.7 && !isUnderground(player.position)) {
+      it.count++; renderHotbar(); audio.click();
+      dust.emit(ground.point.x, ground.point.y, ground.point.z, 0, 0, 3, 0.2);
+      return;
+    }
+  }
+  if (it.count <= 0) return;
+  // throw
+  it.count--; renderHotbar();
+  const mesh = new THREE.Mesh(stoneGeo, stoneMat);
+  mesh.castShadow = true;
+  camera.getWorldDirection(_rd);
+  mesh.position.copy(camera.getWorldPosition(_rp)).addScaledVector(_rd, 0.5);
+  const s = { mesh, vel: _rd.clone().multiplyScalar(19).add(player.vXZ), spin: new THREE.Vector3(Math.random(), Math.random(), Math.random()).multiplyScalar(6), rest: false, bounces: 0 };
+  s.vel.y += 2.5;
+  scene.add(mesh); stones.push(s);
+  if (stones.length > STONE_MAX_WORLD) { scene.remove(stones[0].mesh); stones.shift(); }
+  audio.whoosh();
+}
+function updateStones(dt) {
+  dt = Math.min(dt, 0.05);
+  for (const s of stones) {
+    if (s.rest) continue;
+    s.vel.y -= 22 * dt;
+    _sp.copy(s.mesh.position).addScaledVector(s.vel, dt);
+    const dist = _sv.subVectors(_sp, s.mesh.position).length();
+    if (dist > 1e-5) {
+      _ray.set(s.mesh.position, _sv.normalize()); _ray.far = dist + STONE_R;
+      const hit = _ray.intersectObject(collider, true)[0];
+      if (hit) {
+        const n = hit.face.normal.clone().transformDirection(collider.matrixWorld).normalize();
+        const vn = s.vel.dot(n);
+        const impact = Math.abs(vn);
+        s.vel.addScaledVector(n, -vn * 1.35);          // reflect with 35% restitution
+        s.vel.multiplyScalar(0.62);                      // scrub speed on contact
+        _sp.copy(hit.point).addScaledVector(n, STONE_R + 0.01);
+        s.bounces++;
+        const outside = !isUnderground(player.position);
+        if (impact > 2) {
+          if (outside && n.y > 0.5) dust.emit(hit.point.x, hit.point.y, hit.point.z, 0, 0, 6, Math.min(1, impact / 12));
+          audio.thud(Math.min(1, impact / 14), !outside, hit.point.distanceTo(player.position));
+        }
+        if (s.vel.length() < 0.8 || s.bounces > 8) { s.rest = true; s.vel.set(0, 0, 0); }
+      }
+    }
+    s.mesh.position.copy(_sp);
+    s.mesh.rotation.x += s.spin.x * dt; s.mesh.rotation.y += s.spin.y * dt; s.mesh.rotation.z += s.spin.z * dt;
+    if (s.mesh.position.y < -150) s.rest = true;
+  }
+}
 
 // ---- Touch controls -------------------------------------------------
 // Left side = virtual joystick (move); the rest of the screen = drag-look.
@@ -368,6 +472,13 @@ function insidePyramid(p) {
   }
   return false;
 }
+// Enclosed / below the natural surface (but not the open-air Sphinx pit):
+// drives the auto headlamp, ambient sound and where dust can rise.
+function isUnderground(p) {
+  if (insidePyramid(p)) return true;
+  const inSphinxPit = Math.abs(p.x - SPHINX.center.x - 2) < 55 && Math.abs(p.z - SPHINX.center.z) < 34;
+  return !inSphinxPit && p.y < terrainHeight(p.x, p.z) - 1.2;
+}
 
 function updateHUD() {
   const p = player.position;
@@ -378,7 +489,7 @@ function updateHUD() {
   if (compassEl) compassEl.textContent = `${DIRS[Math.round(hd / 45) % 8]}  ${hd.toFixed(0)}°`;
 
   // Auto headlamp when inside / underground, with manual override (L).
-  const inside = insidePyramid(p) || p.y < 0.4;
+  const inside = isUnderground(p);
   lamp.intensity = (forceLamp || inside) ? 95 : 0;
   if (lampStateEl) lampStateEl.textContent = forceLamp ? 'ON' : (inside ? 'auto' : 'off');
 
@@ -777,6 +888,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  post.resize(innerWidth, innerHeight);
   if (mapOpen) fitMapCanvas();
 });
 
@@ -791,10 +903,23 @@ function animate() {
   const t = clock.getElapsedTime();
   if (world.tick) world.tick(t);
   flickerTorches(t);
+  updateStones(delta);
+  // Immersion: dust at the feet, drifting sand, wind + footsteps, sprint FOV.
+  const outdoors = !isUnderground(player.position);
+  dust.update(delta, player, outdoors);
+  debris.update(player.position);
+  if (!perfMode) sand.update(delta, t, player.position, outdoors);
+  audio.update(t, player.speedXZ, !outdoors, player.fly);
+  audio.steps(delta, player, !outdoors);
+  const wantFov = (input.sprint && player.speedXZ > 9 && !player.fly) ? SPRINT_FOV : BASE_FOV;
+  if (Math.abs(camera.fov - wantFov) > 0.01) {
+    camera.fov += (wantFov - camera.fov) * Math.min(1, delta * 6);
+    camera.updateProjectionMatrix();
+  }
   updateHUD();
   drawMinimap();
   drawFull();
-  renderer.render(scene, camera);
+  post.render(t);
   updateFPS(delta);
 }
 // Rolling FPS readout (updated ~3×/sec).
@@ -817,11 +942,13 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input,
-  inventory, placedTorches, get runToggle() { return runToggle; } };
+  inventory, placedTorches, stones, useItem, selectSlot, dust, sand, audio, post, get runToggle() { return runToggle; },
+  get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.
 if (SAVED.perf) togglePerf();
 document.getElementById('perfState').textContent = perfMode ? 'ON' : 'off';
+{ const el = document.getElementById('soundState'); if (el) el.textContent = audio.muted ? 'off' : 'ON'; }
 setStatus('Ready.');
 document.getElementById('loading').style.display = 'none';
 overlay.style.display = 'flex';
