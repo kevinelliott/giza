@@ -112,8 +112,19 @@ export class Player {
     }
   }
 
+  // Sub-step the simulation so no single move exceeds ~half the capsule
+  // radius: a hard landing at a low frame rate could otherwise carry the
+  // capsule's core straight through a thin surface (e.g. the terrain), where
+  // the depenetration direction is undefined and you fall through the world.
   update(delta, input) {
     delta = Math.min(delta, 0.05);
+    const vmax = Math.max(Math.abs(this.velocity.y) + Math.abs(GRAVITY) * delta, SPEED_RUN);
+    const steps = Math.min(8, Math.max(1, Math.ceil(vmax * delta / (this.radius * 0.5))));
+    const h = delta / steps;
+    for (let i = 0; i < steps; i++) this._step(h, input);
+  }
+
+  _step(delta, input) {
     this._heading(input);
 
     if (this.fly) {

@@ -315,7 +315,7 @@ const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a7654, roughness: 1 
 const stones = [];                 // { mesh, vel, spin, rest }
 const _sv = new THREE.Vector3(), _sp = new THREE.Vector3();
 function useStone(it) {
-  _ray.far = 3;
+  _ray.far = 4.5;
   // pick up a resting/moving stone under the crosshair
   if (stones.length) {
     const hit = _ray.intersectObjects(stones.map(s => s.mesh))[0];
