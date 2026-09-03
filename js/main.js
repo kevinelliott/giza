@@ -13,7 +13,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.68;
+renderer.toneMappingExposure = 0.62;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 6000);
@@ -31,7 +31,7 @@ function saveSettings() {
 // ---- Build the plateau ----------------------------------------------
 setStatus('Quarrying limestone and raising the pyramids…');
 const mats = makeMaterials();
-const world = buildWorld(scene, mats);
+const world = buildWorld(scene, mats, { renderer, camera });
 
 setStatus('Surveying passages and computing collisions…');
 const collider = buildCollider(scene, world.collidables);
@@ -50,6 +50,7 @@ const debris = new NearDebris(scene, terrainHeight, inPit);
 createLensflare(scene, world.sunDir);
 const audio = new AudioFX();
 audio.muted = !!SAVED.muted;
+world.applyCSM(scene);            // every lit material joins the cascaded-shadow shader
 const BASE_FOV = 72, SPRINT_FOV = 80;
 
 // ---- Player headlamp (auto-on inside the pyramids) ------------------
@@ -216,6 +217,8 @@ const torchGroup = new THREE.Group();
 scene.add(torchGroup);
 const placedTorches = [];
 const TORCH_MAT_STICK = new THREE.MeshStandardMaterial({ color: 0x5a3a1c, roughness: 0.9 });
+const TORCH_MAT_FLAME = new THREE.MeshStandardMaterial({ color: 0xffc24a, emissive: 0xff7a18, emissiveIntensity: 2.6 });
+world.setupMaterial(TORCH_MAT_STICK); world.setupMaterial(TORCH_MAT_FLAME);
 
 // Aim + click: pick up a torch you're looking at, otherwise place one.
 function useItem() {
@@ -271,8 +274,8 @@ function placeTorch(point, normal) {
   g.add(shaft);
 
   const tip = dir.clone().multiplyScalar(L + 0.02);
-  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xffc24a, emissive: 0xff7a18, emissiveIntensity: 2.6 }));
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), TORCH_MAT_FLAME.clone());
+  world.setupMaterial(flame.material);
   flame.position.copy(tip).add(new THREE.Vector3(0, 0.06, 0));
   flame.scale.y = 1.4;
   g.add(flame);
@@ -312,6 +315,7 @@ addEventListener('mousedown', e => { if (e.button === 0) useItem(); });
 const STONE_MAX_CARRY = 20, STONE_MAX_WORLD = 40, STONE_R = 0.09;
 const stoneGeo = new THREE.DodecahedronGeometry(STONE_R, 0);
 const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a7654, roughness: 1 });
+world.setupMaterial(stoneMat);
 const stones = [];                 // { mesh, vel, spin, rest }
 const _sv = new THREE.Vector3(), _sp = new THREE.Vector3();
 function useStone(it) {
@@ -490,7 +494,7 @@ function updateHUD() {
 
   // Auto headlamp when inside / underground, with manual override (L).
   const inside = isUnderground(p);
-  lamp.intensity = (forceLamp || inside) ? 95 : 0;
+  lamp.intensity = (forceLamp || inside) ? 42 : 0;
   if (lampStateEl) lampStateEl.textContent = forceLamp ? 'ON' : (inside ? 'auto' : 'off');
 
   let best = null, bestD = Infinity;
@@ -887,6 +891,7 @@ addEventListener('keydown', e => {
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  if (world.csm) world.csm.updateFrustums();
   renderer.setSize(innerWidth, innerHeight);
   post.resize(innerWidth, innerHeight);
   if (mapOpen) fitMapCanvas();
@@ -915,11 +920,15 @@ function animate() {
   if (Math.abs(camera.fov - wantFov) > 0.01) {
     camera.fov += (wantFov - camera.fov) * Math.min(1, delta * 6);
     camera.updateProjectionMatrix();
+    if (world.csm) world.csm.updateFrustums();
   }
+  post.setHaze(outdoors && !player.fly ? 1 : 0);
   updateHUD();
   drawMinimap();
   drawFull();
-  post.render(t);
+  camera.updateMatrixWorld();
+  if (world.csm) world.csm.update();
+  post.render(t, delta);
   updateFPS(delta);
 }
 // Rolling FPS readout (updated ~3×/sec).
@@ -941,7 +950,7 @@ function setStatus(t) {
 }
 
 // Expose a small hook for debugging / automated screenshots.
-window.__giza = { THREE, scene, camera, player, controls, world, look, input,
+window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
   inventory, placedTorches, stones, useItem, selectSlot, dust, sand, audio, post, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 

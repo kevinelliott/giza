@@ -75,6 +75,100 @@ export function buildPyramidGeometry(b, h, opts = {}) {
   return mergeGeometries(faces, false);
 }
 
+// ---------------------------------------------------------------------
+//  Stepped pyramid: the casing-stripped core as it stands today — real
+//  courses of blocks, each a vertical riser with a horizontal tread, thick
+//  at the base and thinning upward with the occasional thick course. The
+//  stepped solid is inscribed in the smooth pyramid (the outer top edge of
+//  every course lies on the original face plane), so the smooth geometry
+//  can stay as the collider. Group 0 = risers, group 1 = treads.
+//  opts: { truncate, yRange:[y0,y1], hole:{s0,s1,y0,y1}, courseScale, seed }
+// ---------------------------------------------------------------------
+export function buildSteppedPyramidGeometry(b, h, opts = {}) {
+  const top = opts.yRange ? opts.yRange[1] : (opts.truncate || h);
+  const bottom = opts.yRange ? opts.yRange[0] : 0;
+  const W = y => Math.max(0, (b / 2) * (1 - y / h));
+  let seed = (opts.seed || 1) | 0;
+  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const k = opts.courseScale || 1;
+  const courses = [];
+  let y = bottom, i = 0;
+  while (y < top - 0.02 && W(y) > 0.3) {
+    let ch = k * (0.6 + 0.9 * Math.exp(-i / 40) + (rand() < 0.07 ? 0.45 : 0) + (rand() - 0.5) * 0.14);
+    if (y + ch > top) ch = top - y;
+    courses.push({ y0: y, y1: y + ch, uoff: rand() * 8 });
+    y += ch; i++;
+  }
+  const rp = [], ru = [], rn = [];          // risers
+  const tp = [], tu = [], tn = [];          // treads
+  // Push a quad (a,b,c,d in order) with a required outward normal; flips winding if needed.
+  const quad = (P, U, N, a, b2, c, d, uva, uvb, uvc, uvd, n) => {
+    const ab = [b2[0] - a[0], b2[1] - a[1], b2[2] - a[2]], ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const cr = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+    const flip = cr[0] * n[0] + cr[1] * n[1] + cr[2] * n[2] < 0;
+    const tri = (p, q, r, up, uq, ur) => {
+      if (flip) { P.push(...p, ...r, ...q); U.push(...up, ...ur, ...uq); }
+      else { P.push(...p, ...q, ...r); U.push(...up, ...uq, ...ur); }
+      for (let j = 0; j < 3; j++) N.push(...n);
+    };
+    tri(a, b2, c, uva, uvb, uvc); tri(a, c, d, uva, uvc, uvd);
+  };
+  // Face frames: pos(s, d, y) with s along the face and d the outward distance.
+  const faces = [
+    { pos: (s, d, yy) => [s, yy, -d], n: [0, 0, -1], north: true },
+    { pos: (s, d, yy) => [s, yy, d], n: [0, 0, 1] },
+    { pos: (s, d, yy) => [d, yy, s], n: [1, 0, 0] },
+    { pos: (s, d, yy) => [-d, yy, s], n: [-1, 0, 0] }
+  ];
+  const hole = opts.hole;
+  for (let c = 0; c < courses.length; c++) {
+    const co = courses[c], Wr = W(co.y1), Wn = c + 1 < courses.length ? W(courses[c + 1].y1) : W(top);
+    const ch = co.y1 - co.y0, blockW = Math.max(1.0, 1.15 * ch);
+    for (const f of faces) {
+      // riser: [-Wr, Wr] at distance Wr, possibly split around the entrance hole
+      const spans = [[-Wr, Wr]];
+      const cut = f.north && hole && co.y1 > hole.y0 && co.y0 < hole.y1;
+      if (cut) { spans.length = 0; if (hole.s0 > -Wr) spans.push([-Wr, Math.min(hole.s0, Wr)]); if (hole.s1 < Wr) spans.push([Math.max(hole.s1, -Wr), Wr]); }
+      for (const [s0, s1] of spans) {
+        if (s1 - s0 < 0.01) continue;
+        const u0 = (s0 + Wr) / blockW + co.uoff, u1 = (s1 + Wr) / blockW + co.uoff;
+        quad(rp, ru, rn, f.pos(s0, Wr, co.y0), f.pos(s1, Wr, co.y0), f.pos(s1, Wr, co.y1), f.pos(s0, Wr, co.y1),
+          [u0, 0], [u1, 0], [u1, 1], [u0, 1], f.n);
+      }
+      // tread: ring segment at y1 from d=Wr (outer) to d=Wn (inner)
+      if (Wr - Wn < 0.005) continue;
+      const tspans = [[-1, 1]];
+      const tcut = f.north && hole && co.y1 > hole.y0 && co.y1 < hole.y1;
+      if (tcut) { tspans.length = 0; tspans.push([-1, Math.max(-1, hole.s0 / Wr)]); tspans.push([Math.min(1, hole.s1 / Wr), 1]); }
+      for (const [k0, k1] of tspans) {
+        if (k1 - k0 < 0.001) continue;
+        const o0 = f.pos(k0 * Wr, Wr, co.y1), o1 = f.pos(k1 * Wr, Wr, co.y1);
+        const i1 = f.pos(k1 * Wn, Wn, co.y1), i0 = f.pos(k0 * Wn, Wn, co.y1);
+        const uv = p => [p[0] / 1.7, p[2] / 1.7];
+        quad(tp, tu, tn, o0, o1, i1, i0, uv(o0), uv(o1), uv(i1), uv(i0), [0, 1, 0]);
+      }
+    }
+  }
+  // Top platform (truncated summit) — or a small cap where the courses stop.
+  if (!opts.yRange || opts.truncate) {
+    const Wt = W(courses.length ? courses[courses.length - 1].y1 : top), yt = courses.length ? courses[courses.length - 1].y1 : top;
+    if (Wt > 0.05) {
+      const uv = p => [p[0] / 1.7, p[2] / 1.7];
+      const a = [-Wt, yt, -Wt], b2 = [Wt, yt, -Wt], c = [Wt, yt, Wt], d = [-Wt, yt, Wt];
+      quad(tp, tu, tn, a, b2, c, d, uv(a), uv(b2), uv(c), uv(d), [0, 1, 0]);
+    }
+  }
+  const mk = (P, U, N) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+    return g;
+  };
+  const merged = mergeGeometries([mk(rp, ru, rn), mk(tp, tu, tn)], true);
+  return merged;
+}
+
 // A box slab oriented along an arbitrary direction, returned in world/local
 // coords. `localOffset` shifts the box within the segment's frame.
 function slab(mid, basis, sx, sy, sz, ox, oy, oz) {
@@ -295,10 +389,14 @@ export function buildInterior(def, mats) {
 
   const finish = (geoms, mat) => {
     if (!geoms.length) return;
-    // Normalise to non-indexed, position+normal only, so the merge succeeds.
+    // Normalise to non-indexed with position+normal+uv (a zero uv is added
+    // where missing) so the merge succeeds and every vertex attribute the
+    // shader expects is present.
     const prepared = geoms.map(g => {
       const x = g.index ? g.toNonIndexed() : g;
-      if (x.getAttribute('uv')) x.deleteAttribute('uv');
+      if (!x.getAttribute('normal')) x.computeVertexNormals();
+      if (!x.getAttribute('uv')) x.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(x.attributes.position.count * 2), 2));
+      for (const name of Object.keys(x.attributes)) if (!['position', 'normal', 'uv'].includes(name)) x.deleteAttribute(name);
       return x;
     });
     const mesh = new THREE.Mesh(mergeGeometries(prepared, false), mat);

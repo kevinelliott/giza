@@ -101,6 +101,18 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 ## Tech
 
 - [Three.js](https://threejs.org) for rendering (WebGL).
+- Rendering: physical sky feeding a PMREM environment map (image-based
+  skylight), sun via 3-cascade shadow maps (CSM), multisampled HDR
+  post-processing (bloom, colour grade, vignette, grain, depth-based heat
+  shimmer), ACES tone mapping.
+- Materials: all procedural — masonry, casing, granite and sand each get a
+  colour map, a height-derived normal map and a roughness map. Walls and
+  interiors use world-space planar mapping so blocks are the same real size
+  on every surface; the sand blends two tiling scales plus large-scale tonal
+  and gravel variation so no repeat is visible.
+- The pyramids are built course by course (real stepped cores with risers
+  and treads, thick at the base and thinning upward); the smooth faces are
+  kept invisible as the collision surface.
 - [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh) for fast
   capsule-vs-mesh collision (collide-and-slide character physics).
 - No build step — plain ES modules loaded from a CDN via an import map.

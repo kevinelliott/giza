@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sky } from 'three/addons/objects/Sky.js';
+import { CSM } from 'three/addons/csm/CSM.js';
 import {
   PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX,
   KHUFU_INTERIOR, simpleInterior, DEG, KHENTKAUS, WORKERS_VILLAGE,
@@ -9,7 +10,7 @@ import {
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY
 } from './data.js';
 import {
-  buildPyramidGeometry, buildInterior, buildStaircase
+  buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
 } from './builders.js';
 
 // Terrain height: a gently undulating plateau, flattened to ~0 around the
@@ -96,11 +97,21 @@ function buildPyramid(p, mats, collidables, group) {
   const truncate = p.id === 'khufu' ? 138.8 : (p.id === 'menkaure' ? 62 : null);
   const core = buildPyramidGeometry(p.base, p.height,
     truncate ? { hole, truncate } : { hole });
+  // Smooth faces = collider only (invisible); the visible body is the
+  // stepped core of real block courses (inscribed in the smooth solid).
   const mesh = new THREE.Mesh(core, mats.limestone);
   mesh.position.set(p.center.x, 0, p.center.z);
   mesh.userData.collidable = true;
-  mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.visible = false;
   group.add(mesh); collidables.push(mesh);
+  const stepped = new THREE.Mesh(buildSteppedPyramidGeometry(p.base, p.height, {
+    truncate, hole,
+    yRange: p.casing === 'cap' ? [0, p.height * 0.78 + 0.6] : null,
+    seed: p.id.length * 131 + p.base | 0
+  }), [mats.course, mats.courseTop]);
+  stepped.position.copy(mesh.position);
+  stepped.castShadow = true; stepped.receiveShadow = true;
+  group.add(stepped);
 
   // Surviving casing
   if (p.casing === 'cap') {
@@ -140,11 +151,18 @@ function buildPyramid(p, mats, collidables, group) {
   return def;
 }
 
+let smallSeed = 17;
 function buildSmallPyramid(q, mats, collidables, group) {
   const mesh = new THREE.Mesh(buildPyramidGeometry(q.base, q.height, {}), mats.limestone);
   mesh.position.set(q.center.x, 0, q.center.z);
-  mesh.userData.collidable = true; mesh.castShadow = true;
+  mesh.userData.collidable = true; mesh.visible = false;
   group.add(mesh); collidables.push(mesh);
+  // Ruined stepped cores (all the subsidiary pyramids have lost their casing).
+  const stepped = new THREE.Mesh(buildSteppedPyramidGeometry(q.base, q.height,
+    { courseScale: 0.8, seed: smallSeed++ }), [mats.course, mats.courseTop]);
+  stepped.position.copy(mesh.position);
+  stepped.castShadow = true; stepped.receiveShadow = true;
+  group.add(stepped);
 }
 
 // A detailed Great Sphinx (recumbent lion, nemes headdress, outstretched
@@ -482,48 +500,81 @@ function buildCasingRemnants(p, mats, collidables, group) {
   group.add(mesh); collidables.push(mesh);
 }
 
-function buildSky(scene) {
+// Physical sky (Preetham) that also becomes the image-based lighting for
+// every PBR material via a PMREM environment map.
+function buildSky(scene, renderer) {
   const sky = new Sky();
   sky.scale.setScalar(450000);
-  scene.add(sky);
   const u = sky.material.uniforms;
-  u.turbidity.value = 8;
-  u.rayleigh.value = 1.4;
-  u.mieCoefficient.value = 0.006;
-  u.mieDirectionalG.value = 0.8;
+  u.turbidity.value = 4;
+  u.rayleigh.value = 2.0;
+  u.mieCoefficient.value = 0.003;
+  u.mieDirectionalG.value = 0.9;
   // Sun: late-afternoon, low in the west-south-west.
   const elev = 28 * DEG, azim = 235 * DEG;
   const sun = new THREE.Vector3();
   sun.setFromSphericalCoords(1, Math.PI / 2 - elev, azim);
   u.sunPosition.value.copy(sun);
+  if (renderer) {
+    // Capture the skylight WITHOUT the sun disc/aureole (the mie term), so
+    // the environment map only carries diffuse sky — the sun itself comes
+    // from the shadow-casting directional cascades.
+    const mie = u.mieCoefficient.value;
+    u.mieCoefficient.value = 0.0;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const skyScene = new THREE.Scene();
+    skyScene.add(sky);
+    scene.environment = pmrem.fromScene(skyScene, 0.04).texture;
+    pmrem.dispose();
+    u.mieCoefficient.value = mie;
+  }
+  scene.add(sky);
   return sun;
 }
 
-export function buildWorld(scene, mats) {
+export function buildWorld(scene, mats, { renderer, camera } = {}) {
   const group = new THREE.Group();
   scene.add(group);
   const collidables = [];
   const landmarks = [];
 
-  // Sky + lighting
-  const sunDir = buildSky(scene);
-  const sun = new THREE.DirectionalLight(0xfff0d2, 3.1);
-  sun.position.copy(sunDir).multiplyScalar(900);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.bias = -0.0005;
-  sun.shadow.normalBias = 1.2;
-  const sc = sun.shadow.camera;
-  sc.near = 1; sc.far = 3600; sc.left = -1000; sc.right = 1000; sc.top = 1000; sc.bottom = -1000;
-  scene.add(sun);
-  // Sky fill + warm bounce off the sand so shadowed faces aren't black.
-  scene.add(new THREE.HemisphereLight(0xbcd3ff, 0xcaa56a, 0.95));
-  scene.add(new THREE.AmbientLight(0xffffff, 0.22));
-  // Cool fill from the opposite side to model skylight on the shadow faces.
-  const fill = new THREE.DirectionalLight(0x9fb6e0, 0.5);
-  fill.position.set(-sunDir.x, 0.4, -sunDir.z).multiplyScalar(900);
-  scene.add(fill);
-  scene.fog = new THREE.FogExp2(0xcdb98a, 0.00016);
+  // Sky + lighting: sun via cascaded shadow maps (crisp shadows from the
+  // horizon to your feet), skylight from the environment map, plus a little
+  // warm bounce off the sand.
+  const sunDir = buildSky(scene, renderer);
+  let csm = null;
+  const csmMaterials = new Set();
+  if (camera) {
+    csm = new CSM({
+      camera, parent: scene, cascades: 3, maxFar: 1100, mode: 'practical',
+      shadowMapSize: 2048, lightDirection: sunDir.clone().negate(), lightIntensity: 3.4,
+      lightMargin: 400, lightFar: 4000, shadowBias: -0.00015
+    });
+    csm.fade = true;
+    csm.updateFrustums();
+    for (const l of csm.lights) { l.color.set(0xfff0d2); l.shadow.normalBias = 0.9; }
+  } else {
+    const sun = new THREE.DirectionalLight(0xfff0d2, 3.0);
+    sun.position.copy(sunDir).multiplyScalar(900);
+    scene.add(sun);
+  }
+  scene.add(new THREE.HemisphereLight(0xc4d6ff, 0xcaa56a, 0.25));
+  scene.fog = new THREE.FogExp2(0xd7c7a6, 0.00013);
+  // Hook a material into the cascade shader (and re-apply any custom
+  // shader patch the material carries, since CSM replaces onBeforeCompile).
+  const setupMaterial = m => {
+    if (!m || !m.isMeshStandardMaterial || csmMaterials.has(m)) return;
+    csmMaterials.add(m);
+    if (!csm) return;
+    csm.setupMaterial(m);
+    const patch = m.userData.shaderPatch;
+    if (patch) { const prev = m.onBeforeCompile; m.onBeforeCompile = (s, r) => { prev(s, r); patch(s); }; }
+    m.needsUpdate = true;
+  };
+  const applyCSM = root => root.traverse(o => {
+    if (!o.material) return;
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(setupMaterial);
+  });
 
   // Terrain
   const terrain = buildTerrain(mats.sand);
@@ -694,7 +745,7 @@ export function buildWorld(scene, mats) {
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
   const tick = buildBirds(group);
 
-  return { group, collidables, landmarks, sunDir, tick, mastabas, buildings };
+  return { group, collidables, landmarks, sunDir, tick, mastabas, buildings, csm, setupMaterial, applyCSM };
 }
 
 function pyrApex(p) {

@@ -274,18 +274,34 @@ export function createLensflare(scene, sunDir) {
 // ---- Cinematic post-processing --------------------------------------------
 const GradeShader = {
   uniforms: {
-    tDiffuse: { value: null }, uTime: { value: 0 },
-    uVignette: { value: 0.38 }, uGrain: { value: 0.025 }, uWarm: { value: 0.035 }
+    tDiffuse: { value: null }, tDepth: { value: null }, uTime: { value: 0 },
+    uVignette: { value: 0.38 }, uGrain: { value: 0.025 }, uWarm: { value: 0.018 },
+    uHaze: { value: 0 }, cameraNear: { value: 0.05 }, cameraFar: { value: 6000 }
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform float uTime, uVignette, uGrain, uWarm;
+    #include <packing>
+    uniform sampler2D tDiffuse, tDepth; uniform float uTime, uVignette, uGrain, uWarm, uHaze, cameraNear, cameraFar;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float vnoise(vec2 p) {
+      vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+    }
     void main() {
-      vec4 c = texture2D(tDiffuse, vUv);
+      vec2 uv = vUv;
+      // heat shimmer: refract distant pixels with slowly rising noise
+      if (uHaze > 0.001) {
+        float d = unpackRGBAToDepth(texture2D(tDepth, vUv));
+        float dist = -perspectiveDepthToViewZ(d, cameraNear, cameraFar);
+        float haze = smoothstep(70.0, 450.0, dist) * uHaze;
+        vec2 n = vec2(vnoise(vUv * vec2(60.0, 160.0) + vec2(0.0, -uTime * 2.6)),
+                      vnoise(vUv * vec2(50.0, 130.0) + vec2(7.3, -uTime * 3.1))) - 0.5;
+        uv += n * haze * vec2(0.0045, 0.0065);
+      }
+      vec4 c = texture2D(tDiffuse, uv);
       // warm desert grade + a touch of contrast/saturation
       c.rgb += vec3(uWarm, uWarm * 0.45, -uWarm * 0.7);
       float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
@@ -300,22 +316,38 @@ const GradeShader = {
     }`
 };
 export function createPost(renderer, scene, camera) {
-  const composer = new EffectComposer(renderer);
+  // Multisampled HDR target so post-processing keeps proper anti-aliasing.
+  const target = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+  const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.16, 0.5, 0.92);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.14, 0.5, 0.93);
   composer.addPass(bloom);
   const grade = new ShaderPass(GradeShader);
   composer.addPass(grade);
   composer.addPass(new OutputPass());
-  let enabled = true;
+  // Quarter-resolution depth pre-pass feeding the heat-shimmer.
+  const depthRT = new THREE.WebGLRenderTarget(innerWidth >> 2, innerHeight >> 2);
+  const depthMat = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  let enabled = true, haze = 0, hazeTarget = 0;
   return {
     setEnabled(v) { enabled = v; },
     get enabled() { return enabled; },
-    resize(w, h) { composer.setSize(w, h); bloom.resolution.set(w, h); },
+    setHaze(v) { hazeTarget = v; },
+    resize(w, h) { composer.setSize(w, h); bloom.resolution.set(w, h); depthRT.setSize(w >> 2, h >> 2); },
     setPixelRatio(r) { composer.setPixelRatio(r); },
-    render(t) {
+    render(t, dt = 0.016) {
       if (!enabled) { renderer.render(scene, camera); return; }
-      grade.uniforms.uTime.value = t;
+      haze += (hazeTarget - haze) * Math.min(1, dt * 2);
+      if (haze > 0.001) {
+        scene.overrideMaterial = depthMat;
+        renderer.setRenderTarget(depthRT);
+        renderer.render(scene, camera);
+        renderer.setRenderTarget(null);
+        scene.overrideMaterial = null;
+      }
+      const u = grade.uniforms;
+      u.uTime.value = t; u.uHaze.value = haze; u.tDepth.value = depthRT.texture;
+      u.cameraNear.value = camera.near; u.cameraFar.value = camera.far;
       composer.render();
     }
   };
