@@ -6,7 +6,8 @@ import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { DayCycle, Sandstorm, Stars } from './atmosphere.js';
 import { Quest } from './quest.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY } from './data.js';
+import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
+import { GEO, EXTENT } from './geodata.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -40,14 +41,15 @@ const collider = buildCollider(scene, world.collidables);
 
 const player = new Player(camera, collider);
 player.teleport(TELEPORTS[0].pos);
-camera.lookAt(0, 30, 0);          // face the pyramids from the overlook
+player.onFellOut = () => player.teleport(TELEPORTS[0].pos);
+camera.lookAt(-94, 30, 84);       // face Khufu and Khafre from the overlook
 
 // ---- Immersion FX: particles, ground debris, flare, post, audio -----
 setStatus('Scattering debris and raising the wind…');
 const post = createPost(renderer, scene, camera);
 const dust = new Dust(scene);
 const sand = new BlowingSand(scene);
-createRocks(scene, terrainHeight, inPit, { x0: -820, x1: 560, z0: -320, z1: 960 });
+createRocks(scene, terrainHeight, inPit, { x0: -820, x1: 440, z0: -320, z1: 960 });
 const debris = new NearDebris(scene, terrainHeight, inPit);
 const flare = createLensflare(scene, world.sunDir);
 const audio = new AudioFX();
@@ -501,9 +503,10 @@ function insidePyramid(p) {
     const dx = p.x - py.center.x, dz = p.z - py.center.z;
     // 1.2 m inside the face plane, so standing on the outer course treads
     // (climbing) still counts as outdoors.
-    const W = (py.base / 2) * (1 - Math.max(0, p.y) / py.height) - 1.2;
+    const y = p.y - py.baseY;
+    const W = (py.base / 2) * (1 - Math.max(0, y) / py.height) - 1.2;
     if (Math.abs(dx) < W && Math.abs(dz) < W) return true;       // within the solid envelope
-    if (p.y < -1 && Math.hypot(dx, dz) < py.base * 0.5) return true; // subterranean below it
+    if (y < -1 && Math.hypot(dx, dz) < py.base * 0.5) return true; // subterranean below it
   }
   return false;
 }
@@ -517,7 +520,7 @@ function isUnderground(p) {
 
 function updateHUD() {
   const p = player.position;
-  posEl.textContent = `E ${p.x.toFixed(0)}  N ${(-p.z).toFixed(0)}  alt ${p.y.toFixed(1)} m`;
+  posEl.textContent = `E ${p.x.toFixed(0)}  N ${(-p.z).toFixed(0)}  alt ${(p.y + GEO.datumASL).toFixed(0)} m ASL`;
 
   // Compass
   const hd = player.headingDeg();
@@ -548,27 +551,28 @@ function updateHUD() {
 // Plottable features (derived from the same data the world is built from).
 const kc = PYRAMIDS.khufu.center, khf = PYRAMIDS.khafre.center, men = PYRAMIDS.menkaure.center;
 const FEATURES = [];
+const satImg = new Image(); satImg.src = 'assets/geo/satellite.jpg';
 FEATURES.push({ kind: 'pyr', label: 'Khufu', x: kc.x, z: kc.z, base: PYRAMIDS.khufu.base, entX: 7 });
 FEATURES.push({ kind: 'pyr', label: 'Khafre', x: khf.x, z: khf.z, base: PYRAMIDS.khafre.base, entX: 0 });
 FEATURES.push({ kind: 'pyr', label: 'Menkaure', x: men.x, z: men.z, base: PYRAMIDS.menkaure.base, entX: 0 });
 for (const q of QUEENS_KHUFU) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
 for (const q of QUEENS_MENKAURE) FEATURES.push({ kind: 'qpyr', x: q.center.x, z: q.center.z, base: q.base });
 FEATURES.push({ kind: 'sphinx', label: 'Sphinx', x: SPHINX.center.x, z: SPHINX.center.z });
-FEATURES.push({ kind: 'temple', label: 'Khufu Mortuary Temple', x: kc.x + 150, z: kc.z });
-FEATURES.push({ kind: 'temple', label: 'Khafre Mortuary Temple', x: khf.x + 145, z: khf.z });
-FEATURES.push({ kind: 'temple', label: 'Menkaure Mortuary Temple', x: men.x + 78, z: men.z });
-FEATURES.push({ kind: 'temple', label: 'Sphinx Temple', x: SPHINX.center.x + 60, z: SPHINX.center.z });
+FEATURES.push({ kind: 'temple', label: 'Khufu Mortuary Temple', x: KHUFU_MORTUARY.center.x, z: KHUFU_MORTUARY.center.z });
+FEATURES.push({ kind: 'temple', label: KHAFRE_MORTUARY.name, x: KHAFRE_MORTUARY.center.x, z: KHAFRE_MORTUARY.center.z });
+FEATURES.push({ kind: 'temple', label: 'Menkaure Mortuary Temple', x: men.x + PYRAMIDS.menkaure.base / 2 + 30, z: men.z });
+FEATURES.push({ kind: 'temple', label: SPHINX_TEMPLE.name, x: SPHINX_TEMPLE.center.x, z: SPHINX_TEMPLE.center.z });
+FEATURES.push({ kind: 'temple', label: AMENHOTEP_TEMPLE.name, x: AMENHOTEP_TEMPLE.center.x, z: AMENHOTEP_TEMPLE.center.z });
 FEATURES.push({ kind: 'temple', label: KHAFRE_VALLEY.name, x: KHAFRE_VALLEY.center.x, z: KHAFRE_VALLEY.center.z });
-FEATURES.push({ kind: 'cause', x: khf.x + 175, z: khf.z + 6, x2: KHAFRE_VALLEY.center.x - 12, z2: KHAFRE_VALLEY.center.z - 14 });
-FEATURES.push({ kind: 'cause', x: men.x + 100, z: men.z + 4, x2: men.x + 360, z2: men.z + 120 });
-FEATURES.push({ kind: 'cause', x: kc.x + 180, z: kc.z + 6, x2: KHUFU_VALLEY.center.x - 20, z2: KHUFU_VALLEY.center.z - 6 });
-for (const b of BOAT_PITS) FEATURES.push({ kind: 'boat', label: b.name, x: b.x, z: b.z });
+for (const [x, z, x2, z2] of world.causeways) FEATURES.push({ kind: 'cause', x, z, x2, z2 });
+for (const b of BOAT_PITS) FEATURES.push({ kind: 'boat', label: b.name, x: b.x, z: b.z, rot: b.rot || 0 });
 for (const s of SATELLITES) FEATURES.push({ kind: 'qpyr', name: s.name, x: s.center.x, z: s.center.z, base: s.base });
 FEATURES.push({ kind: 'temple', label: KHUFU_VALLEY.name, x: KHUFU_VALLEY.center.x, z: KHUFU_VALLEY.center.z });
 FEATURES.push({ kind: 'site', label: TRIAL_PASSAGES.name, x: TRIAL_PASSAGES.center.x, z: TRIAL_PASSAGES.center.z });
 FEATURES.push({ kind: 'site', label: KHENTKAUS_TOWN.name, x: KHENTKAUS_TOWN.center.x, z: KHENTKAUS_TOWN.center.z });
 FEATURES.push({ kind: 'site', label: WORKERS_CEMETERY.name, x: WORKERS_CEMETERY.center.x, z: WORKERS_CEMETERY.center.z });
 FEATURES.push({ kind: 'site', label: GIS_QUARRY.name, x: GIS_QUARRY.center.x, z: GIS_QUARRY.center.z });
+FEATURES.push({ kind: 'site', label: MENKAURE_QUARRY.name, x: MENKAURE_QUARRY.center.x, z: MENKAURE_QUARRY.center.z });
 FEATURES.push({ kind: 'khent', label: KHENTKAUS.name, x: KHENTKAUS.center.x, z: KHENTKAUS.center.z, base: KHENTKAUS.base });
 FEATURES.push({ kind: 'village', label: WORKERS_VILLAGE.name, x: WORKERS_VILLAGE.center.x, z: WORKERS_VILLAGE.center.z });
 FEATURES.push({ kind: 'temple', label: MENKAURE_VALLEY.name, x: MENKAURE_VALLEY.center.x, z: MENKAURE_VALLEY.center.z });
@@ -580,13 +584,22 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
   const X = wx => w / 2 + (wx - cx) * scale;
   const Y = wz => h / 2 + (wz - cz) * scale;
   ctx.fillStyle = '#c2a468'; ctx.fillRect(-w, -h, w * 3, h * 3);   // oversized (rotation-safe)
-  // individual mastaba tombs + workers' town buildings
-  ctx.fillStyle = '#9c7c4c';
-  for (const m of world.mastabas) {
-    const mw = Math.max(1.5, m.w * scale), md = Math.max(1.5, m.d * scale);
-    ctx.fillRect(X(m.x) - mw / 2, Y(m.z) - md / 2, mw, md);
-    if (full && collect && m.name) collect.push({ sx: X(m.x), sy: Y(m.z), name: m.name, r: Math.max(3, mw / 2) });
+  // Sentinel-2 satellite base layer
+  if (satImg.complete && satImg.naturalWidth) {
+    ctx.drawImage(satImg, X(EXTENT.x0), Y(EXTENT.z0), (EXTENT.x1 - EXTENT.x0) * scale, (EXTENT.z1 - EXTENT.z0) * scale);
+    ctx.fillStyle = 'rgba(194,164,104,0.18)'; ctx.fillRect(-w, -h, w * 3, h * 3);
   }
+  // individual mastaba tombs (mapped footprints) + workers' town buildings
+  for (const m of world.mastabas) {
+    const sx = X(m.x), sy = Y(m.z);
+    if (sx < -60 || sy < -60 || sx > w + 60 || sy > h + 60) continue;
+    const mw = Math.max(1.5, m.w * scale), md = Math.max(1.5, m.d * scale);
+    ctx.fillStyle = m.modern ? 'rgba(235,228,214,0.9)' : 'rgba(150,118,72,0.9)';
+    if (m.rot) { ctx.save(); ctx.translate(sx, sy); ctx.rotate(m.rot * Math.PI / 180); ctx.fillRect(-mw / 2, -md / 2, mw, md); ctx.restore(); }
+    else ctx.fillRect(sx - mw / 2, sy - md / 2, mw, md);
+    if (full && collect && m.name) collect.push({ sx, sy, name: m.name, r: Math.max(3, mw / 2) });
+  }
+  ctx.fillStyle = '#9c7c4c';
   ctx.fillStyle = '#8a6b46';
   for (const b of world.buildings) {
     const bw = Math.max(1.5, b.w * scale), bd = Math.max(1.5, b.d * scale);
@@ -637,8 +650,8 @@ function drawMapView(ctx, w, h, cx, cz, scale, full, collect) {
       ctx.fillStyle = '#c7a884'; ctx.fillRect(sx - 8, sy - 4, 16, 8);
       if (full && collect) collect.push({ sx, sy, name: 'Great Sphinx', r: 10 });
     } else if (f.kind === 'boat') {
-      ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 3, 0, 0, 7); ctx.fill();
-      if (full && collect) collect.push({ sx, sy, name: "Khufu's Solar Boat", r: 9 });
+      ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 2.5, (f.rot || 0) * Math.PI / 180, 0, 7); ctx.fill();
+      if (full && collect) collect.push({ sx, sy, name: f.label, r: 9 });
     } else if (f.kind === 'khent') {
       const s = Math.max(5, f.base * scale);
       ctx.fillStyle = '#cdbb8c'; ctx.strokeStyle = '#7c6840'; ctx.lineWidth = 1.5;
@@ -954,6 +967,7 @@ function animate() {
   // Immersion: dust at the feet, drifting sand, wind + footsteps, sprint FOV.
   const outdoors = !isUnderground(player.position);
   day.update(delta, camera.position);
+  mats.town.userData.night.value = THREE.MathUtils.clamp((4 - day.elev) / 8, 0, 1);   // town lights at dusk
   storm.update(delta, outdoors);
   dust.update(delta, player, outdoors);
   debris.update(player.position);
@@ -961,7 +975,7 @@ function animate() {
   motes.update(delta, t, player.position, !outdoors && !perfMode);
   const pp = player.position;
   quest.update(t, delta, { outdoors, night: day.isNight, storm: storm.k > 0.5,
-    sphinx: Math.abs(pp.x - (SPHINX.center.x + 30)) < 8 && Math.abs(pp.z - SPHINX.center.z) < 8 && pp.y < -3 });
+    sphinx: Math.abs(pp.x - (SPHINX.center.x + 30)) < 8 && Math.abs(pp.z - SPHINX.center.z) < 8 && pp.y < SPHINX.floorY + 3 });
   audio.update(t, player.speedXZ, !outdoors, player.fly);
   audio.steps(delta, player, !outdoors);
   const wantFov = (input.sprint && player.speedXZ > 9 && !player.fly) ? SPRINT_FOV : BASE_FOV;
@@ -999,7 +1013,7 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
-  inventory, placedTorches, stones, useItem, selectSlot, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
+  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.

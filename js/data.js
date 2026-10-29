@@ -1,13 +1,16 @@
 // =====================================================================
 //  Giza Plateau — authentic survey data
 //  All distances in metres. World axes: +X = East, +Y = Up, +Z = South.
-//  Positions are derived from the real GPS coordinates of each monument,
-//  projected to a local metric grid with the Great Pyramid (Khufu) at
-//  the origin (latitude ~29.9792 N, where 1 deg lat = 110940 m and
-//  1 deg lon = 96360 m).
+//  Positions come from mapped footprints (OpenStreetMap, traced from
+//  aerial imagery) projected to a local metric grid with the centre of the
+//  Great Pyramid at the origin; ground levels come from the Copernicus
+//  elevation model with Y = 0 at the Great Pyramid's base. See geodata.js
+//  and tools/geo/ for how they are produced.
 // =====================================================================
+import { SITES } from './geodata.js';
 
 export const DEG = Math.PI / 180;
+const C = k => ({ x: SITES[k].x, z: SITES[k].z });
 
 // ---- The three main pyramids ----------------------------------------
 // base       : side length of the square base (m)
@@ -23,6 +26,7 @@ export const PYRAMIDS = {
     height: 146.6,
     slopeDeg: 51.84,        // 51 deg 50' 40"
     center: { x: 0, z: 0 },
+    baseY: 0,
     align: '3′26″',         // sides off true north (W of N)
     casing: 'none',
     blurb: 'Built c. 2560 BC for Pharaoh Khufu. 2.3 million blocks, ' +
@@ -34,9 +38,10 @@ export const PYRAMIDS = {
     base: 215.25,
     height: 143.5,
     slopeDeg: 53.13,        // 53 deg 10'
-    // ~300 m west, 339 m south of Khufu — its SE corner sits on the famous
-    // Giza diagonal that joins the SE corners of all three pyramids.
-    center: { x: -300, z: 339 },
+    // ~335 m west, 352 m south of Khufu, on bedrock ~9 m higher — which is
+    // why it looks the taller of the two.
+    center: C('khafre'),
+    baseY: SITES.khafre.y,
     align: '6′13″',
     casing: 'cap',          // retains casing near the apex
     blurb: 'Built c. 2570 BC for Khafre. Appears taller than Khufu\'s ' +
@@ -49,8 +54,9 @@ export const PYRAMIDS = {
     base: 102.2,
     height: 65,
     slopeDeg: 51.34,
-    // ~562 m west, 739 m south of Khufu (centre-to-centre diagonal ≈ 928.7 m).
-    center: { x: -562, z: 739 },
+    // ~574 m west, 738 m south of Khufu.
+    center: C('menkaure'),
+    baseY: SITES.menkaure.y,
     align: '14′03″',
     casing: 'lowerGranite', // lowest 16 courses were red Aswan granite
     blurb: 'Built c. 2510 BC for Menkaure, the smallest of the three. ' +
@@ -59,29 +65,30 @@ export const PYRAMIDS = {
 };
 
 // ---- Subsidiary "queens'" pyramids ----------------------------------
-// Khufu's three (G1-a/b/c) stand in a N–S row just east of his east face
-// (face at x ≈ +115). Bases ~49.5 / 50 / 46.25 m; ~10 m gaps → centres
-// ~60 / 52 m apart (G1-c offset slightly east). Positioned off the SE.
+// Khufu's three (G1-a/b/c) stand in a N–S row ~78 m east of his east face,
+// south of his mortuary temple. Bases ~49.5 / 50 / 46.25 m.
+const Q = (k, base, height) => ({ base, height, center: C(k), baseY: SITES[k].y });
 export const QUEENS_KHUFU = [
-  { base: 49.5, height: 30.25, center: { x: 148, z: 48 } },   // G1-a (Hetepheres I)
-  { base: 50.0, height: 30,    center: { x: 148, z: 108 } },  // G1-b (Meritites I)
-  { base: 46.25, height: 28,   center: { x: 153, z: 162 } }   // G1-c (Henutsen)
+  Q('g1a', 49.5, 30.25),   // G1-a (Hetepheres I)
+  Q('g1b', 50.0, 30),      // G1-b (Meritites I)
+  Q('g1c', 46.25, 28)      // G1-c (Henutsen)
 ];
-// Menkaure's three (G3-a/b/c) sit in an E–W row just south of his south
-// face (face at z ≈ 739 + 51 = 790). G3-a (east) is the larger granite-cased
-// pyramid; G3-b/c are smaller, to the west; centres ~46 m apart.
+// Menkaure's three (G3-a/b/c) sit in an E–W row south of his south face.
+// G3-a (east) is the larger, once granite-cased; G3-b/c are smaller.
 export const QUEENS_MENKAURE = [
-  { base: 44, height: 28.4, center: { x: -516, z: 806 } },    // G3-a (granite-cased)
-  { base: 31.2, height: 21, center: { x: -562, z: 808 } },    // G3-b
-  { base: 31.2, height: 21, center: { x: -608, z: 806 } }     // G3-c
+  Q('g3a', 44, 28.4),
+  Q('g3b', 31.2, 21),
+  Q('g3c', 31.2, 21)
 ];
 
 // ---- The Great Sphinx -----------------------------------------------
 // Carved from a single limestone outcrop, faces due east (+X).
 export const SPHINX = {
   name: 'The Great Sphinx',
-  // ~327 m east, 432 m south of Khufu, in front of Khafre's valley temple.
-  center: { x: 327, z: 432 },
+  // ~326 m east, 431 m south of Khufu, down at the foot of the plateau —
+  // its enclosure floor is ~42 m below the Great Pyramid's base.
+  center: C('sphinx'),
+  floorY: SITES.sphinx.floor,
   length: 73,
   height: 20,
   width: 19,
@@ -203,7 +210,7 @@ export function simpleInterior(p) {
 // of the Central Field, between the Khafre and Menkaure complexes.
 export const KHENTKAUS = {
   name: 'Tomb of Khentkaus I',
-  center: { x: -40, z: 505 },
+  center: C('khentkaus'), baseY: SITES.khentkaus.y,
   base: 45, base2: 30, height1: 10, height2: 8,
   blurb: 'The "Fourth Pyramid of Giza" — the two-tiered rock-cut tomb of ' +
          'Queen Khentkaus I, at the head of the Central Field.'
@@ -212,7 +219,7 @@ export const KHENTKAUS = {
 // of the Wall of the Crow that housed and fed the building crews.
 export const WORKERS_VILLAGE = {
   name: "Workers' Town (Heit el-Ghurab)",
-  center: { x: 270, z: 835 },
+  center: { x: 585, z: 905 },
   blurb: 'Heit el-Ghurab, the "Lost City of the Pyramids": barracks, bakeries ' +
          'and long galleries that housed the crews who built Giza.'
 };
@@ -220,7 +227,8 @@ export const WORKERS_VILLAGE = {
 // separating the pyramid plateau from the workers' town.
 export const WALL_OF_CROW = {
   name: 'Wall of the Crow',
-  a: { x: 150, z: 762 }, b: { x: 382, z: 772 },
+  a: { x: SITES.wallOfCrow.a[0], z: SITES.wallOfCrow.a[1] },
+  b: { x: SITES.wallOfCrow.b[0], z: SITES.wallOfCrow.b[1] },
   height: 10, thickness: 8, gate: 14,
   blurb: 'A massive limestone wall (~200 m long, ~10 m high) with a ' +
          'monumental gateway between the plateau and the workers\' town.'
@@ -229,22 +237,50 @@ export const WALL_OF_CROW = {
 // causeway (distinct from, and just south of, the Sphinx Temple).
 export const KHAFRE_VALLEY = {
   name: 'Khafre Valley Temple',
-  center: { x: 366, z: 482 },
+  center: C('khafreValley'), baseY: SITES.khafreValley.y,
   blurb: 'Khafre\'s granite-clad valley temple beside the Sphinx, at the foot ' +
          'of his causeway — its pillared hall held his great seated statues.'
 };
 // Menkaure's valley temple, at the foot (east end) of his causeway.
 export const MENKAURE_VALLEY = {
   name: 'Menkaure Valley Temple',
-  center: { x: -202, z: 859 },
+  center: C('menkaureValley'), baseY: SITES.menkaureValley.y,
   blurb: 'Menkaure\'s valley temple at the foot of his causeway — begun in ' +
          'stone and finished in mud brick after his death.'
+};
+
+// The Sphinx Temple, directly in front of the Sphinx (same quarried level).
+export const SPHINX_TEMPLE = {
+  name: 'Sphinx Temple',
+  center: C('sphinxTemple'), baseY: SITES.sphinxTemple.y,
+  blurb: 'Built of blocks quarried from around the Sphinx itself — an open court ' +
+         'ringed by granite-cased pillars, aligned with the equinox sunrise.'
+};
+// Amenhotep II's New Kingdom temple, on the slope north-east of the Sphinx.
+export const AMENHOTEP_TEMPLE = {
+  name: 'Temple of Amenhotep II',
+  center: C('amenhotepTemple'), baseY: SITES.amenhotepTemple.y,
+  blurb: 'A mud-brick chapel built ~1,100 years after the pyramids by Amenhotep II, ' +
+         'who worshipped the Sphinx as Horemakhet, "Horus in the Horizon".'
+};
+// Khafre's mortuary temple, against his pyramid's east face (footprint from
+// the mapped outline in geodata.TEMPLES).
+export const KHAFRE_MORTUARY = {
+  name: 'Khafre Mortuary Temple', center: C('khafreMortuary'),
+  blurb: 'The most complete Old Kingdom mortuary temple: entrance hall, pillared ' +
+         'court and five statue niches, built of colossal local limestone blocks.'
+};
+// The quarry south-east of Menkaure, where his core blocks were cut.
+export const MENKAURE_QUARRY = {
+  name: 'Menkaure Quarry', center: C('menkaureQuarry'),
+  blurb: 'Quarry faces and channels south-east of Menkaure — the source of his core ' +
+         'blocks, still showing the trenches where stones were levered free.'
 };
 
 // The "GIS" central-field quarry south of the Great Pyramid, where much of
 // the core stone was cut.
 export const GIS_QUARRY = {
-  name: 'Central Field Quarry (GIS)', center: { x: -10, z: 250 },
+  name: 'Central Field Quarry (GIS)', center: { x: -40, z: 590 },
   blurb: 'The main quarry south of the Great Pyramid, where workers cut the ' +
          'core limestone blocks — leaving stepped benches in the bedrock.'
 };
@@ -258,58 +294,74 @@ export const TRIAL_PASSAGES = {
 };
 // A priests'/officials' settlement beside the Khentkaus monument.
 export const KHENTKAUS_TOWN = {
-  name: 'Khentkaus Town', center: { x: 30, z: 548 },
+  name: 'Khentkaus Town', center: { x: 178, z: 662 },
   blurb: 'A settlement of priests who served the cult of Queen Khentkaus I, ' +
          'built against her monument.'
 };
 // Tombs of the actual pyramid builders, on the escarpment above their town.
 export const WORKERS_CEMETERY = {
-  name: "Workers' Cemetery", center: { x: 120, z: 700 },
+  name: "Workers' Cemetery", center: { x: 395, z: 905 },
   blurb: 'Tombs of the pyramid builders on the slope above their town — small ' +
          'mud-brick and stone tombs, some with miniature vaulted superstructures.'
 };
 
 // Satellite / cult pyramids beside the main pyramids.
 export const SATELLITES = [
-  { name: 'Khufu Satellite Pyramid (G1-d)', base: 21.75, height: 13.8, center: { x: 95, z: 130 } },
-  { name: 'Khafre Satellite Pyramid (G II-a)', base: 20.1, height: 12.4, center: { x: -300, z: 462 } }
+  { name: 'Khufu Satellite Pyramid (G1-d)', base: 21.75, height: 13.8, center: { x: 95, z: 130 }, baseY: 0 },
+  { name: 'Khafre Satellite Pyramid (G II-a)', base: 20.1, height: 12.4, center: C('khafreSat'), baseY: SITES.khafreSat.y }
 ];
 // Khufu's boat pits: two rectangular pits parallel to the south face (one held
-// the reconstructed "Khufu Ship") and two parallel to the east face.
+// the reconstructed "Khufu Ship"), and — mapped from their real outlines —
+// the two boat-shaped pits flanking his mortuary temple plus the one
+// beside the causeway. len/wid in metres, rot = long-axis angle (deg).
+const [bpN, bpS, bpC] = SITES.boatPits;
+const pitOf = ([x, z, len, wid, rot], name) => ({ x, z, len, wid, rot, name });
 export const BOAT_PITS = [
-  { x: -30, z: 156, ew: true, boat: true, name: "Khufu's Solar Boat (south pit)" },
-  { x: 40, z: 156, ew: true, boat: false, name: 'South boat pit' },
-  { x: 135, z: -34, ew: false, boat: false, name: 'East boat pit' },
-  { x: 135, z: 34, ew: false, boat: false, name: 'East boat pit' }
+  { x: -30, z: 140, len: 32, wid: 6, rot: 0, boat: true, name: "Khufu's Solar Boat (south pit)" },
+  { x: 32, z: 140, len: 32, wid: 6, rot: 0, name: 'South boat pit' },
+  pitOf(bpN, 'North-east boat pit'), pitOf(bpS, 'South-east boat pit'), pitOf(bpC, 'Causeway boat pit')
 ];
-// Khufu's valley temple, at the far east end of his (lost) causeway.
+// Khufu's mortuary temple (basalt-floored court) against the east face.
+export const KHUFU_MORTUARY = { center: { x: 145, z: -2 }, sx: 52.5, sz: 40 };
+// Khufu's causeway leaves the temple ~13° north of east (the mapped boat pit
+// beside it gives the bearing) and drops off the escarpment to his valley
+// temple, whose remains lie beneath the village of Nazlet el-Samman.
+const CW = (bpC[4]) * DEG;
+export const KHUFU_CAUSEWAY = { a: { x: 171, z: -2 }, dir: { x: Math.cos(CW), z: Math.sin(CW) }, len: 740 };
 export const KHUFU_VALLEY = {
   name: 'Khufu Valley Temple',
-  center: { x: 520, z: 50 },
+  center: { x: 171 + Math.cos(CW) * 740, z: -2 + Math.sin(CW) * 740 },
   blurb: 'Khufu\'s valley temple at the east end of his causeway — its remains ' +
          'lie buried beneath the modern village of Nazlet el-Samman.'
 };
 
 // ---- Fast travel destinations (eye position, label) -----------------
+// Outdoor entries are flagged `ground`: their y is a drop height above the
+// terrain, resolved against the real topography when the terrain loads.
+const G = (x, z, y = 1) => ({ x, y, z, ground: true });
+const P = PYRAMIDS, crowMid = { x: (WALL_OF_CROW.a.x + WALL_OF_CROW.b.x) / 2, z: (WALL_OF_CROW.a.z + WALL_OF_CROW.b.z) / 2 };
 export const TELEPORTS = [
-  { label: 'Plateau Overlook (start)', pos: { x: 230, y: 6, z: -220 } },
-  { label: 'Great Pyramid — base, north face', pos: { x: OFF, y: 2, z: ENT_Z - 25 } },
+  { label: 'Plateau Overlook (start)', pos: G(-120, -215) },
+  { label: 'Great Pyramid — base, north face', pos: G(OFF, ENT_Z - 25) },
   { label: 'Great Pyramid — original entrance', pos: { x: OFF, y: DOOR.y + 0.3, z: ENT_Z - 4 } },
   { label: "Great Pyramid — King's Chamber", pos: { x: KINGC.x, y: KINGC.y + 0.3, z: KINGC.z } },
   { label: "Great Pyramid — Queen's Chamber", pos: { x: QUEEN.x, y: QUEEN.y + 0.3, z: QUEEN.z } },
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
-  { label: 'Pyramid of Khafre — north base', pos: { x: -340, y: 2, z: 340 - 120 } },
-  { label: 'Pyramid of Menkaure — north base', pos: { x: -581, y: 2, z: 740 - 58 } },
-  { label: 'The Great Sphinx', pos: { x: 327 + 46, y: -5.5, z: 432 } },
-  { label: 'Tomb of Khentkaus I', pos: { x: -40, y: 3, z: 505 - 40 } },
-  { label: "Workers' Town", pos: { x: 270, y: 3, z: 835 - 70 } },
-  { label: 'Menkaure Valley Temple', pos: { x: -202, y: 2, z: 859 - 30 } },
-  { label: 'Khafre Valley Temple', pos: { x: 366, y: 2, z: 482 - 30 } },
-  { label: 'Wall of the Crow (gate)', pos: { x: 266, y: 2, z: 767 - 14 } },
-  { label: 'Khufu Valley Temple', pos: { x: 520, y: 2, z: 50 - 28 } },
-  { label: 'Trial Passages', pos: { x: 160, y: 2, z: -42 - 12 } },
-  { label: "Workers' Cemetery", pos: { x: 120, y: 2, z: 700 - 35 } },
-  { label: 'Central Field Quarry', pos: { x: -10, y: 2, z: 250 } }
+  { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
+  { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60) },
+  { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 46, SPHINX.center.z, 0.5) },
+  { label: 'Tomb of Khentkaus I', pos: G(KHENTKAUS.center.x, KHENTKAUS.center.z - 38) },
+  { label: "Workers' Town", pos: G(WORKERS_VILLAGE.center.x - 30, WORKERS_VILLAGE.center.z - 62) },
+  { label: 'Menkaure Valley Temple', pos: G(MENKAURE_VALLEY.center.x, MENKAURE_VALLEY.center.z - 34) },
+  { label: 'Khafre Valley Temple', pos: G(KHAFRE_VALLEY.center.x - 32, KHAFRE_VALLEY.center.z + 6) },
+  { label: 'Wall of the Crow (gate)', pos: G(crowMid.x, crowMid.z - 16) },
+  { label: 'Khufu Valley Temple', pos: G(KHUFU_VALLEY.center.x - 24, KHUFU_VALLEY.center.z + 6) },
+  { label: 'Trial Passages', pos: G(160, -54) },
+  { label: "Workers' Cemetery", pos: G(WORKERS_CEMETERY.center.x, WORKERS_CEMETERY.center.z - 30) },
+  { label: 'Central Field Quarry', pos: G(GIS_QUARRY.center.x, GIS_QUARRY.center.z - 56) },
+  { label: 'Temple of Amenhotep II', pos: G(AMENHOTEP_TEMPLE.center.x - 6, AMENHOTEP_TEMPLE.center.z - 22) },
+  { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
+  { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) }
 ];
 
 // ---------------------------------------------------------------------
@@ -317,7 +369,7 @@ export const TELEPORTS = [
 //  real class of object found at (or associated with) that spot.
 // ---------------------------------------------------------------------
 const tpPos = label => TELEPORTS.find(t => t.label.includes(label)).pos;
-const at = (p, dx, dy, dz) => ({ x: p.x + dx, y: p.y + dy, z: p.z + dz });
+const at = (p, dx, dy, dz) => ({ ...p, x: p.x + dx, y: p.y + dy, z: p.z + dz });
 export const ARTIFACTS = [
   { id: 'lid', type: 'fragment', name: 'Sarcophagus lid fragment',
     blurb: "A corner of the red-granite lid that was already gone when Caliph al-Ma'mun's men forced their way in (AD 820).",
@@ -333,7 +385,7 @@ export const ARTIFACTS = [
     pos: at(tpPos('original entrance'), 0.5, 0.3, 3.0) },
   { id: 'ushabti', type: 'ushabti', name: 'Ushabti of Thutmose IV',
     blurb: 'Thutmose IV cleared the Sphinx of sand around 1400 BC after a dream, and raised the Dream Stele between its paws.',
-    pos: { x: SPHINX.center.x + 30, y: -5.55, z: SPHINX.center.z + 1.5 } },
+    pos: G(SPHINX.center.x + 30, SPHINX.center.z + 1.5, 0.45) },
   { id: 'diorite', type: 'scarab', name: 'Diorite chip from a Khafre statue',
     blurb: "Khafre's famous seated statue (Cairo Museum) was found buried in a pit in this valley temple in 1860.",
     pos: at(tpPos('Khafre Valley'), 4, 0.35, 2) },

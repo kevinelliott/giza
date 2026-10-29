@@ -4,3 +4,5 @@ index.local.html
 test/preview*.png
 _*.cjs
 test/shot*.png
+tools/geo/cache/
+_*.mjs

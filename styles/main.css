@@ -178,3 +178,5 @@ b { color: #ffd98a; }
 #help { right: 16px; top: 16px; width: 460px; max-height: 88vh; overflow: auto; }
 #help ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
 #help li { font-size: 0.88rem; line-height: 1.45; padding-left: 0.9rem; border-left: 2px solid rgba(255, 217, 138, 0.4); }
+#help .credits { font-size: 11px; opacity: 0.65; margin-top: 10px; line-height: 1.4; }
+.mapcredit { font-size: 10px; opacity: 0.7; }

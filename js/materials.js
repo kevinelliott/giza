@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EXTENT } from './geodata.js';
 
 // =====================================================================
 //  Procedural PBR material set. Every surface gets a colour map, a
@@ -310,12 +311,20 @@ vec4 gzStoch(sampler2D tex, vec2 uv) {
 // Fragment-shader patch for the ground: stochastic sampling of the detail
 // tile blended with a coarse tile, plus broad tonal patches and gravel
 // areas driven by world position — no visible repetition at any range.
-export function sandShaderPatch(shader) {
+// `ground` (optional): { tex, ext } — the Sentinel-2 macro colour ratio
+// texture and the world rectangle it covers (x0, z0, width, depth).
+export function sandShaderPatch(shader, ground) {
+  if (ground) {
+    shader.uniforms.gzGround = { value: ground.tex };
+    shader.uniforms.gzRoads = { value: ground.roads };
+    shader.uniforms.gzExt = { value: ground.ext };
+  }
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vWp;')
     .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vWp;\n' + GZ_GLSL)
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWp;\n' + GZ_GLSL +
+      (ground ? '\nuniform sampler2D gzGround;\nuniform sampler2D gzRoads;\nuniform vec4 gzExt;\n#define GZ_GROUND\n' : ''))
     .replace('#include <map_fragment>', `
       #ifdef USE_MAP
         vec4 texA = gzStoch(map, vMapUv);
@@ -326,16 +335,62 @@ export function sandShaderPatch(shader) {
         float gravel = smoothstep(0.58, 0.8, gzNoise(vWp.xz * 0.013 + 3.0) * 0.6 + gzNoise(vWp.xz * 0.07) * 0.4);
         sampledDiffuseColor.rgb *= mix(0.86, 1.10, tonal);
         sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, sampledDiffuseColor.rgb * vec3(0.72, 0.68, 0.62), gravel * 0.7);
+        #ifdef GZ_GROUND
+          // Real ground colour from the satellite composite (as a ratio to
+          // open desert): roads, gravel spreads, wadis, fields, the town.
+          vec2 gUv = (vWp.xz - gzExt.xy) / gzExt.zw;
+          vec3 gRat = texture2D(gzGround, gUv).rgb * 2.0;
+          sampledDiffuseColor.rgb *= mix(vec3(1.0), gRat, 0.8);
+          // mapped roads (asphalt) and tracks (compacted, darker sand)
+          vec2 rM = texture2D(gzRoads, gUv).rg;
+          float gzRoadK = smoothstep(0.3, 0.65, rM.r);
+          vec3 asphalt = vec3(0.32, 0.30, 0.28) * (0.82 + 0.3 * gzNoise(vWp.xz * 0.8)) * (0.9 + 0.2 * tonal);
+          sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, asphalt, gzRoadK);
+          sampledDiffuseColor.rgb *= mix(1.0, 0.84, smoothstep(0.25, 0.6, rM.g));
+          // bare limestone where the slope is too steep to hold sand
+          vec3 gN = inverseTransformDirection(normalize(vNormal), viewMatrix);
+          float steep = smoothstep(0.94, 0.74, gN.y);
+          sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, vec3(0.62, 0.52, 0.39) * (0.8 + 0.4 * tonal), steep * 0.8);
+        #endif
         diffuseColor *= sampledDiffuseColor;
       #endif`)
     .replace('#include <normal_fragment_maps>', `
       #ifdef USE_NORMALMAP_TANGENTSPACE
         vec3 mapN = mix(gzStoch(normalMap, vNormalMapUv), texture2D(normalMap, vNormalMapUv * 0.171 + vec2(0.37, 0.61)), mixK).xyz * 2.0 - 1.0;
         mapN.xy *= normalScale;
+        #ifdef GZ_GROUND
+          mapN.xy *= 1.0 - 0.8 * gzRoadK;
+        #endif
         normal = normalize(tbn * mapN);
       #else
         #include <normal_fragment_maps>
       #endif`);
+}
+
+// Modern town: window grids on the walls (lit at night) over vertex colours.
+export function townPatch(night) {
+  return shader => {
+    shader.uniforms.gzNight = night;
+    const [head, tail] = shader.fragmentShader.split('void main() {');
+    shader.fragmentShader = head.replace('#include <common>', '#include <common>\nuniform float gzNight;\n' + GZ_GLSL) +
+      'void main() {' + tail.replace('#include <color_fragment>', `
+      #include <color_fragment>
+      vec3 tP = cameraPosition + ((-vViewPosition) * mat3(viewMatrix));
+      vec3 tN = inverseTransformDirection(normalize(vNormal), viewMatrix);
+      float tWall = 1.0 - step(0.5, abs(tN.y));
+      float tU = abs(tN.x) > abs(tN.z) ? tP.z : tP.x;
+      float tF = tP.y / 3.1, tFy = fract(tF), tFu = fract(tU / 3.4);
+      float tWin = tWall * step(0.38, tFy) * step(tFy, 0.8) * step(0.3, tFu) * step(tFu, 0.7);
+      float tH = gzHash(vec2(floor(tU / 3.4), floor(tF)) + floor(tP.xz * 0.05) * 7.0);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.05, 0.06), tWin * 0.85);
+      float tLit = tWin * step(0.66, tH);`)
+      .replace('#include <emissivemap_fragment>', `
+      #include <emissivemap_fragment>
+      totalEmissiveRadiance += mix(vec3(1.0, 0.7, 0.4), vec3(0.75, 0.85, 1.0), step(0.9, tH)) * tLit * gzNight * 1.8;`)
+      .replace('#include <roughnessmap_fragment>', `
+      #include <roughnessmap_fragment>
+      roughnessFactor = mix(roughnessFactor, 0.2, tWin);`);
+  };
 }
 
 // Pyramid course strips (standard UVs: u = blocks, v = course index +
@@ -443,7 +498,27 @@ export function makeMaterials() {
   const rubble = tex(sand({ seed: 33, tint: [178, 158, 122], ripples: false }), [1, 1]);
 
   const sandMat = std(sandT, { roughness: 1.0, side: THREE.DoubleSide, normalScale: new THREE.Vector2(0.55, 0.55), envMapIntensity: 0.22 });
-  sandMat.userData.shaderPatch = sandShaderPatch;
+  // Satellite-derived ground colour (neutral grey until the image loads)
+  const groundTex = new THREE.DataTexture(new Uint8Array([128, 128, 128, 255]), 1, 1);
+  groundTex.needsUpdate = true;
+  const roadsTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  roadsTex.needsUpdate = true;
+  const ground = { tex: groundTex, roads: roadsTex, ext: new THREE.Vector4(EXTENT.x0, EXTENT.z0, EXTENT.x1 - EXTENT.x0, EXTENT.z1 - EXTENT.z0) };
+  if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
+    new THREE.TextureLoader().load('assets/geo/ground.jpg', t => {
+      t.colorSpace = THREE.NoColorSpace; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      t.anisotropy = 4; ground.tex = t;
+      sandMat.userData.groundU && (sandMat.userData.groundU.value = t);
+    });
+    new THREE.TextureLoader().load('assets/geo/roads.png', t => {
+      t.colorSpace = THREE.NoColorSpace; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      t.anisotropy = 8; ground.roads = t;
+      sandMat.userData.roadsU && (sandMat.userData.roadsU.value = t);
+    });
+  }
+  sandMat.userData.shaderPatch = s => {
+    sandShaderPatch(s, ground); sandMat.userData.groundU = s.uniforms.gzGround; sandMat.userData.roadsU = s.uniforms.gzRoads;
+  };
   sandMat.customProgramCacheKey = () => 'giza-sand';
 
   const limestoneMat = std(limestone, { side: THREE.DoubleSide, normalScale: new THREE.Vector2(1.2, 1.2) });
@@ -471,6 +546,11 @@ export function makeMaterials() {
   interiorGraniteMat.userData.shaderPatch = triplanarPatch(5);
   interiorGraniteMat.customProgramCacheKey = () => 'giza-igranite-tp';
 
+  const townMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, envMapIntensity: 0.3 });
+  townMat.userData.night = { value: 0 };
+  townMat.userData.shaderPatch = townPatch(townMat.userData.night);
+  townMat.customProgramCacheKey = () => 'giza-town';
+
   return {
     limestone: limestoneMat,
     course: courseMat,
@@ -481,6 +561,8 @@ export function makeMaterials() {
     bedrock: bedrockMat,
     interior: interiorMat,
     interiorGranite: interiorGraniteMat,
-    wood: new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.85, metalness: 0.0, envMapIntensity: 0.4 })
+    wood: new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.85, metalness: 0.0, envMapIntensity: 0.4 }),
+    plaster: new THREE.MeshStandardMaterial({ color: 0xe4dccb, roughness: 0.9, envMapIntensity: 0.3 }),
+    town: townMat
   };
 }

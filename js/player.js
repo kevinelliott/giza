@@ -11,8 +11,7 @@ export function buildCollider(scene, collidables) {
     let g = mesh.geometry.clone();
     g.applyMatrix4(mesh.matrixWorld);
     g = g.index ? g.toNonIndexed() : g;
-    g.deleteAttribute('normal');
-    g.deleteAttribute('uv');
+    for (const k of Object.keys(g.attributes)) if (k !== 'position') g.deleteAttribute(k);
     geoms.push(g);
   }
   const merged = mergeGeometries(geoms, false);
@@ -220,7 +219,7 @@ export class Player {
 
     this.syncCamera();
 
-    if (this.position.y < -120) this.teleport({ x: 230, y: 6, z: -220 });
+    if (this.position.y < -160) this.onFellOut?.();
   }
 
   // Push the capsule out of any overlapping geometry. Returns the applied

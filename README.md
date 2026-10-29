@@ -62,9 +62,45 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
   sun set over Khafre, see the Milky Way come out, and get caught in a
   sandstorm. Progress is saved in your browser.
 
+## Built from real satellite and aerial data
+
+The layout is not hand-placed: `tools/geo/build_geodata.py` pulls open data
+and bakes it into `js/geodata.js` plus three images in `assets/geo/`.
+
+- **Positions** of the pyramids, queens' pyramids, the Sphinx, the temples,
+  Khentkaus, the boat pits and the Wall of the Crow come from their mapped
+  footprints (OpenStreetMap, traced from aerial imagery), projected onto a
+  local metre grid centred on the Great Pyramid.
+- **Topography** is the Copernicus 30 m elevation model, with buildings and
+  monuments filtered out and Y = 0 set at Khufu's base. So the real lie of the
+  land is there: Khafre stands ~9 m higher than Khufu (which is why it looks
+  taller), Menkaure ~12 m higher, and the Sphinx sits at the foot of the
+  escarpment in a pit ~42 m below Khufu's base, with the causeways climbing
+  40–50 m from the valley temples to the pyramids.
+- **~580 tomb footprints** in the Western and Eastern cemeteries, south of
+  Khufu and in the Central Field are built from their mapped outlines, sizes
+  and orientations (including named ones such as Hemiunu's tomb); the mapped
+  outlines of Khafre's mortuary temple and Menkaure's valley temple become
+  their walls.
+- **The modern town** (Nazlet el-Samman and the Pyramids-road districts) is
+  extruded from ~1,850 mapped building outlines, with windows that light up
+  at dusk, and the modern cemetery south of the Sphinx from its own tombs.
+- **Ground colour** is a cloud-free Sentinel-2 composite (July 2025) used as a
+  macro colour layer under the procedural sand, so gravel spreads, wadis,
+  fields and the golf course are where they really are; **roads and tracks**
+  are painted from the mapped road network; **palms** grow wherever the
+  satellite sees vegetation. The full map (`M`) uses the satellite image as
+  its base layer.
+
+Sources and licences are listed in [`tools/geo/README.md`](tools/geo/README.md).
+Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains
+modified Copernicus Sentinel data 2025. Copernicus GLO-30 DEM © DLR e.V.
+2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under
+COPERNICUS by the European Union and ESA.
+
 ## What's modelled
 
-**To scale, from real GPS-derived relative positions:**
+**To scale, at their mapped positions and real ground levels:**
 
 - **Great Pyramid of Khufu** — base 230.4 m, original height 146.6 m, face
   slope 51°50′.
@@ -83,9 +119,11 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
   nemes headdress and the Dream Stele between its paws — plus the Sphinx
   (Valley) Temple and the mortuary temples east of each pyramid.
 - **Mastaba cemeteries** (the Eastern and Western fields of street-gridded
-  tombs around the Great Pyramid), **causeways** running toward the valley
-  temples, surviving **casing stones** at the Great Pyramid's base, and a
-  reconstructed **solar boat** in its pit on the south side.
+  tombs around the Great Pyramid, from their mapped footprints), **causeways**
+  climbing from the valley temples to the mortuary temples, Khafre's granite
+  **valley temple** and the **Sphinx Temple**, Amenhotep II's temple, the
+  mapped **boat pits** beside Khufu's temple and causeway, surviving **casing
+  stones** at the Great Pyramid's base, and a reconstructed **solar boat**.
 - A weathered desert plateau, late-afternoon physical sky, sun shadows,
   scattered fallen casing blocks, **palm groves**, **camels** by the Sphinx,
   and **birds** circling overhead.
@@ -105,7 +143,11 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 
 ### Notes on accuracy
 
-- Monument **positions, sizes, orientations and slope angles** are accurate.
+- Monument **positions** come from mapped footprints and **ground levels** from
+  the elevation model; **sizes, orientations and slope angles** are the
+  surveyed values. Sites whose remains are buried or unmapped (Khufu's valley
+  temple under the village, the workers' cemetery, the Khentkaus town) are
+  placed from published plans and are approximate.
 - Interior **passage cross-sections are slightly enlarged** (≈1.6 m wide,
   2.2 m tall) so you can walk them upright. The real passages are ~1.0–1.2 m
   and require crouching — the genuine dimensions are listed in the in-game
@@ -138,12 +180,16 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 index.html         # import map, UI overlays
 styles/main.css    # HUD / menu styling
 js/data.js         # survey data: dimensions, positions, interior layout
+js/geodata.js      # GENERATED: DEM, mapped sites, tombs, town, palms
+js/terrain.js      # real topography: DEM + levelled platforms, height lookup
 js/materials.js    # procedural stone / sand textures + materials
 js/builders.js     # geometry: pyramid faces, tunnels, rooms, stairs, sarcophagi
 js/world.js        # assembles the plateau, terrain, sky and lighting
 js/player.js       # collider/BVH build + capsule character controller
 js/fx.js           # dust/sand particles, ground debris, lens flare, post-processing, audio
 js/main.js         # bootstrap, input, HUD, fast-travel, game loop
+assets/geo/        # GENERATED: satellite map, ground colour, road mask
+tools/geo/         # the geodata pipeline (Python) and its sources
 test/headless.mjs  # Node smoke test for the geometry/physics build
 ```
 
