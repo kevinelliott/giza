@@ -67,7 +67,10 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 The layout is not hand-placed: `tools/geo/build_geodata.py` pulls open data
 and bakes it into `js/geodata.js` plus three images in `assets/geo/`.
 
-- **Positions** of the pyramids, queens' pyramids, the Sphinx, the temples,
+- **Pyramid spacing** follows Petrie's 1880–82 triangulation: Khafre's centre
+  is 486.9 m from Khufu's, Menkaure's 936.2 m. The mapped footprints agree to
+  within ~1.5 m, and `npm test` checks the layout.
+- **Positions** of the queens' pyramids, the Sphinx, the temples,
   Khentkaus, the boat pits and the Wall of the Crow come from their mapped
   footprints (OpenStreetMap, traced from aerial imagery), projected onto a
   local metre grid centred on the Great Pyramid.
@@ -83,8 +86,13 @@ and bakes it into `js/geodata.js` plus three images in `assets/geo/`.
   outlines of Khafre's mortuary temple and Menkaure's valley temple become
   their walls.
 - **The modern town** (Nazlet el-Samman and the Pyramids-road districts) is
-  extruded from ~1,850 mapped building outlines, with windows that light up
-  at dusk, and the modern cemetery south of the Sphinx from its own tombs.
+  extruded from ~1,850 mapped building outlines. Storey counts come from the
+  surface model (DSM minus bare earth), every roof takes the colour the
+  satellite sees at that spot, and the facade style follows it: red brick
+  infill in a concrete frame (the typical unfinished Cairo block), plastered
+  and painted, or bare concrete — with shop shutters, parapets, stair huts,
+  water tanks, rebar left for the next storey, and windows that light up at
+  dusk. The modern cemetery south of the Sphinx is built from its own tombs.
 - **Ground colour** is a cloud-free Sentinel-2 composite (July 2025) used as a
   macro colour layer under the procedural sand, so gravel spreads, wadis,
   fields and the golf course are where they really are; **roads and tracks**
@@ -115,9 +123,18 @@ COPERNICUS by the European Union and ESA.
 - **Pyramid of Menkaure** — base 102.2 m, with its red-granite lower courses;
   descending passage to a burial chamber.
 - **Subsidiary "queens'" pyramids** of Khufu and Menkaure.
-- **The Great Sphinx** — 73 m long, 20 m high, facing due east, with its
-  nemes headdress and the Dream Stele between its paws — plus the Sphinx
-  (Valley) Temple and the mortuary temples east of each pyramid.
+- **The Great Sphinx** — 73 m long, 20 m high, 19 m across the haunches,
+  facing due east. It is sculpted as a single weathered surface (a signed
+  distance field polygonised at load): the lion body with its folded hind
+  legs and curled tail, the long re-cased forelegs and paws, the king's face
+  under the nemes headcloth that narrows over the crown and flares to the
+  shoulders, the missing nose, and the deep horizontal erosion bands of the
+  soft body layers, with the Dream Stele against its chest.
+- Surface details as they stand today: the chevron blocks over Khufu's
+  original entrance and al-Ma'mun's robbers' tunnel below it, the gash in
+  Menkaure's north face, rubble aprons around the bases, burial-shaft mouths,
+  false doors and broken tops on the mastabas, tour buses in the mapped car
+  parks, and visitors wandering the famous spots.
 - **Mastaba cemeteries** (the Eastern and Western fields of street-gridded
   tombs around the Great Pyramid, from their mapped footprints), **causeways**
   climbing from the valley temples to the mortuary temples, Khafre's granite
@@ -182,6 +199,7 @@ styles/main.css    # HUD / menu styling
 js/data.js         # survey data: dimensions, positions, interior layout
 js/geodata.js      # GENERATED: DEM, mapped sites, tombs, town, palms
 js/terrain.js      # real topography: DEM + levelled platforms, height lookup
+js/sphinx.js       # the sculpted Sphinx (SDF + surface nets) and its material
 js/materials.js    # procedural stone / sand textures + materials
 js/builders.js     # geometry: pyramid faces, tunnels, rooms, stairs, sarcophagi
 js/world.js        # assembles the plateau, terrain, sky and lighting

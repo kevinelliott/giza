@@ -11,6 +11,14 @@ import { SITES } from './geodata.js';
 
 export const DEG = Math.PI / 180;
 const C = k => ({ x: SITES[k].x, z: SITES[k].z });
+// The three main pyramids use Petrie's 1880-82 triangulation (centre to centre
+// from the Great Pyramid; 1 inch = 0.0254 m). The mapped footprints agree to
+// within ~1.5 m, which is what positions everything else.
+const IN = 0.0254;
+const PETRIE = {
+  khafre: { x: -13165.8 * IN, z: 13931.6 * IN },     // 334.4 m W, 353.9 m S
+  menkaure: { x: -22616 * IN, z: 29102 * IN }        // 574.4 m W, 739.2 m S
+};
 
 // ---- The three main pyramids ----------------------------------------
 // base       : side length of the square base (m)
@@ -40,7 +48,7 @@ export const PYRAMIDS = {
     slopeDeg: 53.13,        // 53 deg 10'
     // ~335 m west, 352 m south of Khufu, on bedrock ~9 m higher — which is
     // why it looks the taller of the two.
-    center: C('khafre'),
+    center: PETRIE.khafre,
     baseY: SITES.khafre.y,
     align: '6′13″',
     casing: 'cap',          // retains casing near the apex
@@ -55,7 +63,7 @@ export const PYRAMIDS = {
     height: 65,
     slopeDeg: 51.34,
     // ~574 m west, 738 m south of Khufu.
-    center: C('menkaure'),
+    center: PETRIE.menkaure,
     baseY: SITES.menkaure.y,
     align: '14′03″',
     casing: 'lowerGranite', // lowest 16 courses were red Aswan granite
@@ -321,16 +329,17 @@ export const BOAT_PITS = [
   { x: 32, z: 140, len: 32, wid: 6, rot: 0, name: 'South boat pit' },
   pitOf(bpN, 'North-east boat pit'), pitOf(bpS, 'South-east boat pit'), pitOf(bpC, 'Causeway boat pit')
 ];
-// Khufu's mortuary temple (basalt-floored court) against the east face.
-export const KHUFU_MORTUARY = { center: { x: 145, z: -2 }, sx: 52.5, sz: 40 };
+// Khufu's mortuary temple (basalt-floored court) against the east face:
+// 40 m deep (E–W) by 52.5 m wide (N–S), between the two boat pits.
+export const KHUFU_MORTUARY = { center: { x: 115.2 + 20, z: 0 }, sx: 40, sz: 52.5 };
 // Khufu's causeway leaves the temple ~13° north of east (the mapped boat pit
 // beside it gives the bearing) and drops off the escarpment to his valley
 // temple, whose remains lie beneath the village of Nazlet el-Samman.
 const CW = (bpC[4]) * DEG;
-export const KHUFU_CAUSEWAY = { a: { x: 171, z: -2 }, dir: { x: Math.cos(CW), z: Math.sin(CW) }, len: 740 };
+export const KHUFU_CAUSEWAY = { a: { x: 155.2, z: 0 }, dir: { x: Math.cos(CW), z: Math.sin(CW) }, len: 740 };
 export const KHUFU_VALLEY = {
   name: 'Khufu Valley Temple',
-  center: { x: 171 + Math.cos(CW) * 740, z: -2 + Math.sin(CW) * 740 },
+  center: { x: 155.2 + Math.cos(CW) * 740, z: Math.sin(CW) * 740 },
   blurb: 'Khufu\'s valley temple at the east end of his causeway — its remains ' +
          'lie buried beneath the modern village of Nazlet el-Samman.'
 };

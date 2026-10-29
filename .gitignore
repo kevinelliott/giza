@@ -6,3 +6,4 @@ _*.cjs
 test/shot*.png
 tools/geo/cache/
 _*.mjs
+_*.html

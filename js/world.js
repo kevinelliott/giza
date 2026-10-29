@@ -14,7 +14,9 @@ import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
 } from './builders.js';
 import { terrainHeight, inPit, groundUnder, GRID, SPHINX_PIT } from './terrain.js';
-import { TOMBS, TOWN, TREES, TEMPLES, EXTENT } from './geodata.js';
+import { TOMBS, TOWN, TREES, TEMPLES, EXTENT, PARKING, SITES as GEO_SITES } from './geodata.js';
+import { buildSphinxGeometry } from './sphinx.js';
+const SITES_SPHINX_ROT = GEO_SITES.sphinx.rot;
 
 // The ground: the real 30 m elevation model baked into a 10 m grid (see
 // terrain.js). Indexed so normals are smooth; cells are dropped where the
@@ -79,7 +81,7 @@ function buildPyramid(p, mats, collidables, group) {
   if (p.casing === 'cap') {
     const cap = new THREE.Mesh(
       buildPyramidGeometry(p.base, p.height, { yRange: [p.height * 0.78, p.height], scale: 1.004 }),
-      mats.casing);
+      Object.assign(mats.casing.clone(), { side: THREE.BackSide }));     // faces wind inward (see below)
     cap.position.copy(mesh.position);
     cap.userData.collidable = true; cap.castShadow = true;
     group.add(cap); collidables.push(cap);
@@ -87,7 +89,10 @@ function buildPyramid(p, mats, collidables, group) {
   if (p.casing === 'lowerGranite') {
     const band = new THREE.Mesh(
       buildPyramidGeometry(p.base, p.height, { yRange: [0, 12], scale: 1.004 }),
-      mats.granite);
+      // weathered red Aswan granite: matte, and without the normal map (the
+      // smooth band geometry has no usable tangent frame for it)
+      // (its faces wind inward, so render the back side, whose flipped normals face out)
+      new THREE.MeshStandardMaterial({ map: mats.granite.map, color: 0xffffff, roughness: 0.85, envMapIntensity: 0.15, side: THREE.BackSide }));
     band.position.copy(mesh.position);
     band.userData.collidable = true; band.castShadow = true;
     group.add(band); collidables.push(band);
@@ -124,52 +129,21 @@ function buildSmallPyramid(q, mats, collidables, group) {
   group.add(stepped); collidables.push(stepped);
 }
 
-// A detailed Great Sphinx (recumbent lion, nemes headdress, outstretched
-// paws, Dream Stele), sat with its base at `baseY` inside its enclosure.
+// The Great Sphinx: a sculpted, weathered surface (see sphinx.js) sat on
+// its enclosure floor, plus the granite Dream Stele of Thutmose IV standing
+// against its chest between the forelegs.
 function buildSphinx(mats, collidables, group, baseY) {
   const s = SPHINX;
   const g = new THREE.Group();
-  const body = mats.limestone, head = mats.limestone, gr = mats.granite;   // one outcrop: head and body are the same stone
-  const add = (sx, sy, sz, x, y, z, mat, collide = true, rot = 0) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat || body);
-    m.position.set(x, y, z); if (rot) m.rotation.z = rot;
-    m.castShadow = true; m.receiveShadow = true;
-    if (collide) { m.userData.collidable = true; collidables.push(m); }
-    g.add(m); return m;
-  };
-  // Faces east (+X). Coordinates: x east (front), y up from base, z = ±width.
-  // — Recumbent lion body (rises toward the chest at the front) —
-  add(46, 9, 13, -18, 4.5, 0);                 // torso
-  add(17, 12.5, 13, -33, 6.2, 0);              // rear haunches (taller)
-  for (const sz of [1, -1]) {                  // folded hind legs along the sides
-    add(20, 3.5, 3.2, -28, 1.8, sz * 6.4);
-    add(7, 5, 3, -41, 2.5, sz * 5.5);          // rear paws
-  }
-  // tail curling along the south flank to the right rear
-  add(14, 2.2, 2.2, -34, 1.1, 7.2, body, true);
-  // — Outstretched forepaws reaching east —
-  for (const sz of [1, -1]) {
-    add(30, 3.6, 4.4, 17, 1.8, sz * 4.6);      // foreleg
-    for (let t = 0; t < 4; t++)                // four toes per paw
-      add(1.7, 2.0, 0.9, 31.5, 1.0, sz * 4.6 + (t - 1.5) * 1.15, body, false);
-  }
-  // — Chest, neck, head —
-  add(10, 15, 11, 2.5, 7.5, 0);                // chest below the head
-  add(6, 5.5, 6.5, 8.5, 14.5, 0, head);        // neck
-  add(7, 8.5, 7, 12.5, 17.5, 0, head);         // face
-  add(1.2, 2.0, 4.5, 16.3, 18.5, 0, head, false); // brow ridge
-  add(1.4, 1.4, 1.4, 16.4, 17.6, 0, body, false); // broken nose stub
-  // nemes headdress: broad striped headcloth flaring at the sides + back
-  add(10, 4.5, 13.5, 11, 21.5, 0, head);       // crown of the headcloth
-  for (const sz of [1, -1])                    // side lappets (the flaps)
-    add(5.5, 10, 3, 12, 14.5, sz * 5.3, head, true, sz * 0.12);
-  add(5, 8, 6, 6.5, 16, 0, head);              // back of the headcloth
-  add(1.3, 1.3, 1.3, 16.6, 21.0, 0, gr, false);// uraeus (cobra) on the brow
-  add(2.0, 5.5, 2.4, 14.5, 11.5, 0, gr, false);// broken ceremonial beard stub
-  // Dream Stele of Thutmose IV, standing between the front paws
-  add(1.2, 9, 5, 30, 4.5, 0, gr);
+  const body = new THREE.Mesh(buildSphinxGeometry(), mats.sphinx);
+  body.castShadow = true; body.receiveShadow = true; body.userData.collidable = true;
+  g.add(body); collidables.push(body);
+  const stele = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.6, 2.2), mats.granite);
+  stele.position.set(9.9, 1.8, 0); stele.castShadow = true; stele.userData.collidable = true;
+  g.add(stele); collidables.push(stele);
   g.position.set(s.center.x, baseY || 0, s.center.z);
-  group.add(g);
+  g.rotation.y = -(SITES_SPHINX_ROT || 0) * DEG;
+  group.add(g); g.updateMatrixWorld(true);
 }
 
 // The quarried enclosure the Sphinx sits in: cut down into the slope to the
@@ -309,66 +283,135 @@ function buildCauseway(a, b, w, mat, collidables, group, rise = 1.4) {
 
 // Tombs mapped from their real footprints: battered (inward-leaning) stone
 // mastabas, or the small whitewashed family tombs of the modern cemetery.
+// Each mastaba also gets the open mouths of its burial shafts in a row along
+// the roof, a false-door niche on its east face, a broken top and rubble.
 function buildTombs(mats, collidables, group, out) {
-  const stone = [], white = [];
+  const ruined = [], kept = [], white = [], dark = [], rubble = [];
+  const hash = (a, b) => { const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return v - Math.floor(v); };
+  const place = (g, rot, x, y, z) => { g.rotateY(-rot * DEG); g.translate(x, y, z); return g; };
   for (const [x, z, L, W, rot, h, kind, name] of TOMBS) {
     const y0 = groundUnder(x, z, L / 2, W / 2) - 0.4;
     const top = Math.max(terrainHeight(x, z), terrainHeight(x + L / 2, z), terrainHeight(x - L / 2, z)) + h;
-    const H = top - y0;
+    const H = top - y0, r1 = hash(x, z), r2 = hash(z, x);
     const g = new THREE.BoxGeometry(L, H, W, 1, 1, 1);
     const p = g.attributes.position;
     const batter = kind ? 1 : Math.max(0.86, 1 - 0.07 * h / Math.min(L, W) * 2);
     for (let i = 0; i < p.count; i++) if (p.getY(i) > 0) { p.setX(i, p.getX(i) * batter); p.setZ(i, p.getZ(i) * (1 - (1 - batter) * L / W * 0.5)); }
     g.computeVertexNormals();
-    g.rotateY(-rot * DEG);
-    g.translate(x, y0 + H / 2, z);
-    (kind ? white : stone).push(g);
-    out.push({ x, z, w: L, d: W, rot, name: name || null, modern: !!kind });
+    place(g, rot, x, y0 + H / 2, z);
+    if (kind) { white.push(g); out.push({ x, z, w: L, d: W, rot, name: null, modern: true }); continue; }
+    (L > 18 && r1 < 0.45 ? kept : ruined).push(g);
+    out.push({ x, z, w: L, d: W, rot, name: name || null, modern: false });
+    const tl = L * batter, tw = W * (1 - (1 - batter) * L / W * 0.5);
+    // burial shafts: dark square mouths in a row along the long axis
+    const shafts = Math.max(1, Math.min(5, Math.round(L * W / 140)));
+    for (let k = 0; k < shafts; k++) {
+      const u = shafts === 1 ? 0 : (k / (shafts - 1) - 0.5) * tl * 0.6, sz = Math.min(2.0, tw * 0.3);
+      dark.push(place(new THREE.BoxGeometry(sz, 0.08, sz), rot, 0, 0, 0).translate(x + Math.cos(rot * DEG) * u, top + 0.03, z + Math.sin(rot * DEG) * u));
+    }
+    // false-door niche toward the south end of the east face
+    const nx = -Math.sin(rot * DEG), nz = Math.cos(rot * DEG), s = nx >= 0 ? 1 : -1;
+    const ax = Math.cos(rot * DEG), az = Math.sin(rot * DEG), along = (az >= 0 ? 1 : -1) * tl * 0.32;
+    if (L > 8 && H > 2.5) {
+      const fd = new THREE.BoxGeometry(1.4, Math.min(3, H - 0.6), 0.12);
+      dark.push(place(fd, rot, 0, 0, 0).translate(x + ax * along + nx * s * (W / 2 - 0.03), y0 + 0.4 + Math.min(3, H - 0.6) / 2, z + az * along + nz * s * (W / 2 - 0.03)));
+    }
+    // broken top: a few displaced blocks; rubble at the foot
+    const nTop = r2 < 0.6 ? 1 + Math.floor(r2 * 5) : 0;
+    for (let k = 0; k < nTop; k++) {
+      const bx = (hash(x + k, z) - 0.5) * tl * 0.7, bz = (hash(z, x + k) - 0.5) * tw * 0.6, bs = 0.9 + hash(k, x) * 1.2;
+      rubble.push(place(new THREE.BoxGeometry(bs * 1.4, bs * 0.8, bs), rot + k * 17, 0, 0, 0).translate(x + ax * bx - az * bz, top + bs * 0.35, z + az * bx + ax * bz));
+    }
+    for (let k = 0; k < 3 + Math.floor(r1 * 4); k++) {
+      const ang = hash(k, z) * Math.PI * 2, rr = Math.max(L, W) / 2 + 0.6 + hash(x, k) * 2.5, bs = 0.5 + hash(z + k, x) * 1.1;
+      const bx = x + Math.cos(ang) * rr * (L / Math.max(L, W)), bz = z + Math.sin(ang) * rr * (W / Math.max(L, W));
+      rubble.push(new THREE.BoxGeometry(bs * 1.3, bs * 0.7, bs).rotateY(ang * 3).translate(bx, terrainHeight(bx, bz) + bs * 0.25, bz));
+    }
   }
-  for (const [list, mat] of [[stone, mats.bedrock], [white, mats.plaster]]) {
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x241e17, roughness: 1 });
+  for (const [list, mat, col] of [[ruined, mats.bedrock, true], [kept, mats.limestone, true], [white, mats.plaster, true],
+    [rubble, mats.bedrock, true], [dark, darkMat, false]]) {
     if (!list.length) continue;
     const mesh = new THREE.Mesh(mergeGeometries(list, false), mat);
-    mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
-    group.add(mesh); collidables.push(mesh);
+    mesh.castShadow = col; mesh.receiveShadow = true;
+    if (col) { mesh.userData.collidable = true; collidables.push(mesh); }
+    group.add(mesh);
   }
 }
 
 // The modern town (Nazlet el-Samman and the Pyramids-road districts) from
-// mapped building outlines: extruded, vertex-coloured brick and plaster.
+// mapped building outlines: heights from the surface model, roofs in the
+// colour the satellite sees, and a facade style to match (see townPatch).
+const FACADE = {
+  0: [[0.58, 0.31, 0.22], [0.64, 0.36, 0.25], [0.53, 0.29, 0.21], [0.62, 0.40, 0.29]],            // red brick
+  1: [[0.86, 0.80, 0.68], [0.80, 0.70, 0.54], [0.88, 0.76, 0.66], [0.84, 0.82, 0.74], [0.74, 0.62, 0.46],
+      [0.90, 0.86, 0.78], [0.70, 0.74, 0.72], [0.82, 0.66, 0.50]],                                 // plaster / paint
+  2: [[0.64, 0.63, 0.60], [0.70, 0.69, 0.66], [0.58, 0.58, 0.57]]                                   // concrete
+};
+const toLin = c => c.map(v => Math.pow(v, 2.2));       // colours below are sRGB
 function buildTown(mats, collidables, group, out, clearings) {
-  const pos = [], col = [], idx = [];
-  const palette = [[0.62, 0.38, 0.27], [0.70, 0.45, 0.33], [0.80, 0.70, 0.55], [0.86, 0.80, 0.68],
-    [0.74, 0.66, 0.56], [0.90, 0.86, 0.78], [0.66, 0.55, 0.42], [0.58, 0.34, 0.24]];
+  const pos = [], col = [], info = [], idx = [];
+  const hash = (a, b) => { const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return v - Math.floor(v); };
+  // one box (props on roofs) appended to the buffers
+  const box = (cx, y0, cz, sx, sy, sz, rot, c, style, seed, base, top) => {
+    const g = new THREE.BoxGeometry(sx, sy, sz); g.rotateY(rot); g.translate(cx, y0 + sy / 2, cz);
+    const k = pos.length / 3, p = g.attributes.position;
+    const cl = toLin(c);
+    for (let i = 0; i < p.count; i++) { pos.push(p.getX(i), p.getY(i), p.getZ(i)); col.push(...cl); info.push(style + 8, seed, base, top); }
+    for (const i of g.index.array) idx.push(k + i);
+  };
   let o = 0;
   for (let b = 0; b < TOWN.n.length; b++) {
-    const n = TOWN.n[b], h = TOWN.h[b];
+    const n = TOWN.n[b], h = TOWN.h[b], style = TOWN.s[b];
     const pts = [];
     for (let i = 0; i < n; i++) pts.push(new THREE.Vector2(TOWN.p[o + i * 2], TOWN.p[o + i * 2 + 1]));
     o += n * 2;
     let cx = 0, cz = 0, gmin = Infinity, gmax = -Infinity;
     for (const v of pts) { cx += v.x / n; cz += v.y / n; const g = terrainHeight(v.x, v.y); gmin = Math.min(gmin, g); gmax = Math.max(gmax, g); }
     if (clearings.some(c => Math.hypot(cx - c.x, cz - c.z) < c.r)) continue;
-    const y0 = gmin - 0.6, y1 = gmax + h;
-    const hv = Math.abs(Math.sin(cx * 12.99 + cz * 78.23) * 43758.5) % 1;
-    const c = palette[Math.floor(hv * palette.length)], shade = 0.92 + 0.16 * ((hv * 7.3) % 1);
-    const base = pos.length / 3;
-    // walls (outline is clockwise in x/z, so outward normals face away from the centre)
+    const seed = hash(cx, cz), seed2 = hash(cz * 1.3, cx * 0.7);
+    const ground = gmin, y0 = gmin - 0.6, roofY = gmax + h;
+    const parapet = (style === 0 && seed2 < 0.3) ? 0 : 1.0;           // some brick blocks are left open-topped
+    const top = roofY + parapet;
+    const pal = FACADE[style], fcS = pal[Math.floor(seed * pal.length) % pal.length], fc = toLin(fcS);
+    const rc = TOWN.c[b], roofC = [((rc >> 16) & 255) / 255, ((rc >> 8) & 255) / 255, (rc & 255) / 255];
+    // walls (outline is clockwise in x/z, so these face outward)
     for (let i = 0; i < n; i++) {
       const a = pts[i], d = pts[(i + 1) % n], k = pos.length / 3;
-      pos.push(a.x, y0, a.y, d.x, y0, d.y, d.x, y1, d.y, a.x, y1, a.y);
-      for (let q = 0; q < 4; q++) col.push(c[0] * shade, c[1] * shade, c[2] * shade);
+      pos.push(a.x, y0, a.y, d.x, y0, d.y, d.x, top, d.y, a.x, top, a.y);
+      for (let q = 0; q < 4; q++) { col.push(...fc); info.push(style, seed, ground, roofY); }
       idx.push(k, k + 2, k + 1, k, k + 3, k + 2);
     }
-    // flat roof
+    // flat roof, in the satellite's colour (slightly mixed with the facade)
     const tri = THREE.ShapeUtils.triangulateShape(pts, []);
     const k = pos.length / 3;
-    for (const v of pts) { pos.push(v.x, y1, v.y); col.push(c[0] * shade * 0.9, c[1] * shade * 0.9, c[2] * shade * 0.9); }
+    const rr = toLin(roofC.map((v, i) => v * 0.75 + fcS[i] * 0.25));
+    for (const v of pts) { pos.push(v.x, roofY, v.y); col.push(...rr); info.push(style + 4, seed, ground, roofY); }
     for (const [a, bb, cc] of tri) idx.push(k + a, k + cc, k + bb);
+    // roof clutter: stair hut, water tanks, rebar left for the next storey
+    const area = Math.abs(THREE.ShapeUtils.area(pts));
+    if (area > 45 && h > 4) {
+      const e = pts[0].clone().sub(new THREE.Vector2(cx, cz)), rot = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      const hx = cx + e.x * 0.45, hz = cz + e.y * 0.45;
+      if (seed2 > 0.25) box(hx, roofY, hz, 2.6, 2.7, 3.2, -rot, fcS, style, seed, roofY, roofY + 2.7);
+      const tanks = Math.floor(seed2 * 4);
+      for (let t = 0; t < tanks; t++) {
+        const tx = cx - e.x * (0.2 + 0.15 * t), tz = cz - e.y * (0.2 + 0.15 * t) + (t % 2) * 1.6;
+        box(tx, roofY, tz, 1.1, 1.3, 1.1, -rot, (seed + t * 0.3) % 1 > 0.5 ? [0.12, 0.12, 0.13] : [0.85, 0.85, 0.82], 3, seed, roofY, roofY);
+      }
+      if (style === 0 && seed2 < 0.55) {
+        for (let i = 0; i < Math.min(n, 6); i++) {
+          const v = pts[i], dx = cx - v.x, dz = cz - v.y, dl = Math.hypot(dx, dz) || 1;
+          box(v.x + dx / dl * 0.4, top, v.y + dz / dl * 0.4, 0.3, 1.2 + seed * 0.8, 0.3, 0, [0.5, 0.36, 0.28], 3, seed, top, top);
+        }
+      }
+    }
     out.push({ pts, h });
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('aInfo', new THREE.Float32BufferAttribute(info, 4));
   geo.setIndex(idx);
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, mats.town);
@@ -524,6 +567,141 @@ function buildBoatPit(pit, mats, collidables, group) {
   group.add(boat); boat.updateMatrixWorld(true);
   collidables.push(hull, cabin);
   return { x: cx, y: y + 4, z: cz };
+}
+
+// Surface details of the pyramids as they stand today: the great gabled
+// (chevron) blocks over Khufu's original entrance and al-Ma'mun's robbers'
+// tunnel below it, the vertical gash torn into Menkaure's north face in
+// 1196, and aprons of fallen casing and core rubble around every base.
+function buildPyramidDetails(mats, collidables, group) {
+  const kh = PYRAMIDS.khufu, half = kh.base / 2, zf = y => kh.center.z - half * (1 - y / kh.height);
+  const geoms = [];
+  for (const [yApex, out] of [[24.2, 1.6], [22.6, 0.6]]) {               // two pairs of gabled beams
+    for (const sgn of [-1, 1]) {
+      const g = new THREE.BoxGeometry(5.6, 1.5, 2.2);
+      g.rotateZ(sgn * 0.68);
+      g.translate(7 + sgn * 2.0, yApex - 1.5, zf(yApex - 1.5) - out);
+      geoms.push(g);
+    }
+  }
+  const chev = new THREE.Mesh(mergeGeometries(geoms, false), mats.casing);
+  chev.castShadow = true; chev.receiveShadow = true; chev.userData.collidable = true;
+  group.add(chev); collidables.push(chev);
+  const hole = new THREE.MeshStandardMaterial({ color: 0x17120d, roughness: 1 });
+  const mamun = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.2, 4), hole);
+  mamun.position.set(kh.center.x - 0.5, 7.4, zf(7.4) + 0.6); group.add(mamun);
+  // Menkaure's north-face gash (a dark, rough-edged recess up the centre)
+  const mk = PYRAMIDS.menkaure, mh = mk.base / 2, mzf = y => mk.center.z - mh * (1 - y / mk.height);
+  const slope = Math.atan2(mk.height, mh);
+  const gash = new THREE.Mesh(new THREE.BoxGeometry(5.2, 30, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x5e4c36, roughness: 1 }));
+  gash.rotation.x = Math.PI / 2 - slope;            // lean back with the face
+  const gy = 12;
+  gash.position.set(mk.center.x, mk.baseY + gy, mzf(gy) - 0.15);
+  group.add(gash);
+  // rubble aprons
+  const rub = [];
+  let seed = 3;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  for (const p of Object.values(PYRAMIDS)) {
+    const hb = p.base / 2, n = Math.round(p.base * 0.9);
+    for (let i = 0; i < n; i++) {
+      const side = Math.floor(rnd() * 4), t = (rnd() - 0.5) * 2 * hb, d = hb + 0.5 + Math.pow(rnd(), 2) * 9;
+      const x = p.center.x + (side === 0 ? t : side === 1 ? d : side === 2 ? -t : -d);
+      const z = p.center.z + (side === 0 ? -d : side === 1 ? t : side === 2 ? d : -t);
+      if (p.id === 'khufu' && Math.abs(x - 7) < 9 && z < p.center.z - hb + 2) continue;   // keep the entrance stair clear
+      const s = 0.35 + Math.pow(rnd(), 2.2) * 1.4;
+      rub.push(new THREE.BoxGeometry(s * (1 + rnd()), s * 0.7, s).rotateY(rnd() * 3).translate(x, terrainHeight(x, z) + s * 0.2, z));
+    }
+  }
+  const apron = new THREE.Mesh(mergeGeometries(rub, false), mats.limestone);
+  apron.castShadow = true; apron.receiveShadow = true;
+  group.add(apron);
+}
+
+// Tour buses lined up in the mapped car parks.
+function buildBuses(collidables, group) {
+  const geoms = [];
+  const liveries = [[0.92, 0.92, 0.9], [0.95, 0.95, 0.95], [0.85, 0.2, 0.18], [0.2, 0.35, 0.65], [0.95, 0.75, 0.2], [0.88, 0.88, 0.86]];
+  let seed = 11;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const paint = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set(toLin(c), i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  for (const [px, pz, L, W, rot] of PARKING) {
+    if (Math.hypot(px, pz) > 1100) continue;
+    const ax = Math.cos(rot * DEG), az = Math.sin(rot * DEG);
+    const cols = Math.floor((L - 6) / 4.2), rows = Math.max(1, Math.floor((W - 4) / 16));
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (rnd() < 0.45) continue;
+      const u = (c - (cols - 1) / 2) * 4.2, v = (r - (rows - 1) / 2) * 16;
+      const x = px + ax * u - az * v, z = pz + az * u + ax * v, y = terrainHeight(x, z);
+      const liv = liveries[Math.floor(rnd() * liveries.length)], yaw = -(rot * DEG) + Math.PI / 2;
+      const body = paint(new THREE.BoxGeometry(12, 3.0, 2.55), liv).rotateY(yaw).translate(x, y + 1.75, z);
+      const glass = paint(new THREE.BoxGeometry(11.6, 1.1, 2.6), [0.08, 0.1, 0.12]).rotateY(yaw).translate(x, y + 2.35, z);
+      const wheels = paint(new THREE.BoxGeometry(9.5, 0.7, 2.3), [0.06, 0.06, 0.06]).rotateY(yaw).translate(x, y + 0.35, z);
+      geoms.push(body, glass, wheels);
+    }
+  }
+  if (!geoms.length) return;
+  const mesh = new THREE.Mesh(mergeGeometries(geoms, false),
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.2, envMapIntensity: 0.8 }));
+  mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData.collidable = true;
+  group.add(mesh); collidables.push(mesh);
+}
+
+// Visitors milling about the famous spots: simple instanced figures that
+// wander between random points, pausing to look around.
+function buildTourists(group) {
+  const spots = [
+    { x: 7, z: -150, r: 38, n: 34 }, { x: 150, z: -110, r: 25, n: 10 }, { x: 440, z: 452, r: 22, n: 26 },
+    { x: -330, z: 222, r: 30, n: 14 }, { x: -575, z: 660, r: 22, n: 8 }, { x: -737, z: 1149, r: 18, n: 16 },
+    { x: 4, z: -235, r: 55, n: 18 }, { x: 395, z: 395, r: 14, n: 8 }
+  ];
+  const total = spots.reduce((s, p) => s + p.n, 0);
+  // a lathed human silhouette: legs, hips, torso, shoulders, neck
+  const bodyG = new THREE.LatheGeometry([[0.001, 0], [0.12, 0], [0.11, 0.45], [0.13, 0.82], [0.17, 0.92], [0.16, 1.1],
+    [0.21, 1.33], [0.2, 1.4], [0.07, 1.47], [0.05, 1.52]].map(([r, y]) => new THREE.Vector2(r, y)), 7);
+  bodyG.scale(1, 1, 0.62);                                                          // flatter front-to-back
+  const headG = new THREE.SphereGeometry(0.12, 8, 6); headG.translate(0, 1.6, 0);
+  const bodies = new THREE.InstancedMesh(bodyG, new THREE.MeshStandardMaterial({ roughness: 0.85 }), total);
+  const heads = new THREE.InstancedMesh(headG, new THREE.MeshStandardMaterial({ roughness: 0.7 }), total);
+  const shirts = [0xf2f2f2, 0x2b4f8c, 0xc23b2f, 0x1e1e1e, 0xe8c547, 0x6fa36a, 0xd98ab0, 0x8a6b4a, 0x4fb3c9, 0xb0b0b0];
+  const skins = [0xc99d78, 0x8d5f3f, 0xe6c2a0, 0xa8754f, 0xf0d2b8];
+  let seed = 5;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const people = [], c = new THREE.Color();
+  for (const sp of spots) for (let i = 0; i < sp.n; i++) {
+    const a = rnd() * 6.283, r = Math.sqrt(rnd()) * sp.r;
+    const p = { sp, x: sp.x + Math.cos(a) * r, z: sp.z + Math.sin(a) * r, tx: 0, tz: 0, wait: rnd() * 6, speed: 0.6 + rnd() * 0.6, h: 0.9 + rnd() * 0.17, ph: rnd() * 9, yaw: rnd() * 6.3 };
+    p.tx = p.x; p.tz = p.z;
+    const k = people.length;
+    bodies.setColorAt(k, c.setHex(shirts[Math.floor(rnd() * shirts.length)]));
+    heads.setColorAt(k, c.setHex(skins[Math.floor(rnd() * skins.length)]));
+    people.push(p);
+  }
+  bodies.castShadow = heads.castShadow = true;
+  bodies.frustumCulled = heads.frustumCulled = false;
+  group.add(bodies, heads);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), v = new THREE.Vector3();
+  let last = 0;
+  return t => {
+    const dt = Math.min(0.1, last ? t - last : 0); last = t;
+    people.forEach((p, k) => {
+      if (p.wait > 0) p.wait -= dt;
+      else {
+        const dx = p.tx - p.x, dz = p.tz - p.z, d = Math.hypot(dx, dz);
+        if (d < 0.3) {
+          p.wait = 2 + rnd() * 9;
+          const a = rnd() * 6.283, r = Math.sqrt(rnd()) * p.sp.r;
+          p.tx = p.sp.x + Math.cos(a) * r; p.tz = p.sp.z + Math.sin(a) * r;
+        } else { p.x += dx / d * p.speed * dt; p.z += dz / d * p.speed * dt; p.yaw = Math.atan2(dx, dz); }
+      }
+      const walking = p.wait <= 0 ? 1 : 0;
+      e.set(0, p.yaw, Math.sin(t * 7 + p.ph) * 0.04 * walking); q.setFromEuler(e);
+      m.compose(v.set(p.x, terrainHeight(p.x, p.z) + Math.abs(Math.sin(t * 7 + p.ph)) * 0.04 * walking, p.z), q, sc.set(1, p.h, 1));
+      bodies.setMatrixAt(k, m); heads.setMatrixAt(k, m);
+    });
+    bodies.instanceMatrix.needsUpdate = heads.instanceMatrix.needsUpdate = true;
+  };
 }
 
 // A simple resting/standing camel.
@@ -881,11 +1059,16 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   for (let i = 0; i < 4; i++) { const c = buildCamel(deco, 0, 0, 0, null); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
   const cc = { x: -180, z: 640 }, cr = 55;
 
+  buildPyramidDetails(mats, collidables, group);
+  buildBuses(collidables, group);
+  const touristTick = buildTourists(group);
+
   // Surviving casing at the Great Pyramid base + circling birds
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
   const birdTick = buildBirds(group);
   const tick = t => {
     birdTick(t);
+    touristTick(t);
     for (const c of caravan) {
       const s = (t * 1.1 + c.off) / cr;
       const x = cc.x + Math.cos(s) * cr, z = cc.z + Math.sin(s) * cr;

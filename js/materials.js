@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { EXTENT } from './geodata.js';
+import { sphinxMaterial } from './sphinx.js';
 
 // =====================================================================
 //  Procedural PBR material set. Every surface gets a colour map, a
@@ -367,29 +368,83 @@ export function sandShaderPatch(shader, ground) {
       #endif`);
 }
 
-// Modern town: window grids on the walls (lit at night) over vertex colours.
+// Modern town facades, drawn procedurally per building from aInfo =
+// (style + 4*part, seed, ground y, roof y): style 0 = red brick infill in a
+// concrete frame (Nazlet el-Samman's unfinished blocks), 1 = plastered and
+// painted, 2 = bare concrete with wide glazing; part 0 = wall, 1 = roof,
+// 2 = roof clutter. Windows light up at night (gzNight), ground floors get
+// shop shutters, and walls are streaked and dirtied toward the street.
 export function townPatch(night) {
   return shader => {
     shader.uniforms.gzNight = night;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 aInfo;\nvarying vec4 vInfo;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInfo = aInfo;');
     const [head, tail] = shader.fragmentShader.split('void main() {');
-    shader.fragmentShader = head.replace('#include <common>', '#include <common>\nuniform float gzNight;\n' + GZ_GLSL) +
+    shader.fragmentShader = head.replace('#include <common>', '#include <common>\nuniform float gzNight;\nvarying vec4 vInfo;\n' + GZ_GLSL) +
       'void main() {' + tail.replace('#include <color_fragment>', `
       #include <color_fragment>
       vec3 tP = cameraPosition + ((-vViewPosition) * mat3(viewMatrix));
       vec3 tN = inverseTransformDirection(normalize(vNormal), viewMatrix);
-      float tWall = 1.0 - step(0.5, abs(tN.y));
-      float tU = abs(tN.x) > abs(tN.z) ? tP.z : tP.x;
-      float tF = tP.y / 3.1, tFy = fract(tF), tFu = fract(tU / 3.4);
-      float tWin = tWall * step(0.38, tFy) * step(tFy, 0.8) * step(0.3, tFu) * step(tFu, 0.7);
-      float tH = gzHash(vec2(floor(tU / 3.4), floor(tF)) + floor(tP.xz * 0.05) * 7.0);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.05, 0.06), tWin * 0.85);
-      float tLit = tWin * step(0.66, tH);`)
+      float tPart = floor(vInfo.x / 4.0 + 0.01), tStyle = vInfo.x - tPart * 4.0, tSeed = vInfo.y;
+      float tWall = (tPart < 0.5 ? 1.0 : 0.0) * (1.0 - step(0.5, abs(tN.y)));
+      vec3 tT = normalize(vec3(-tN.z, 0.0, tN.x) + 1e-5);
+      float tU = dot(tP, tT) + tSeed * 37.0;
+      float tLy = tP.y - vInfo.z, tH = vInfo.w - vInfo.z;
+      float tFl = floor(tLy / 3.1), tFy = fract(tLy / 3.1);
+      float tBay = mix(3.1, 4.3, fract(tSeed * 7.31));
+      float tFu = fract(tU / tBay), tBayId = floor(tU / tBay);
+      float tInside = step(0.3, tLy) * step(tLy, tH - 0.4);           // below the parapet
+      float tWin = 0.0, tLit = 0.0, tGlass = 0.0;
+      if (tWall > 0.5) {
+        float wH = gzHash(vec2(tBayId, tFl) + tSeed * 13.0);
+        if (tStyle < 0.5) {
+          // brick infill: courses + staggered joints, inside a concrete frame
+          float row = floor(tLy / 0.21);
+          float bu = fract((tU + mod(row, 2.0) * 0.12) / 0.24);
+          float mortar = max(step(fract(tLy / 0.21), 0.12), step(bu, 0.06));
+          diffuseColor.rgb *= mix(1.0, 0.82, mortar) * (0.9 + 0.2 * gzHash(vec2(floor(tU / 0.24), row)));
+          float frame = max(step(tFu, 0.07), step(tFy, 0.09)) * tInside + (1.0 - step(tLy, tH - 0.3)) * 0.0;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.70, 0.68, 0.64), frame);
+          tWin = step(0.3, tFu) * step(tFu, 0.72) * step(0.32, tFy) * step(tFy, 0.8);
+        } else if (tStyle < 1.5) {
+          // plaster: windows with pale surrounds, some wooden shutters
+          float sur = step(0.25, tFu) * step(tFu, 0.77) * step(0.27, tFy) * step(tFy, 0.85);
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.12 + 0.05, sur * 0.6);
+          tWin = step(0.3, tFu) * step(tFu, 0.72) * step(0.32, tFy) * step(tFy, 0.8);
+          if (wH > 0.62) { diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.36, 0.42, 0.33) * (0.8 + 0.4 * fract(tSeed * 3.7)), tWin); tWin *= 0.0; }
+          diffuseColor.rgb *= 1.0 - 0.18 * step(fract(tLy / 3.1), 0.05);  // floor-line stains
+        } else {
+          // concrete: wide glazing bands
+          tWin = step(0.12, tFu) * step(tFu, 0.88) * step(0.28, tFy) * step(tFy, 0.86);
+          tGlass = tWin;
+        }
+        tWin *= tInside;
+        // ground floor shops: rolling shutters / lit shopfronts
+        if (tFl < 0.5 && tSeed > 0.3 && gzHash(vec2(tBayId, tSeed)) > 0.3) {
+          float sh = step(0.07, tFu) * step(tFu, 0.93) * step(tFy, 0.82);
+          float ribs = 0.85 + 0.15 * step(0.5, fract(tLy * 6.0));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.42, 0.44, 0.46) * ribs, sh);
+          tLit = sh * step(0.55, gzHash(vec2(tBayId, 3.0) + tSeed)) * 0.7;
+          tWin *= 0.0;
+        }
+        diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.05, 0.05, 0.06), vec3(0.12, 0.16, 0.2), tGlass), tWin * 0.9);
+        tLit = max(tLit, tWin * step(0.64, wH));
+        // weathering: vertical rain streaks, street grime at the base
+        diffuseColor.rgb *= 0.86 + 0.14 * gzNoise(vec2(tU * 0.9, tLy * 0.06 + tSeed * 9.0));
+        diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 1.6, tLy));
+      } else if (tPart > 0.5 && tPart < 1.5) {
+        // roofs: mottled, dusty, with darker patches of junk and stains
+        float m = gzNoise(tP.xz * 0.35 + tSeed * 5.0);
+        diffuseColor.rgb *= 0.82 + 0.3 * m;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.55, 0.45), 0.25 * gzNoise(tP.xz * 0.08));
+      }`)
       .replace('#include <emissivemap_fragment>', `
       #include <emissivemap_fragment>
-      totalEmissiveRadiance += mix(vec3(1.0, 0.7, 0.4), vec3(0.75, 0.85, 1.0), step(0.9, tH)) * tLit * gzNight * 1.8;`)
+      totalEmissiveRadiance += mix(vec3(1.0, 0.7, 0.4), vec3(0.75, 0.85, 1.0), step(0.85, fract(tSeed * 11.0 + tFl * 0.37))) * tLit * gzNight * 1.8;`)
       .replace('#include <roughnessmap_fragment>', `
       #include <roughnessmap_fragment>
-      roughnessFactor = mix(roughnessFactor, 0.2, tWin);`);
+      roughnessFactor = mix(roughnessFactor, mix(0.35, 0.12, tGlass), tWin);`);
   };
 }
 
@@ -546,7 +601,7 @@ export function makeMaterials() {
   interiorGraniteMat.userData.shaderPatch = triplanarPatch(5);
   interiorGraniteMat.customProgramCacheKey = () => 'giza-igranite-tp';
 
-  const townMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, envMapIntensity: 0.3 });
+  const townMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, envMapIntensity: 0.3, side: THREE.DoubleSide });
   townMat.userData.night = { value: 0 };
   townMat.userData.shaderPatch = townPatch(townMat.userData.night);
   townMat.customProgramCacheKey = () => 'giza-town';
@@ -563,6 +618,7 @@ export function makeMaterials() {
     interiorGranite: interiorGraniteMat,
     wood: new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.85, metalness: 0.0, envMapIntensity: 0.4 }),
     plaster: new THREE.MeshStandardMaterial({ color: 0xe4dccb, roughness: 0.9, envMapIntensity: 0.3 }),
-    town: townMat
+    town: townMat,
+    sphinx: sphinxMaterial()
   };
 }

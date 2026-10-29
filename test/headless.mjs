@@ -23,7 +23,22 @@ globalThis.document = {
 const { makeMaterials } = await import('../js/materials.js');
 const { buildWorld } = await import('../js/world.js');
 const { buildCollider, Player } = await import('../js/player.js');
-const { TELEPORTS } = await import('../js/data.js');
+const { TELEPORTS, PYRAMIDS, SPHINX } = await import('../js/data.js');
+
+// Layout accuracy: centre-to-centre offsets from the Great Pyramid against
+// Petrie's 1880-82 triangulation, and the Sphinx against its mapped outline.
+{
+  const check = (name, got, want, tol) => {
+    const err = Math.hypot(got.x - want.x, got.z - want.z);
+    if (err > tol) throw new Error(`${name} is ${err.toFixed(2)} m from its surveyed position`);
+    console.log(`layout OK — ${name}: ${Math.hypot(got.x, got.z).toFixed(1)} m from Khufu (error ${err.toFixed(2)} m)`);
+  };
+  check('Khafre', PYRAMIDS.khafre.center, { x: -334.41, z: 353.86 }, 0.05);
+  check('Menkaure', PYRAMIDS.menkaure.center, { x: -574.45, z: 739.19 }, 0.05);
+  check('Sphinx', SPHINX.center, { x: 326.1, z: 431.0 }, 2);
+  const d = Math.hypot(PYRAMIDS.khafre.center.x - PYRAMIDS.khufu.center.x, PYRAMIDS.khafre.center.z - PYRAMIDS.khufu.center.z);
+  if (Math.abs(d - 486.9) > 0.5) throw new Error('Khufu–Khafre spacing off: ' + d);
+}
 
 const scene = new THREE.Scene();
 const mats = makeMaterials();
