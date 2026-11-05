@@ -391,6 +391,23 @@ for r in ov['segment']:
         roads.append(dict(w=ROAD_W[r['class']], k=kind, p=p.ravel().tolist()))
 print('roads', len(roads), file=sys.stderr)
 
+# Driving routes on the plateau (for the horse carriages and camel rides):
+# the paved roads inside the archaeological site, merged into long lines.
+from shapely.ops import linemerge
+site_lines = []
+for r in ov['segment']:
+    if r['subtype'] == 'road' and r['class'] in ('service', 'unclassified', 'tertiary', 'residential', 'pedestrian', 'track'):
+        g = r['L']
+        if g.geom_type == 'LineString' and fence.contains(g.centroid) and in_extent(g, 30):
+            site_lines.append(g)
+merged = linemerge(site_lines)
+routes = []
+for part in getattr(merged, 'geoms', [merged]):
+    if part.length > 220:
+        p_ = np.round(np.array(part.simplify(2.5).coords) * 2) / 2
+        routes.append(p_.ravel().tolist())
+print('routes', len(routes), 'km %.1f' % (sum(LineString(np.array(r).reshape(-1, 2)).length for r in routes) / 1000), file=sys.stderr)
+
 # ---------------------------------------------------------------- imagery
 from pyproj import Transformer
 _tr = Transformer.from_crs(4326, 32636, always_xy=True)
@@ -520,6 +537,8 @@ lines = [
     '// modern buildings: per-building vertex counts, flat [x,z,...] outline, heights',
     '// (+ roof colour sampled from Sentinel-2, facade style 0 brick-frame / 1 plaster / 2 concrete)',
     f'export const TOWN = {{ n: {fl(town_counts)}, p: {fl(town_pts)}, h: {fl([t[1] for t in town])}, c: {fl(town_roof)}, s: {fl(town_style)} }};',
+    '// paved routes across the site (carriages and camel rides): flat [x,z,...] each',
+    f'export const ROUTES = {fl(routes)};',
     '// car/bus parks: [x, z, length, width, rotationDeg]',
     f'export const PARKING = {fl(parking)};',
     '// palms where Sentinel-2 NDVI shows vegetation: flat [x, z, scale, ...]',

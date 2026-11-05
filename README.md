@@ -51,6 +51,10 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 
 ## Things to do
 
+- **Ride a camel.** Saddled camels wait by the Sphinx, on the Great Pyramid's
+  north side and at the panorama viewpoint: walk up and press `E`.
+- **Stay for the Sound & Light show.** After dark, coloured floodlights on the
+  Sphinx terrace sweep the Sphinx and the three pyramids.
 - **Climb the Great Pyramid.** The stepped core is real collision geometry:
   walk up the smaller courses, jump the tall ones, and stand on the flat
   summit 139 m up. (Please don't do this in real life.)
@@ -134,7 +138,10 @@ COPERNICUS by the European Union and ESA.
   original entrance and al-Ma'mun's robbers' tunnel below it, the gash in
   Menkaure's north face, rubble aprons around the bases, burial-shaft mouths,
   false doors and broken tops on the mastabas, tour buses in the mapped car
-  parks, and visitors wandering the famous spots.
+  parks, visitors who walk the famous spots (swinging arms and legs), horse
+  carriages and led camel rides plying the mapped site roads, the surveyors'
+  mast on Khufu's summit marking its original height, the Sphinx enclosure's
+  rough quarried rock walls, and high cirrus that colours with the sunset.
 - **Mastaba cemeteries** (the Eastern and Western fields of street-gridded
   tombs around the Great Pyramid, from their mapped footprints), **causeways**
   climbing from the valley temples to the mortuary temples, Khafre's granite
@@ -200,6 +207,7 @@ js/data.js         # survey data: dimensions, positions, interior layout
 js/geodata.js      # GENERATED: DEM, mapped sites, tombs, town, palms
 js/terrain.js      # real topography: DEM + levelled platforms, height lookup
 js/sphinx.js       # the sculpted Sphinx (SDF + surface nets) and its material
+js/life.js         # visitors, carriages, camel rides, rideable camels, light show
 js/materials.js    # procedural stone / sand textures + materials
 js/builders.js     # geometry: pyramid faces, tunnels, rooms, stairs, sarcophagi
 js/world.js        # assembles the plateau, terrain, sky and lighting

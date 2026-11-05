@@ -184,3 +184,51 @@ export class Sandstorm {
     if (this.csm && this.day) for (const l of this.csm.lights) l.intensity = this.day.sunIntensity * (1 - 0.55 * k);
   }
 }
+
+// High, thin cirrus streaks: a large textured sheet far overhead that drifts
+// with the wind and takes the colour of the light — white at noon, gold and
+// rose at sunset, a faint moonlit grey at night — and vanishes in a storm.
+export class Clouds {
+  constructor(scene) {
+    const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), img = g.createImageData(S, S);
+    const rnd = (() => { let s = 77; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+    const grid = (n) => Array.from({ length: n * n }, rnd);
+    const oct = [[8, 0.5], [16, 0.25], [32, 0.15], [64, 0.1]].map(([n, a]) => ({ n, a, v: grid(n) }));
+    const at = (o, x, y) => {             // tileable bilinear value noise, stretched along x
+      const fx = x * o.n / 4, fy = y * o.n, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+      const q = (a, b) => o.v[((b % o.n + o.n) % o.n) * o.n + ((a % o.n + o.n) % o.n)];
+      const sm = t => t * t * (3 - 2 * t);
+      return (q(i, j) * (1 - sm(u)) + q(i + 1, j) * sm(u)) * (1 - sm(v)) + (q(i, j + 1) * (1 - sm(u)) + q(i + 1, j + 1) * sm(u)) * sm(v);
+    };
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      let n = 0; for (const o of oct) n += at(o, x / S * 4, y / S) * o.a;
+      const a = Math.max(0, Math.min(1, (n - 0.52) * 3.2));
+      const k = (y * S + x) * 4;
+      img.data[k] = img.data[k + 1] = img.data[k + 2] = 255; img.data[k + 3] = a * a * 255;
+    }
+    g.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 3);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, opacity: 0.6 });
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000), this.mat);
+    this.mesh.rotation.x = Math.PI / 2;           // face down
+    this.mesh.renderOrder = -1;
+    scene.add(this.mesh);
+    this.tex = tex;
+    this._c = new THREE.Color();
+  }
+  update(dt, day, camPos, storm) {
+    this.tex.offset.x += dt * 0.0016; this.tex.offset.y += dt * 0.0004;
+    this.mesh.position.set(camPos.x, 2400, camPos.z);
+    const e = day.elev;
+    const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const dayK = sm(-6, 8, e), gold = sm(0, 5, e) * (1 - sm(8, 22, e));
+    this._c.setRGB(1, 1, 1).lerp(new THREE.Color(1.0, 0.62, 0.42), gold * 0.85);
+    this._c.lerp(new THREE.Color(0.55, 0.6, 0.75), 1 - dayK);       // faint, moonlit at night
+    this._c.multiplyScalar(0.35 + 0.65 * dayK);
+    this.mat.color.copy(this._c);
+    this.mat.opacity = (0.05 + 0.6 * dayK) * (1 - storm);
+  }
+}

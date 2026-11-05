@@ -4,7 +4,8 @@ import { makeMaterials } from './materials.js';
 import { buildWorld, terrainHeight, inPit } from './world.js';
 import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
-import { DayCycle, Sandstorm, Stars } from './atmosphere.js';
+import { DayCycle, Sandstorm, Stars, Clouds } from './atmosphere.js';
+import { animateCamelLegs } from './life.js';
 import { Quest } from './quest.js';
 import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
 import { GEO, EXTENT } from './geodata.js';
@@ -59,6 +60,7 @@ const BASE_FOV = 72, SPRINT_FOV = 80;
 
 // ---- Atmosphere: time of day, stars, sandstorms, interior motes --------
 const stars = new Stars(scene);
+const clouds = new Clouds(scene);
 const day = new DayCycle({ scene, renderer, sky: world.sky, csm: world.csm, hemi: world.hemi, flare, stars });
 day.setHour(typeof SAVED.hour === 'number' ? SAVED.hour : 16);
 const storm = new Sandstorm({ scene, sand, post, audio, csm: world.csm, day });
@@ -166,6 +168,7 @@ addEventListener('keyup', e => {
 });
 
 function toggleFly() {
+  if (riding) dismount();
   player.fly = !player.fly;
   document.getElementById('flyState').textContent = player.fly ? 'ON' : 'off';
 }
@@ -251,8 +254,53 @@ const TORCH_MAT_FLAME = new THREE.MeshStandardMaterial({ color: 0xffc24a, emissi
 world.setupMaterial(TORCH_MAT_STICK); world.setupMaterial(TORCH_MAT_FLAME);
 
 // Aim + click: pick up a torch you're looking at, otherwise place one.
+// ---- Camel riding: walk up to a saddled camel and press E ------------
+let riding = null, hintCamel = null;
+const _cf = new THREE.Vector3();
+function nearestCamel(r = 4.2) {
+  let best = null, bd = r;
+  for (const c of world.rideables) {
+    const d = Math.hypot(c.position.x - player.position.x, c.position.z - player.position.z);
+    if (d < bd && Math.abs(c.position.y - player.position.y) < 3) { bd = d; best = c; }
+  }
+  return best;
+}
+function mount(c) {
+  riding = c; player.fly = false;
+  player.teleport({ x: c.position.x, y: c.position.y + 0.3, z: c.position.z });
+  player.speedMul = 1.45; player.eyeExtra = 2.8;             // seated up on the hump
+  camera.getWorldDirection(_cf); c.rotation.y = Math.atan2(-_cf.z, _cf.x);
+  toast('🐪 Up you go! Walk to amble, Shift to trot — E to get down.', 3200);
+  quest.award('camel');
+}
+function dismount() {
+  const c = riding; riding = null;
+  player.speedMul = 1; player.eyeExtra = 0;
+  const th = c.rotation.y, x = c.position.x + Math.sin(th) * 2.4, z = c.position.z + Math.cos(th) * 2.4;
+  player.teleport({ x, y: terrainHeight(x, z) + 0.5, z });
+  animateCamelLegs(c, 0, 0);
+}
+function updateRide(t, dt) {
+  if (riding) {
+    camera.getWorldDirection(_cf); _cf.y = 0; _cf.normalize();
+    const want = Math.atan2(-_cf.z, _cf.x);
+    let d = want - riding.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d));
+    riding.rotation.y += d * Math.min(1, dt * 4);
+    const fx = Math.cos(riding.rotation.y), fz = -Math.sin(riding.rotation.y);
+    const x = player.position.x + fx * 0.2, z = player.position.z + fz * 0.2;
+    riding.position.set(x, terrainHeight(x, z), z);
+    animateCamelLegs(riding, t, player.vXZ.length() * 0.45);
+    return;
+  }
+  const c = (started && !player.fly) ? nearestCamel() : null;
+  if (c && c !== hintCamel) toast('🐪 A saddled camel — press E (or USE) to ride', 2200);
+  hintCamel = c;
+}
+
 function useItem() {
   if (!(started || controls.isLocked) || mapOpen) return;
+  if (riding) { dismount(); return; }
+  { const c = player.fly ? null : nearestCamel(); if (c) { mount(c); return; } }
   _ray.set(camera.getWorldPosition(_rp), camera.getWorldDirection(_rd));
   _ray.far = 5;
   // 1) Pick up a placed torch under the crosshair.
@@ -967,6 +1015,10 @@ function animate() {
   // Immersion: dust at the feet, drifting sand, wind + footsteps, sprint FOV.
   const outdoors = !isUnderground(player.position);
   day.update(delta, camera.position);
+  updateRide(t, delta);
+  const showK = THREE.MathUtils.clamp((-4 - day.elev) / 4, 0, 1);
+  world.lightShow(t, perfMode ? 0 : showK);
+  clouds.update(delta, day, camera.position, storm.k);
   mats.town.userData.night.value = THREE.MathUtils.clamp((4 - day.elev) / 8, 0, 1);   // town lights at dusk
   storm.update(delta, outdoors);
   dust.update(delta, player, outdoors);
@@ -975,6 +1027,7 @@ function animate() {
   motes.update(delta, t, player.position, !outdoors && !perfMode);
   const pp = player.position;
   quest.update(t, delta, { outdoors, night: day.isNight, storm: storm.k > 0.5,
+    show: showK > 0.5 && outdoors && Math.hypot(pp.x - SPHINX.center.x - 90, pp.z - SPHINX.center.z) < 160,
     sphinx: Math.abs(pp.x - (SPHINX.center.x + 30)) < 8 && Math.abs(pp.z - SPHINX.center.z) < 8 && pp.y < SPHINX.floorY + 3 });
   audio.update(t, player.speedXZ, !outdoors, player.fly);
   audio.steps(delta, player, !outdoors);
@@ -1013,7 +1066,7 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
-  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
+  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.

@@ -18,7 +18,9 @@ const ACHIEVEMENTS = [
   { id: 'sites', name: 'Surveyor', text: 'You visited every named site on the plateau.' },
   { id: 'night', name: 'Under the stars', text: 'You watched the pyramids by starlight.' },
   { id: 'storm', name: 'Sand in your teeth', text: 'You weathered a sandstorm out in the open.' },
-  { id: 'runner', name: 'Desert runner', text: 'You ran a full kilometre across the sand.' }
+  { id: 'runner', name: 'Desert runner', text: 'You ran a full kilometre across the sand.' },
+  { id: 'camel', name: 'Ship of the desert', text: 'You rode a camel across the plateau.' },
+  { id: 'show', name: 'Sound & Light', text: 'You watched the evening light show from the Sphinx terrace.' }
 ];
 
 function artifactMesh(type, setupMaterial) {
@@ -108,6 +110,7 @@ export class Quest {
       if (env.sphinx) this.award('sphinx');
       if (env.night && env.outdoors) this.award('night');
       if (env.storm && env.outdoors) this.award('storm');
+      if (env.show) this.award('show');
       if (this.player.onGround && this.player.speedXZ > 9 && env.outdoors) {
         this.runDist += this.player.speedXZ * dt;
         if (this.runDist > 1000) this.award('runner');

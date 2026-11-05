@@ -45,6 +45,8 @@ export class Player {
     this.bobY = 0;
     this.onGround = false;
     this.fly = false;
+    this.speedMul = 1;      // >1 while riding
+    this.eyeExtra = 0;      // extra eye height (sitting up on a camel)
 
     // capsule endpoints relative to feet position
     this.segTop = new THREE.Vector3(0, this.height - this.radius, 0);
@@ -142,9 +144,9 @@ export class Player {
     const targetH = input.crouch ? CROUCH_H : STAND_H;
     this.height = THREE.MathUtils.damp(this.height, targetH, 12, delta);
     this.segTop.set(0, Math.max(this.height - this.radius, this.radius + 0.02), 0);
-    this.eye = this.height - 0.18;
+    this.eye = this.height - 0.18 + this.eyeExtra;
 
-    let speed = input.sprint ? SPEED_RUN : SPEED_WALK;
+    let speed = (input.sprint ? SPEED_RUN : SPEED_WALK) * this.speedMul;
     if (input.crouch) speed *= 0.5;
     this.velocity.y += GRAVITY * delta;
     if (this.onGround && input.jump && !input.crouch) { this.velocity.y = JUMP; this.onGround = false; }

@@ -619,6 +619,7 @@ export function makeMaterials() {
     wood: new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.85, metalness: 0.0, envMapIntensity: 0.4 }),
     plaster: new THREE.MeshStandardMaterial({ color: 0xe4dccb, roughness: 0.9, envMapIntensity: 0.3 }),
     town: townMat,
-    sphinx: sphinxMaterial()
+    sphinx: sphinxMaterial(),
+    rock: sphinxMaterial({ joints: false })
   };
 }

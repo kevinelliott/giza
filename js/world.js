@@ -15,7 +15,8 @@ import {
 } from './builders.js';
 import { terrainHeight, inPit, groundUnder, GRID, SPHINX_PIT } from './terrain.js';
 import { TOMBS, TOWN, TREES, TEMPLES, EXTENT, PARKING, SITES as GEO_SITES } from './geodata.js';
-import { buildSphinxGeometry } from './sphinx.js';
+import { buildSphinxGeometry, rockify } from './sphinx.js';
+import { buildCamel, animateCamelLegs, buildTraffic, buildVisitors, buildSummitMast, buildLightShow } from './life.js';
 const SITES_SPHINX_ROT = GEO_SITES.sphinx.rot;
 
 // The ground: the real 30 m elevation model baked into a 10 m grid (see
@@ -152,8 +153,11 @@ function buildSphinx(mats, collidables, group, baseY) {
 function buildSphinxEnclosure(mats, collidables, group) {
   const { x0, x1, z0, z1, y: floorY } = SPHINX_PIT;
   const t = 5;
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0 + 2 * t, 1, z1 - z0 + 2 * t), mats.bedrock);
-  floor.position.set((x0 + x1) / 2, floorY - 0.5, (z0 + z1) / 2); floor.receiveShadow = true;
+  const fw = x1 - x0 + 2 * t, fd = z1 - z0 + 2 * t;
+  const floorG = new THREE.PlaneGeometry(fw, fd, Math.round(fw / 1.5), Math.round(fd / 1.5)).rotateX(-Math.PI / 2)
+    .translate((x0 + x1) / 2, floorY + 0.05, (z0 + z1) / 2);
+  const floor = new THREE.Mesh(rockify(floorG, 0.35), mats.rock);
+  floor.receiveShadow = true;
   floor.userData.collidable = true; group.add(floor); collidables.push(floor);
   const geoms = [];
   // wall pieces whose tops follow the ground just outside the pit
@@ -165,9 +169,10 @@ function buildSphinxEnclosure(mats, collidables, group) {
       const top = Math.max(terrainHeight(px0 + ox, pz0 + oz), terrainHeight(px1 + ox, pz1 + oz),
         terrainHeight((px0 + px1) / 2 + ox, (pz0 + pz1) / 2 + oz)) + 0.4;
       const hgt = Math.max(0.6, top - floorY);
-      const g = new THREE.BoxGeometry(Math.abs(px1 - px0) || t, hgt, Math.abs(pz1 - pz0) || t);
+      const sx = Math.abs(px1 - px0) || t, sz = Math.abs(pz1 - pz0) || t;
+      const g = new THREE.BoxGeometry(sx, hgt, sz, Math.ceil(sx / 1.1), Math.ceil(hgt / 1.1), Math.ceil(sz / 1.1));
       g.translate((px0 + px1) / 2 + ox / 2, floorY + hgt / 2, (pz0 + pz1) / 2 + oz / 2);
-      geoms.push(g);
+      geoms.push(rockify(g, 0.75));
     }
   };
   const rx = x0 + 10, rz = z0 - 18;                        // ramp gap in the north wall
@@ -175,7 +180,7 @@ function buildSphinxEnclosure(mats, collidables, group) {
   piece(rx + 3.5, z0 - t / 2, x1 + t, z0 - t / 2, 0, -t);
   piece(x0 - t, z1 + t / 2, x1 + t, z1 + t / 2, 0, t);    // south
   piece(x0 - t / 2, z0, x0 - t / 2, z1, -t, 0);           // west (behind the tail)
-  const walls = new THREE.Mesh(mergeGeometries(geoms, false), mats.bedrock);
+  const walls = new THREE.Mesh(mergeGeometries(geoms, false), mats.rock);
   walls.castShadow = true; walls.receiveShadow = true; walls.userData.collidable = true;
   group.add(walls); collidables.push(walls);
   // rock-cut ramp down into the enclosure from the north-west
@@ -648,86 +653,6 @@ function buildBuses(collidables, group) {
   group.add(mesh); collidables.push(mesh);
 }
 
-// Visitors milling about the famous spots: simple instanced figures that
-// wander between random points, pausing to look around.
-function buildTourists(group) {
-  const spots = [
-    { x: 7, z: -150, r: 38, n: 34 }, { x: 150, z: -110, r: 25, n: 10 }, { x: 440, z: 452, r: 22, n: 26 },
-    { x: -330, z: 222, r: 30, n: 14 }, { x: -575, z: 660, r: 22, n: 8 }, { x: -737, z: 1149, r: 18, n: 16 },
-    { x: 4, z: -235, r: 55, n: 18 }, { x: 395, z: 395, r: 14, n: 8 }
-  ];
-  const total = spots.reduce((s, p) => s + p.n, 0);
-  // a lathed human silhouette: legs, hips, torso, shoulders, neck
-  const bodyG = new THREE.LatheGeometry([[0.001, 0], [0.12, 0], [0.11, 0.45], [0.13, 0.82], [0.17, 0.92], [0.16, 1.1],
-    [0.21, 1.33], [0.2, 1.4], [0.07, 1.47], [0.05, 1.52]].map(([r, y]) => new THREE.Vector2(r, y)), 7);
-  bodyG.scale(1, 1, 0.62);                                                          // flatter front-to-back
-  const headG = new THREE.SphereGeometry(0.12, 8, 6); headG.translate(0, 1.6, 0);
-  const bodies = new THREE.InstancedMesh(bodyG, new THREE.MeshStandardMaterial({ roughness: 0.85 }), total);
-  const heads = new THREE.InstancedMesh(headG, new THREE.MeshStandardMaterial({ roughness: 0.7 }), total);
-  const shirts = [0xf2f2f2, 0x2b4f8c, 0xc23b2f, 0x1e1e1e, 0xe8c547, 0x6fa36a, 0xd98ab0, 0x8a6b4a, 0x4fb3c9, 0xb0b0b0];
-  const skins = [0xc99d78, 0x8d5f3f, 0xe6c2a0, 0xa8754f, 0xf0d2b8];
-  let seed = 5;
-  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  const people = [], c = new THREE.Color();
-  for (const sp of spots) for (let i = 0; i < sp.n; i++) {
-    const a = rnd() * 6.283, r = Math.sqrt(rnd()) * sp.r;
-    const p = { sp, x: sp.x + Math.cos(a) * r, z: sp.z + Math.sin(a) * r, tx: 0, tz: 0, wait: rnd() * 6, speed: 0.6 + rnd() * 0.6, h: 0.9 + rnd() * 0.17, ph: rnd() * 9, yaw: rnd() * 6.3 };
-    p.tx = p.x; p.tz = p.z;
-    const k = people.length;
-    bodies.setColorAt(k, c.setHex(shirts[Math.floor(rnd() * shirts.length)]));
-    heads.setColorAt(k, c.setHex(skins[Math.floor(rnd() * skins.length)]));
-    people.push(p);
-  }
-  bodies.castShadow = heads.castShadow = true;
-  bodies.frustumCulled = heads.frustumCulled = false;
-  group.add(bodies, heads);
-  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), v = new THREE.Vector3();
-  let last = 0;
-  return t => {
-    const dt = Math.min(0.1, last ? t - last : 0); last = t;
-    people.forEach((p, k) => {
-      if (p.wait > 0) p.wait -= dt;
-      else {
-        const dx = p.tx - p.x, dz = p.tz - p.z, d = Math.hypot(dx, dz);
-        if (d < 0.3) {
-          p.wait = 2 + rnd() * 9;
-          const a = rnd() * 6.283, r = Math.sqrt(rnd()) * p.sp.r;
-          p.tx = p.sp.x + Math.cos(a) * r; p.tz = p.sp.z + Math.sin(a) * r;
-        } else { p.x += dx / d * p.speed * dt; p.z += dz / d * p.speed * dt; p.yaw = Math.atan2(dx, dz); }
-      }
-      const walking = p.wait <= 0 ? 1 : 0;
-      e.set(0, p.yaw, Math.sin(t * 7 + p.ph) * 0.04 * walking); q.setFromEuler(e);
-      m.compose(v.set(p.x, terrainHeight(p.x, p.z) + Math.abs(Math.sin(t * 7 + p.ph)) * 0.04 * walking, p.z), q, sc.set(1, p.h, 1));
-      bodies.setMatrixAt(k, m); heads.setMatrixAt(k, m);
-    });
-    bodies.instanceMatrix.needsUpdate = heads.instanceMatrix.needsUpdate = true;
-  };
-}
-
-// A simple resting/standing camel.
-function buildCamel(deco, x, z, rot, collidables) {
-  const g = new THREE.Group();
-  const part = (sx, sy, sz, px, py, pz, collide) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), deco.camel);
-    m.position.set(px, py, pz); m.castShadow = true;
-    if (collide) { m.userData.collidable = true; }
-    g.add(m); return m;
-  };
-  const body = part(3.4, 1.6, 1.4, 0, 2.0, 0, true);     // torso (collidable)
-  part(1.1, 1.0, 1.1, -0.5, 3.0, 0);                     // hump 1
-  part(1.0, 0.8, 1.0, 0.7, 2.9, 0);                      // hump 2
-  part(0.7, 2.0, 0.7, 2.0, 2.6, 0);                      // neck
-  part(0.9, 0.7, 0.6, 2.4, 3.6, 0);                      // head
-  for (const [lx, lz] of [[-1.2, 0.5], [-1.2, -0.5], [1.2, 0.5], [1.2, -0.5]]) {
-    const leg = part(0.35, 2.0, 0.35, lx, 2.0, lz);      // legs, pivoted at the hip
-    leg.geometry.translate(0, -1.0, 0);
-  }
-  g.position.set(x, terrainHeight(x, z), z); g.rotation.y = rot;
-  g.updateMatrixWorld(true);
-  if (collidables) collidables.push(body);
-  return g;
-}
-
 // A flock of birds slowly circling overhead; returns an updater.
 function buildBirds(group) {
   const mat = new THREE.MeshStandardMaterial({ color: 0x2b2218, roughness: 1 });
@@ -1049,19 +974,27 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   landmarks.push({ name: WORKERS_CEMETERY.name, blurb: WORKERS_CEMETERY.blurb, radius: 55,
     pos: { x: WORKERS_CEMETERY.center.x, y: terrainHeight(WORKERS_CEMETERY.center.x, WORKERS_CEMETERY.center.z) + 2, z: WORKERS_CEMETERY.center.z } });
 
-  // Camels waiting on the terrace north of the Sphinx
-  group.add(buildCamel(deco, SPHINX.center.x + 30, SPHINX.center.z - 48, 1.0, collidables));
-  group.add(buildCamel(deco, SPHINX.center.x + 46, SPHINX.center.z - 56, 1.4, collidables));
+  // Saddled camels waiting for riders (walk up and press E): on the terrace
+  // by the Sphinx, at the Great Pyramid's north side and at the panorama
+  const rideables = [];
+  for (const [x, z, rot, col] of [[SPHINX.center.x + 30, SPHINX.center.z - 48, 1.0, 0xb03030], [SPHINX.center.x + 46, SPHINX.center.z - 56, 1.4, 0x2d5aa0],
+    [40, -165, 0.4, 0xd8a030], [52, -172, 0.9, 0x3f7f3f], [-725, 1140, 2.2, 0xb03030], [-740, 1132, 2.6, 0x8a3fa0]]) {
+    const c = buildCamel(deco.camel, x, z, rot, { saddle: col });
+    group.add(c); rideables.push(c);
+  }
 
   // A small camel caravan plodding a loop on the open desert south of
   // Khafre (not collidable — it moves).
   const caravan = [];
-  for (let i = 0; i < 4; i++) { const c = buildCamel(deco, 0, 0, 0, null); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
+  for (let i = 0; i < 4; i++) { const c = buildCamel(deco.camel, 0, 0, 0); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
   const cc = { x: -180, z: 640 }, cr = 55;
 
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);
-  const touristTick = buildTourists(group);
+  const touristTick = buildVisitors(group);
+  const trafficTick = buildTraffic(group, deco.camel);
+  buildSummitMast(group);
+  const lightShow = buildLightShow(scene);
 
   // Surviving casing at the Great Pyramid base + circling birds
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
@@ -1069,6 +1002,7 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   const tick = t => {
     birdTick(t);
     touristTick(t);
+    trafficTick(t);
     for (const c of caravan) {
       const s = (t * 1.1 + c.off) / cr;
       const x = cc.x + Math.cos(s) * cr, z = cc.z + Math.sin(s) * cr;
@@ -1080,7 +1014,7 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
     }
   };
 
-  return { group, collidables, landmarks, sunDir, sky, hemi, tick, mastabas, buildings, town, causeways, csm, setupMaterial, applyCSM };
+  return { group, collidables, landmarks, sunDir, sky, hemi, tick, mastabas, buildings, town, causeways, csm, setupMaterial, applyCSM, rideables, lightShow };
 }
 
 function pyrApex(p) {

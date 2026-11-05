@@ -186,7 +186,7 @@ export function buildSphinxGeometry(cell = 0.42) {
 
 // Material: vertex-coloured rock with a fine pitted bump and the joints of
 // the restoration blocks drawn on the lowest band.
-export function sphinxMaterial() {
+export function sphinxMaterial({ joints = true } = {}) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, metalness: 0, envMapIntensity: 0.3 });
   m.userData.shaderPatch = shader => {
     shader.vertexShader = shader.vertexShader
@@ -200,7 +200,7 @@ export function sphinxMaterial() {
           return mix(mix(mix(sxH(i), sxH(i + vec3(1,0,0)), f.x), mix(sxH(i + vec3(0,1,0)), sxH(i + vec3(1,1,0)), f.x), f.y),
                      mix(mix(sxH(i + vec3(0,0,1)), sxH(i + vec3(1,0,1)), f.x), mix(sxH(i + vec3(0,1,1)), sxH(i + vec3(1,1,1)), f.x), f.y), f.z); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-        float sxR = step(vLp.y, 2.7) + step(9.0, vLp.x) * step(vLp.y, 4.2) * step(2.5, abs(vLp.z));
+        float sxR = ${joints ? 'step(vLp.y, 2.7) + step(9.0, vLp.x) * step(vLp.y, 4.2) * step(2.5, abs(vLp.z))' : '0.0'};
         if (sxR > 0.5) {                                   // restoration block joints
           float row = floor(vLp.y / 0.55);
           float u = (abs(vLp.z) > 4.0 ? vLp.x : vLp.z + vLp.x * 0.0) + row * 0.45;
@@ -214,6 +214,26 @@ export function sphinxMaterial() {
         float sx0 = sxN(sxP), sxX = sxN(sxP + vec3(0.07, 0.0, 0.0)), sxY = sxN(sxP + vec3(0.0, 0.07, 0.0));
         normal = normalize(normal + vec3(sx0 - sxX, sx0 - sxY, 0.0) * 2.2);`);
   };
-  m.customProgramCacheKey = () => 'giza-sphinx';
+  m.customProgramCacheKey = () => 'giza-sphinx' + (joints ? '' : '-rock');
   return m;
+}
+
+// Natural rock for quarried faces (the Sphinx enclosure): displace a
+// finely segmented box with 3D noise (by world position, so shared edges
+// stay closed) and colour it in the same strata as the Sphinx.
+export function rockify(geo, amp = 0.7) {
+  const p = geo.attributes.position, col = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const n = (a, b, c) => (noise3(a * 0.35, b * 0.35, c * 0.35) - 0.5) * 1.4 + (noise3(a * 1.3, b * 1.3, c * 1.3) - 0.5) * 0.5;
+    const band = Math.pow(Math.abs(Math.sin(y * Math.PI / 1.35 + noise3(x * 0.1, y * 0.2, z * 0.1))), 6) * 0.6;
+    p.setXYZ(i, x + n(x + 11, y, z) * amp + band * 0.0, y + n(x, y + 7, z) * amp * 0.35, z + n(x, y, z + 3) * amp);
+    const s = noise3(x * 0.3, y * 2.2, z * 0.3), strat = 0.84 + 0.16 * Math.sin(y * 4.4 + s * 2.5) - band * 0.25;
+    const k = strat * (0.92 + 0.16 * noise3(x * 1.7, y * 1.7, z * 1.7));
+    col[i * 3] = Math.pow(0.72 * k, 2.2); col[i * 3 + 1] = Math.pow(0.59 * k, 2.2); col[i * 3 + 2] = Math.pow(0.42 * k, 2.2);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.deleteAttribute('uv');
+  geo.computeVertexNormals();
+  return geo;
 }
