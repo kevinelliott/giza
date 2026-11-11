@@ -105,7 +105,7 @@ void('l_slope', lambda bm: prism_x(bm, [(RY - 0.52, 0), (RY + 0.52, 0), (RY + 0.
 void('l_chamber', lambda bm: prism_x(bm, [(RY + SCN / 2, SCF), (RY - SCN / 2, SCF), (RY - SCN / 2, SCF + 1.9), (RY, SCF + 2.61), (RY + SCN / 2, SCF + 1.9)], SCE - SCW, SCE))
 
 room = G.union(voids, 'khafre')
-G.void_to_room(room, 0.7, drop=lambda c: (c.z > EZ - 3.0 and c.y > face(c.z) - 0.02) or (c.z > 0.02 and c.y > 108.5))
+G.void_to_room(room, 0.4, drop=lambda c: (c.z > EZ - 3.0 and c.y > face(c.z) - 0.02) or (c.z > 0.02 and c.y > 108.5))
 
 room.data.materials.clear()
 NAMES = ['plaster', 'limestone', 'rock', 'granite', 'granite_black', 'dark']
@@ -226,4 +226,4 @@ G.empty('tex_belzoni', ((CW + CE) / 2 + 0.5, CS + 0.012, CF + 2.75), (-1, 0, 0),
 final = [room, G.join(solids, 'solids')]
 G.join(deco, 'deco')
 print('KEY', dict(EY=round(EY, 3), EZ=EZ, CF=round(CF, 3), LE=LE, LJ=round(LJ, 3), LB=round(LB, 3), LC=round(LC, 3), LF=round(LF, 3), RY=round(RY, 3), SCE=round(SCE, 3), YA=round(YA, 3), CE=round(CE, 3), CW=round(CW, 3)))
-G.bake_and_export(final, 'khafre.glb')
+G.bake_and_export(final, 'khafre.glb', samples=160)

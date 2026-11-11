@@ -98,7 +98,7 @@ for y0, y1 in ((QN - 0.05, QN + 1.4), (QS - 1.4, QS + 0.05)):
 # the forced tunnel
 void('tunnel', lambda bm: G.box(bm, -1.05, 1.05, 73.6, 112.0, TF, TF + 2.35))
 void('cavity', lambda bm: G.box(bm, 0.9, 6.55, OPY1 - 0.3, 76.2, TF, TF + 2.7))
-void('breach', lambda bm: G.box(bm, 6.5, OFF - HW + 0.05, OPY1, OPY0, za(OPY0) + 0.02, za(OPY1) + 1.25))
+void('breach', lambda bm: G.prism(bm, [(6.5, 0), (OFF - HW + 0.05, 0), (OFF - HW + 0.05, 1.3), (6.5, 1.3)], OPY0, OPY1, za(OPY0), za(OPY1)))      # floor flush with the passage's
 # the ragged mouths in the face (taller than the passages behind them), with sills up to floor level
 void('mouth_t', lambda bm: G.box(bm, -1.3, 1.3, 107.6, 112.5, TF - 1.3, TF + 3.65))
 void('mouth_e', lambda bm: G.box(bm, OFF - 0.95, OFF + 0.95, EY - 2.4, EY + 2.5, EZ - 2.4, EZ + 3.3))
@@ -142,8 +142,13 @@ bm = bmesh.new(); G.prism(bm, sq(0.06), JY + 0.75, JY - 0.75, zd(JY + 0.75) + V1
 deco.append(G.obj(bm, 'deco_plug', 'granite'))
 # ---- steps: up from the cavity into the ascending passage, and down to the descending one ---------
 top = za((OPY0 + OPY1) / 2)
-bm = bmesh.new(); prism_x(bm, [(OPY1, -0.1), (OPY0, -0.1), (OPY0, 0.0), (OPY1, 0.0)], 4.5, 6.56, TF + 0.02, top)          # boarded ramp
-prism_x(bm, [(OPY1, -0.1), (OPY0, -0.1), (OPY0, 0.0), (OPY1, 0.0)], 6.5, 6.56, TF - 0.6, top - 0.02)
+bm = bmesh.new()                                             # a solid boarded ramp, rising to the passage floor along its whole edge
+lo = [bm.verts.new((4.4, OPY1, TF - 0.1)), bm.verts.new((4.4, OPY0, TF - 0.1)), bm.verts.new((6.56, OPY0, TF - 0.1)), bm.verts.new((6.56, OPY1, TF - 0.1))]
+hi = [bm.verts.new((4.4, OPY1, TF + 0.01)), bm.verts.new((4.4, OPY0, TF + 0.01)), bm.verts.new((6.56, OPY0, za(OPY0))), bm.verts.new((6.56, OPY1, za(OPY1)))]
+bm.faces.new(lo[::-1]); bm.faces.new((hi[0], hi[1], hi[2])); bm.faces.new((hi[0], hi[2], hi[3]))
+for i in range(4):
+    j = (i + 1) % 4; bm.faces.new((lo[i], lo[j], hi[j], hi[i]))
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 solids.append(G.obj(bm, 'wramp_breach', 'wood'))
 bm = bmesh.new()
 x0, x1 = 3.1, OFF - HW; z1 = zd(75.35); ns = math.ceil((TF - z1) / 0.27)
