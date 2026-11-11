@@ -675,6 +675,29 @@ function buildBoatPit(pit, mats, collidables, group) {
   return { x: cx, y: y + 4, z: cz };
 }
 
+// The Grand Egyptian Museum, on the skyline 2.2 km north-west of the Great
+// Pyramid (bearing 320 deg) and a kilometre beyond the edge of the map: a
+// plain massing of its ~445 x 557 m wedge, 46 m high at the front (OSM
+// outline and height tag; research/sites/giza-town-and-roads.md). No detail,
+// no interior — it is there because it is what you see from the plateau.
+function buildGEM(group, mats) {
+  const cx = -1449, cz = -1696, y0 = terrainHeight(-1449, -690) - 3;
+  const mk = (pts, h, color, y = y0) => {
+    const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false }); g.rotateX(-Math.PI / 2); g.translate(cx, y, cz);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color, roughness: 0.85 })); m.castShadow = true; m.receiveShadow = true; group.add(m);
+  };
+  mk([[-230, -250], [215, -280], [225, 230], [-80, 280]], 27, 0xd6ccb6);                       // the galleries' wedge
+  mk([[-80, 280], [225, 230], [228, 244], [-78, 296]], 46, 0xe6dcc4);                          // the 46 m front wall of translucent stone, facing the pyramids
+  mk([[-40, 240], [60, 224], [62, 240], [-38, 256]], 48, 0x9fb3c0);                            // the glazed entrance in it
+  mk([[-150, 320], [130, 300], [140, 420], [-140, 440]], 1.5, 0xcfc6b2);                       // forecourt
+  // the ground it stands on: desert carried on beyond the map's north-west edge (drawn, not walkable)
+  const gg = new THREE.PlaneGeometry(1500, 1700); gg.rotateX(-Math.PI / 2); gg.translate(cx, y0 - 0.05, -700 - 850);
+  const ground = new THREE.Mesh(gg, mats.sand); ground.receiveShadow = true; group.add(ground);
+  const ob = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 16, 4), new THREE.MeshStandardMaterial({ color: 0xa8705a, roughness: 0.7 }));
+  ob.position.set(cx - 10, y0 + 9.5, cz + 370); group.add(ob);                                 // the hanging obelisk of Ramesses II in the forecourt
+}
+
 // Surface details of the pyramids as they stand today: the great gabled
 // (chevron) blocks over Khufu's original entrance and al-Ma'mun's robbers'
 // tunnel below it, the vertical gash torn into Menkaure's north face in
@@ -1092,11 +1115,12 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   landmarks.push({ name: WORKERS_CEMETERY.name, blurb: WORKERS_CEMETERY.blurb, radius: 55,
     pos: { x: WORKERS_CEMETERY.center.x, y: terrainHeight(WORKERS_CEMETERY.center.x, WORKERS_CEMETERY.center.z) + 2, z: WORKERS_CEMETERY.center.z } });
 
-  // Saddled camels waiting for riders (walk up and press E): on the terrace
-  // by the Sphinx, at the Great Pyramid's north side and at the panorama
+  // Saddled camels waiting for riders (walk up and press E): at the Panorama,
+  // below the 9 Pyramids ridge and at the southern viewpoint — the zones the
+  // animals have been kept to since 2025 (no longer at the Sphinx or by Khufu)
   const rideables = [];
-  for (const [x, z, rot, col] of [[SPHINX.center.x + 30, SPHINX.center.z - 48, 1.0, 0xb03030], [SPHINX.center.x + 46, SPHINX.center.z - 56, 1.4, 0x2d5aa0],
-    [40, -165, 0.4, 0xd8a030], [52, -172, 0.9, 0x3f7f3f], [-725, 1140, 2.2, 0xb03030], [-740, 1132, 2.6, 0x8a3fa0]]) {
+  for (const [x, z, rot, col] of [[-1372, 742, 1.0, 0xb03030], [-1386, 756, 1.4, 0x2d5aa0],
+    [-250, 1215, 0.4, 0xd8a030], [-236, 1224, 0.9, 0x3f7f3f], [-725, 1140, 2.2, 0xb03030], [-740, 1132, 2.6, 0x8a3fa0]]) {
     const c = buildCamel(deco.camel, x, z, rot, { saddle: col });
     c.userData.dynamic = true; c.userData.saddle = col;       // (dynamic: the native export leaves them out and builds its own)
     group.add(c); rideables.push(c);
@@ -1152,6 +1176,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
     if (anchors.tp_burial) Object.assign(MERESANKH.tpBurial, { x: anchors.tp_burial.x, y: anchors.tp_burial.y, z: anchors.tp_burial.z });
     shell(c.x, y - 1, c.z, 34, 20, 36);
   }
+  buildGEM(group, mats);
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);
   const touristTick = buildVisitors(group);

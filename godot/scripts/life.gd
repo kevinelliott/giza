@@ -204,6 +204,11 @@ func _traffic(flat_routes: Array) -> void:
 		for i in range(1, pts.size()): cum.append(cum[i - 1] + pts[i].distance_to(pts[i - 1]))
 		var length := cum[cum.size() - 1]
 		if length <= 200.0: continue
+		# Since the 2025 reorganisation, horses, camels and carriages work only on the south side of the
+		# plateau and between the Panorama and the dunes: keep to the site roads there.
+		var mid := Vector2.ZERO
+		for q in pts: mid += q / pts.size()
+		if not (mid.y > 480.0 or mid.x < -940.0): continue
 		var route := {"pts": pts, "cum": cum, "len": length}
 		for k in maxi(1, roundi(length / 700.0)):
 			var g := _carriage(CARRIAGES[(ri + k) % CARRIAGES.size()])

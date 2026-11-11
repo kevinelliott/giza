@@ -51,8 +51,9 @@ and your **headlamp turns on automatically** whenever you go inside a pyramid.
 
 ## Things to do
 
-- **Ride a camel.** Saddled camels wait by the Sphinx, on the Great Pyramid's
-  north side and at the panorama viewpoint: walk up and press `E`.
+- **Ride a camel.** Saddled camels wait at the Panorama, below the 9 Pyramids
+  ridge and at the southern viewpoint — the zones the animals have been kept
+  to since 2025: walk up and press `E`.
 - **Stay for the Sound & Light show.** After dark, coloured floodlights on the
   Sphinx terrace sweep the Sphinx and the three pyramids.
 - **Climb the Great Pyramid.** The stepped core is real collision geometry:
@@ -132,10 +133,12 @@ web version does not have yet:
   antiquities fence only the electric visitor buses, as since April 2025.
   Parked cars, street lamps, townspeople on the pavements.
 - **The Nile at Luxor** (`tools/blender/luxor_nile.py`, `boats.py`): the
-  corniche, the ferry crossing, cruise ships rafted at the quay, feluccas, a
+  corniche, Luxor Temple and the Winter Palace in outline, the ferry crossing,
+  cruise ships rafted at the quay, feluccas, a
   dahabiya, motor launches — and a felucca or a launch you can take out (E).
 - **The Valley of the Kings** (`tools/blender/valley_kings.py`): the ground
-  from the 30 m elevation model, the tomb entrances placed from the Theban
+  from the 30 m elevation model with cliffs and al-Qurn drawn back in, the
+  visitor centre and its road train, the tomb entrances placed from the Theban
   Mapping Project survey, and **the tomb of Tutankhamun (KV62)** at survey
   dimensions with its real wall paintings.
 

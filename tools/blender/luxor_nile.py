@@ -167,6 +167,8 @@ y = SOUTH + 20
 while y < NORTH - 40:
     w = random.uniform(22, 60); d = random.uniform(16, 30); h = random.choice((3, 4, 4, 5, 6)) * 3.3
     x0 = 40 + random.uniform(0, 8)
+    if y + w > -690 and y < -90:                                # (Luxor Temple and the Winter Palace stand here)
+        y += w + 6; continue
     box(bm, x0, x0 + d, y, y + w, QUAY, QUAY + h)
     for f in range(int(h / 3.3)):
         n = int(w / 3.6)
@@ -175,6 +177,92 @@ while y < NORTH - 40:
             box(bw, x0 - 0.03, x0 + 0.02, ya + 0.5, ya + (w - 2.0) / n - 0.5, QUAY + f * 3.3 + 1.0, QUAY + f * 3.3 + 2.5)
     y += w + random.uniform(4, 16)
 obj(bm, 'town_front', 'c_d9c7a3'); obj(bw, 'deco_town_windows', 'c_27323a')
+
+# ---- Luxor Temple (schematic massing at the right overall sizes) -----------------------------------------
+# The temple lies parallel to the river, entered from the north through Ramesses II's pylon: pylon 65 m wide
+# and 24 m high, court of Ramesses II 57 x 51 m, the processional colonnade of Amenhotep III (two rows of
+# seven columns ~16 m high, 52 m long), his sun court 52 x 46 m, the hypostyle (32 columns) and the inner
+# rooms; ~260 m in all. One 25 m obelisk stands before the pylon (its twin is in Paris), with two seated
+# colossi of Ramesses II; the mosque of Abu al-Haggag sits on the east side of the first court.
+# (General figures, not from a survey: see research/sites/nile-and-boats.md.)
+TX = 95.0; TY = -130.0; Z0 = QUAY
+def column(bm, x, y, r, hgt, cap=1.25):
+    for (ra, rb, za, zb) in ((r * 1.15, r * 1.15, 0, 0.5), (r, r * 0.92, 0.5, hgt * 0.82), (r * 0.92, r * cap, hgt * 0.82, hgt * 0.97), (r * 1.1, r * 1.1, hgt * 0.97, hgt)):
+        q = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=ra, radius2=rb, depth=zb - za)
+        bmesh.ops.translate(bm, verts=q['verts'], vec=(x, y, Z0 + (za + zb) / 2))
+bs = bmesh.new(); bc = bmesh.new()
+for sx in (-1, 1):                                              # pylon towers, battered
+    q = bmesh.ops.create_cube(bs, size=1.0)
+    for v in q['verts']:
+        top = v.co.z > 0
+        v.co = Vector((TX + sx * (3.2 + 14.6) + v.co.x * (29.2 - (2.4 if top else 0)), TY - 4.0 + v.co.y * (8.0 - (3.0 if top else 0)), Z0 + (24.0 if top else 0.0)))
+box(bs, TX - 3.2, TX + 3.2, TY - 6.5, TY - 1.5, Z0 + 11.0, Z0 + 15.5)                         # the gateway lintel
+box(bs, TX + 8.2 - 1.25, TX + 8.2 + 1.25, TY + 9, TY + 11.5, Z0, Z0 + 2.2)                    # the eastern obelisk; the western one went to Paris
+box(bs, TX - 8.2 - 1.25, TX - 8.2 + 1.25, TY + 9, TY + 11.5, Z0, Z0 + 1.6)                    # (its empty base)
+q = bmesh.ops.create_cone(bs, cap_ends=True, segments=4, radius1=1.75, radius2=1.15, depth=22.0)
+bmesh.ops.rotate(bs, verts=q['verts'], cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 4, 3, 'Z')); bmesh.ops.translate(bs, verts=q['verts'], vec=(TX + 8.2, TY + 10.25, Z0 + 2.2 + 11.0))
+q = bmesh.ops.create_cone(bs, cap_ends=True, segments=4, radius1=1.15, radius2=0.0, depth=1.8)
+bmesh.ops.rotate(bs, verts=q['verts'], cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 4, 3, 'Z')); bmesh.ops.translate(bs, verts=q['verts'], vec=(TX + 8.2, TY + 10.25, Z0 + 2.2 + 22.0 + 0.9))
+for sx in (-1, 1):                                              # the two seated colossi (~14 m with their bases)
+    cx = TX + sx * 6.0
+    box(bs, cx - 2.2, cx + 2.2, TY + 2.0, TY + 7.5, Z0, Z0 + 2.0); box(bs, cx - 1.9, cx + 1.9, TY + 2.6, TY + 5.4, Z0 + 2.0, Z0 + 6.2)
+    box(bs, cx - 1.7, cx + 1.7, TY + 2.4, TY + 4.2, Z0 + 6.2, Z0 + 10.6); box(bs, cx - 1.9, cx + 1.9, TY + 4.0, TY + 7.0, Z0 + 2.0, Z0 + 5.4)
+    box(bs, cx - 1.0, cx + 1.0, TY + 2.5, TY + 4.3, Z0 + 10.6, Z0 + 13.6)
+y1 = TY - 8.0
+box(bs, TX - 26.5, TX - 25.0, y1 - 57, y1, Z0, Z0 + 9.0); box(bs, TX + 25.0, TX + 26.5, y1 - 57, y1, Z0, Z0 + 9.0)      # court of Ramesses II
+for k in range(12):
+    yy = y1 - 3.5 - k * 4.6
+    column(bc, TX - 21.5, yy, 0.95, 9.5); column(bc, TX + 21.5, yy, 0.95, 9.5); column(bc, TX - 17.0, yy, 0.95, 9.5); column(bc, TX + 17.0, yy, 0.95, 9.5)
+for k in range(8): column(bc, TX - 14 + k * 4.0, y1 - 53.5, 0.95, 9.5)
+box(bs, TX - 22.5, TX + 22.5, y1 - 2.2, y1 - 1.2, Z0 + 9.5, Z0 + 10.6)
+y2 = y1 - 57.0
+box(bs, TX - 26.5, TX - 8.0, y2 - 2.5, y2, Z0, Z0 + 12.0); box(bs, TX + 8.0, TX + 26.5, y2 - 2.5, y2, Z0, Z0 + 12.0)
+for k in range(7):                                              # the great colonnade
+    yy = y2 - 6.0 - k * 6.9
+    column(bc, TX - 4.6, yy, 1.55, 15.8, 1.75); column(bc, TX + 4.6, yy, 1.55, 15.8, 1.75)
+box(bs, TX - 6.3, TX - 2.9, y2 - 51, y2 - 2.5, Z0 + 15.8, Z0 + 17.6); box(bs, TX + 2.9, TX + 6.3, y2 - 51, y2 - 2.5, Z0 + 15.8, Z0 + 17.6)
+box(bs, TX - 10.5, TX - 9.5, y2 - 52, y2 - 2.5, Z0, Z0 + 14.0); box(bs, TX + 9.5, TX + 10.5, y2 - 52, y2 - 2.5, Z0, Z0 + 14.0)
+y3 = y2 - 52.0
+for k in range(11):                                             # the sun court of Amenhotep III: double rows on three sides
+    yy = y3 - 3.0 - k * 4.1
+    for xx in (-23.0, -19.2, 19.2, 23.0): column(bc, TX + xx, yy, 0.8, 8.3)
+for k in range(9):
+    for yy in (y3 - 2.5, y3 - 6.0): column(bc, TX - 15.2 + k * 3.8, yy, 0.8, 8.3) if abs(-15.2 + k * 3.8) > 4 else None
+box(bs, TX - 26.0, TX - 25.0, y3 - 46, y3, Z0, Z0 + 8.6); box(bs, TX + 25.0, TX + 26.0, y3 - 46, y3, Z0, Z0 + 8.6)
+y4 = y3 - 46.0
+for r_ in range(4):                                             # hypostyle: 4 x 8
+    for k in range(8): column(bc, TX - 14.7 + k * 4.2, y4 - 3.0 - r_ * 4.2, 0.8, 8.3)
+box(bs, TX - 18.0, TX + 18.0, y4 - 18.0, y4 - 1.0, Z0 + 8.3, Z0 + 9.2)
+y5 = y4 - 19.0
+box(bs, TX - 20.0, TX + 20.0, y5 - 44.0, y5, Z0, Z0 + 8.2)                                      # the inner rooms and sanctuary, as a block
+box(bs, TX - 2.0, TX + 2.0, y5 - 0.05, y5 + 0.05, Z0, Z0 + 5.0)
+obj(bs, 'luxor_temple', 'c_cfa870'); obj(bc, 'temple_columns', 'c_d6b27c', True)
+bm = bmesh.new()                                                # the mosque of Abu al-Haggag, raised on the buried east colonnade of the first court
+box(bm, TX + 9.0, TX + 25.0, y1 - 24.0, y1 - 4.0, Z0 + 6.0, Z0 + 12.5)
+q = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=1.5, radius2=1.1, depth=14.0); bmesh.ops.translate(bm, verts=q['verts'], vec=(TX + 23.0, y1 - 6.0, Z0 + 12.5 + 7.0))
+q = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=1.5, radius2=0.1, depth=3.0); bmesh.ops.translate(bm, verts=q['verts'], vec=(TX + 23.0, y1 - 6.0, Z0 + 12.5 + 15.5))
+q = bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=6, radius=3.2); bmesh.ops.translate(bm, verts=q['verts'], vec=(TX + 15.0, y1 - 15.0, Z0 + 12.5))
+obj(bm, 'abu_haggag', 'c_efe9dc')
+bm = bmesh.new()                                                # the Avenue of Sphinxes, running north from the pylon
+for k in range(22):
+    for sx in (-1, 1):
+        cx = TX + sx * 5.5; yy = TY + 20 + k * 6.5
+        box(bm, cx - 0.7, cx + 0.7, yy - 1.9, yy + 1.9, Z0, Z0 + 0.6); box(bm, cx - 0.5, cx + 0.5, yy - 1.6, yy + 1.2, Z0 + 0.6, Z0 + 1.3); box(bm, cx - 0.4, cx + 0.4, yy - 1.7, yy - 0.9, Z0 + 1.3, Z0 + 2.0)
+obj(bm, 'sphinx_avenue', 'c_cfa870')
+bm = bmesh.new(); box(bm, TX - 30, TX + 30, TY - 230, TY + 170, Z0 - 0.3, Z0 + 0.02)
+obj(bm, 'temple_ground', 'c_d2bf9a')
+# the Winter Palace (1907), south of the temple: a long ochre front of three storeys over a raised terrace, facing the river
+WY0, WY1 = -640.0, -520.0
+bm = bmesh.new(); box(bm, 44, 66, WY0, WY1, Z0, Z0 + 16.5); box(bm, 40, 44, WY0 + 40, WY1 - 40, Z0, Z0 + 4.2); box(bm, 42, 68, WY0 + 48, WY1 - 48, Z0 + 16.5, Z0 + 19.0)
+obj(bm, 'winter_palace', 'c_e2bf78')
+bm = bmesh.new()
+for f in range(3):
+    for i in range(26):
+        ya = WY0 + 3.0 + i * 4.4
+        box(bm, 43.96, 44.02, ya, ya + 1.7, Z0 + 5.2 + f * 3.8, Z0 + 7.6 + f * 3.8)
+obj(bm, 'deco_wp_windows', 'c_3d4a44')
+empty('tp_luxor_temple', (TX - 12.0, TY + 26.0, Z0 + 0.4)); empty('poi_temple', (TX, TY + 16.0, Z0 + 3.0)); empty('poi_colonnade', (TX, y2 - 26.0, Z0 + 3.0))
+empty('poi_haggag', (TX + 12.0, y1 - 14.0, Z0 + 3.0)); empty('poi_winter', (38.0, (WY0 + WY1) / 2, Z0 + 2.0)); empty('poi_avenue', (TX, TY + 80.0, Z0 + 2.0))
 
 # ---- where the boats are ------------------------------------------------------------------------------
 # cruise ships lie along the East Bank only, parallel to the bank with their bows upstream (south),

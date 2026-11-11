@@ -309,6 +309,27 @@ def skiff(P):
     return b.done()
 
 
+def taftaf():
+    """The Valley of the Kings road train ("taf-taf"): a small tractor unit and three open-sided, roofed
+    carriages with bench seats, on rubber tyres. Built here because it uses the same plain-colour kit;
+    its livery varies by year (unverified): drawn yellow and white."""
+    b = Boat('taftaf')
+    def wheels(x, hw, r=0.3):
+        for s_ in (-1, 1): b.spar((x, s_ * hw, r), (x, s_ * (hw + 0.18), r), r, r, '1a1a1a', 12)
+    b.box(4.6, 7.2, -0.75, 0.75, 0.35, 1.25, 'e2b21f', 0.06); b.box(4.6, 5.9, -0.72, 0.72, 1.25, 2.05, '27323a'); b.box(4.5, 6.0, -0.78, 0.78, 2.05, 2.15, 'e2b21f', 0.03)
+    wheels(5.1, 0.72); wheels(6.7, 0.72)
+    for k in range(3):
+        x0 = 0.9 - k * 3.6
+        b.box(x0, x0 + 3.2, -0.8, 0.8, 0.45, 0.6, 'f2f0ea', 0.03)
+        for xx in (x0 + 0.08, x0 + 1.6, x0 + 3.12):
+            for s_ in (-1, 1): b.spar((xx, s_ * 0.76, 0.6), (xx, s_ * 0.76, 2.2), 0.03, 0.03, 'f2f0ea')
+        b.box(x0 - 0.1, x0 + 3.3, -0.88, 0.88, 2.2, 2.3, 'e2b21f', 0.03)
+        for q in range(3): b.box(x0 + 0.3 + q * 1.0, x0 + 0.75 + q * 1.0, -0.7, 0.7, 0.95, 1.02, '8a5a32'); 
+        wheels(x0 + 0.6, 0.74, 0.26); wheels(x0 + 2.6, 0.74, 0.26)
+        b.box(x0 + 3.2, x0 + 3.6, -0.05, 0.05, 0.5, 0.56, '333333')
+    return b.done()
+
+
 # Sizes: research/sites/nile-and-boats.md
 PARAMS = {
     # tourist felucca: hull 8-10 m, mast ~0.9 x and yard ~1.9 x the hull length (scaled from photos); white hull, red-orange bottom
@@ -322,7 +343,7 @@ PARAMS = {
 }
 if __name__ == '__main__':
     built = [felucca(PARAMS['felucca']), dahabiya(PARAMS['dahabiya']), cruiser(PARAMS['cruiser']), ferry(PARAMS['ferry']),
-             launch(PARAMS['launch']), khufu(PARAMS['khufu']), skiff(PARAMS['skiff'])]
+             launch(PARAMS['launch']), khufu(PARAMS['khufu']), skiff(PARAMS['skiff']), taftaf()]
     for i, o in enumerate(built): o.location.y = i * 30.0
     out = os.path.join(ROOT, 'assets', 'models', 'boats.glb')
     bpy.ops.object.select_all(action='SELECT')

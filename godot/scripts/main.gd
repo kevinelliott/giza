@@ -295,7 +295,7 @@ func _materials() -> void:
 	var wm := ShaderMaterial.new()
 	wm.shader = WATER
 	outdoor["water"] = wm
-	for k in [["desert", Color("cdb085"), Color("b89a70")], ["theban", Color("d9bf96"), Color("c9a57c")], ["silt", Color("6f6a4c"), Color("5f5a44")]]:
+	for k in [["desert", Color("cdb085"), Color("b89a70")], ["theban", Color("c4a67e"), Color("b08a60")], ["silt", Color("6f6a4c"), Color("5f5a44")]]:
 		var dm := ShaderMaterial.new()
 		dm.shader = DESERT
 		dm.set_shader_parameter("sand_color", k[1])

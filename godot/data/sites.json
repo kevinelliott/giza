@@ -368,6 +368,36 @@
      "radius": 25
     },
     {
+     "key": "temple",
+     "name": "Luxor Temple",
+     "blurb": "The pylon of Ramesses II, 65 m wide and 24 m high, with two seated colossi of the king and one obelisk of red granite — its twin has stood in the Place de la Concorde in Paris since 1836. The massing here is schematic.",
+     "radius": 40
+    },
+    {
+     "key": "colonnade",
+     "name": "Colonnade of Amenhotep III",
+     "blurb": "Fourteen papyrus columns nearly 16 m high in two rows: the processional way along which the barques of Amun, Mut and Khonsu were carried at the Opet festival.",
+     "radius": 30
+    },
+    {
+     "key": "haggag",
+     "name": "Mosque of Abu al-Haggag",
+     "blurb": "A mosque built in the thirteenth century on top of the then-buried court of Ramesses II, and still in use: when the temple was dug out, it was left standing high on the old ground level.",
+     "radius": 22
+    },
+    {
+     "key": "avenue",
+     "name": "Avenue of Sphinxes",
+     "blurb": "The sphinx-lined processional road that runs 2.7 km north from here to the temples of Karnak, reopened along its whole length in 2021.",
+     "radius": 45
+    },
+    {
+     "key": "winter",
+     "name": "Winter Palace",
+     "blurb": "The Winter Palace hotel of 1907, ochre-fronted, on the corniche south of the temple. Lord Carnarvon stayed here, and it was on its noticeboard that news of Tutankhamun's tomb was posted in 1922.",
+     "radius": 45
+    },
+    {
      "key": "west",
      "name": "West Bank landing",
      "blurb": "The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.",
@@ -380,6 +410,7 @@
    "file": "valley_kings.glb",
    "title": "Valley of the Kings",
    "outdoor": true,
+   "river": true,
    "position": [
     -23,
     105,
@@ -391,6 +422,18 @@
      "name": "KV62 — Tomb of Tutankhamun",
      "blurb": "The entrance Howard Carter's workmen uncovered on 4 November 1922, under the debris of huts built for the cutting of KV9 just above. The whitewashed walls, the roof over the stair and the gate are modern.",
      "radius": 14
+    },
+    {
+     "key": "visitor_centre",
+     "name": "Visitor centre",
+     "blurb": "The visitor centre at the mouth of the wadi: tickets, a large model of the valley and its tombs, and the booth for the \"taf-taf\", the little road train that carries visitors the last half-kilometre.",
+     "radius": 45
+    },
+    {
+     "key": "qurn",
+     "name": "al-Qurn",
+     "blurb": "Al-Qurn, \"the Horn\": the pyramid-shaped peak, about 450 m above sea level, that stands over the valley — perhaps the reason the kings chose this wadi for their tombs.",
+     "radius": 220
     },
     {
      "key": "valley",

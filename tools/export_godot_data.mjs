@@ -35,12 +35,19 @@ out.models.push({ id: 'luxor_nile', file: 'luxor_nile.glb', title: 'Luxor — th
   ['feluccas', 'Feluccas', 'Open wooden passenger sailboats with a single lateen sail on a very long yard — the traditional way to drift on the river at sunset. Press E beside the one at the steps to go out.', 30],
   ['dahabiya', 'Dahabiya', 'A two-masted lateen houseboat: the way nineteenth-century travellers went up the Nile, revived today as small, quiet cruise boats, usually towed by a tug when the wind fails.', 40],
   ['ferry', 'National ferry', 'The public ferry to the West Bank, used by townspeople and by visitors bound for the Valley of the Kings. Small covered motor launches make the same crossing for hire.', 25],
+  ['temple', 'Luxor Temple', 'The pylon of Ramesses II, 65 m wide and 24 m high, with two seated colossi of the king and one obelisk of red granite — its twin has stood in the Place de la Concorde in Paris since 1836. The massing here is schematic.', 40],
+  ['colonnade', 'Colonnade of Amenhotep III', 'Fourteen papyrus columns nearly 16 m high in two rows: the processional way along which the barques of Amun, Mut and Khonsu were carried at the Opet festival.', 30],
+  ['haggag', 'Mosque of Abu al-Haggag', 'A mosque built in the thirteenth century on top of the then-buried court of Ramesses II, and still in use: when the temple was dug out, it was left standing high on the old ground level.', 22],
+  ['avenue', 'Avenue of Sphinxes', 'The sphinx-lined processional road that runs 2.7 km north from here to the temples of Karnak, reopened along its whole length in 2021.', 45],
+  ['winter', 'Winter Palace', 'The Winter Palace hotel of 1907, ochre-fronted, on the corniche south of the temple. Lord Carnarvon stayed here, and it was on its noticeboard that news of Tutankhamun\'s tomb was posted in 1922.', 45],
   ['west', 'West Bank landing', 'The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.', 40]
 ]) });
 // The Valley of the Kings, in Luxor's frame: KV62's entrance is 3623 m west and 4581 m north of the ferry landing, and ~105 m above the river.
 const KV = [LUXOR[0] - 3623, 105, LUXOR[2] - 4581];
-out.models.push({ id: 'valley_kings', file: 'valley_kings.glb', title: 'Valley of the Kings', outdoor: true, position: KV, pois: pois([
+out.models.push({ id: 'valley_kings', file: 'valley_kings.glb', title: 'Valley of the Kings', outdoor: true, river: true, position: KV, pois: pois([
   ['kv62', 'KV62 — Tomb of Tutankhamun', 'The entrance Howard Carter\'s workmen uncovered on 4 November 1922, under the debris of huts built for the cutting of KV9 just above. The whitewashed walls, the roof over the stair and the gate are modern.', 14],
+  ['visitor_centre', 'Visitor centre', 'The visitor centre at the mouth of the wadi: tickets, a large model of the valley and its tombs, and the booth for the "taf-taf", the little road train that carries visitors the last half-kilometre.', 45],
+  ['qurn', 'al-Qurn', 'Al-Qurn, "the Horn": the pyramid-shaped peak, about 450 m above sea level, that stands over the valley — perhaps the reason the kings chose this wadi for their tombs.', 220],
   ['valley', 'Valley of the Kings', 'The wadi where the pharaohs of the New Kingdom (c. 1539–1075 BC) were buried in rock-cut tombs — sixty-five are numbered. The pyramid-shaped peak above is al-Qurn.', 90]
 ].concat([['KV9', 'Ramesses V and VI'], ['KV17', 'Seti I'], ['KV11', 'Ramesses III'], ['KV2', 'Ramesses IV'], ['KV6', 'Ramesses IX'], ['KV8', 'Merenptah'],
   ['KV14', 'Tausret and Setnakht'], ['KV35', 'Amenhotep II'], ['KV16', 'Ramesses I'], ['KV47', 'Siptah'], ['KV57', 'Horemheb'], ['KV5', 'the sons of Ramesses II'], ['KV1', 'Ramesses VII']]

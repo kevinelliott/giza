@@ -636,6 +636,7 @@ export const TOWN_PLACES = [
   ['King Farouk\'s rest house', 170, -119, 30, 'A small royal rest house on the edge of the plateau north-east of the Great Pyramid, built for King Farouk in the 1940s.'],
   ['9 Pyramids Lounge', -224, 1264, 40, 'An open-air restaurant on the southern ridge, opened in October 2020: 1.3 km from the Great Pyramid, looking north at all of them.'],
   ['Khufu\'s restaurant', -959, 101, 45, 'A restaurant in the King Khufu Centre on the western approach, part of the 2025 redevelopment of the visitor route.'],
+  ['Grand Egyptian Museum', -1449, -1100, 700, 'The Grand Egyptian Museum, inaugurated on 1 November 2025: a wedge of galleries nearly half a kilometre long whose walls are aligned on the pyramids, 2.2 km north-west of the Great Pyramid. It holds the whole of Tutankhamun\'s treasure and, since 2021, the Khufu ship. Only its outline is shown here; it lies beyond the edge of this map.'],
   ['Visitor bus stop — Panorama', -1407, 684, 30, 'A stop on the free electric hop-on hop-off bus line that has carried visitors round the plateau since April 2025, when private cars, taxis and tour coaches were barred from the site.'],
   ['Visitor bus stop — Menkaure', -856, 329, 25, 'The visitor bus stop for the Third Pyramid.'],
   ['Visitor bus stop — Khafre', -129, 259, 25, 'The visitor bus stop for the Second Pyramid.'],

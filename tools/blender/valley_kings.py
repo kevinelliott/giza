@@ -249,13 +249,48 @@ def valley():
         col.objects.link(e); return e
 
     d = np.load(os.path.join(G.ROOT, 'tools', 'geo', 'cache', 'valley_dem.npz'))
-    h = d['h'].astype(float); step = float(d['step']); half = float(d['half']); n = h.shape[0]; c = n // 2
-    h -= h[c, c]
+    h0 = d['h'].astype(float); step0 = float(d['step']); half = float(d['half']); n0 = h0.shape[0]
+    h0 -= h0[n0 // 2, n0 // 2]
+    # resample the 20 m grid to 10 m, so that cliffs can be drawn into it
+    step = 10.0; n = int(2 * half / step) + 1; c = n // 2
     xs = np.linspace(-half, half, n)
     X, Y = np.meshgrid(xs, xs)
+    fx = (X + half) / step0; fy = (Y + half) / step0
+    i0 = np.clip(fx.astype(int), 0, n0 - 2); j0 = np.clip(fy.astype(int), 0, n0 - 2); u = fx - i0; v = fy - j0
+    h = h0[j0, i0] * (1 - u) * (1 - v) + h0[j0, i0 + 1] * u * (1 - v) + h0[j0 + 1, i0] * (1 - u) * v + h0[j0 + 1, i0 + 1] * u * v
+    # al-Qurn: the pyramid-shaped peak, ~450 m asl (280 m above the valley floor), 780 m away on bearing ~233 deg.
+    # The 30 m model rounds it off; give it back its point.
+    qx, qy = 780 * math.sin(math.radians(233)), 780 * math.cos(math.radians(233))
+    Rq = np.hypot(X - qx, Y - qy)
+    h = np.maximum(h, 280.0 - 0.72 * Rq)
+    # Cliffs. The elevation model smooths the Theban limestone into rolling hills; the real valley is walled by
+    # near-vertical faces 10-30 m high standing on scree aprons. Redraw each ~28 m of rise as a scree slope
+    # topped by a cliff, with the cliff line wandering a little, leaving the wadi floor and the summits alone.
+    def vnoise(x, y):
+        return (np.sin(x * 0.013 + 1.7 * np.sin(y * 0.009)) + np.sin(y * 0.017 + 1.3 * np.sin(x * 0.011)) + 0.5 * np.sin((x + y) * 0.041)) / 2.5
+    HB = 30.0
+    t = (h - 14.0) / HB + 0.22 * vnoise(X, Y)
+    fl_ = np.floor(t); fr = t - fl_
+    sc = np.where(fr < 0.58, fr * 0.3 / 0.58, 0.3 + (np.clip((fr - 0.58) / 0.07, 0, 1)) * 0.62 + np.clip((fr - 0.65) / 0.35, 0, 1) * 0.08)   # scree, cliff, ledge
+    hc = (fl_ + sc - 0.22 * vnoise(X, Y)) * HB + 14.0
+    w = np.clip((h - 16.0) / 20.0, 0, 1) * np.clip((Rq - 60.0) / 120.0, 0, 1)        # none on the valley floor, none on al-Qurn's own cone
+    h = h * (1 - w * 0.92) + hc * (w * 0.92)
+    # The 30 m model also reads the narrow wadi floor 5-35 m too high. Cut the floor back down along the way in,
+    # from the visitor centre (149 m asl) up to the heads of the valley, through the surveyed entrance levels.
+    FLOOR = [(345, 566, -21.5), (300, 470, -17.0), (240, 330, -10.5), (190, 222, -5.5), (156, 157, -2.7), (73, 60, -0.8), (4, 0, 0.0),
+             (-60, -30, 2.7), (-122, -30, 12.0), (-161, -125, 16.3)]
+    for (ax, ay, az), (bx2, by2, bz2) in zip(FLOOR, FLOOR[1:]):
+        L = math.hypot(bx2 - ax, by2 - ay); m = max(2, int(L / 12))
+        for q in range(m + 1):
+            tq = q / m; px, py, pz = ax + (bx2 - ax) * tq, ay + (by2 - ay) * tq, az + (bz2 - az) * tq
+            Rn = np.hypot(X - px, Y - py); kn = np.clip((Rn - 22.0) / 75.0, 0, 1); kn = kn * kn * (3 - 2 * kn)
+            h[:] = np.minimum(h, h * kn + pz * (1 - kn) + (1 - kn) * 0.0 + kn * 0.0) if False else np.where(h > pz, h * kn + pz * (1 - kn), h)
     for (_n, _o, ex, ey, ez, _a) in NEIGHBOURS:                   # the 30 m model reads high on the wadi floor: pull it to the surveyed datums
         Rn = np.hypot(X - ex, Y - ey); kn = np.clip((Rn - 14.0) / 34.0, 0, 1); kn = kn * kn * (3 - 2 * kn)
         h[:] = h * kn + ez * (1 - kn)
+    for (vx, vy, vz, vr) in ((345.0, 566.0, -21.5, 60.0), (156.0, 157.0, -2.7, 25.0)):       # level sites: visitor centre (149 m asl), drop-off
+        Rn = np.hypot(X - vx, Y - vy); kn = np.clip((Rn - vr) / 50.0, 0, 1); kn = kn * kn * (3 - 2 * kn)
+        h[:] = h * kn + vz * (1 - kn)
     R = np.hypot(X - 4.0, Y)                                     # level ground in front of KV62's own entrance (KV9 is on the slope just behind it)
     k = np.clip((R - 9.0) / 16.0, 0, 1); k = k * k * (3 - 2 * k)
     h *= k
@@ -267,7 +302,7 @@ def valley():
     V = [[bm.verts.new((xs[i], xs[j], h[j, i])) for i in range(n)] for j in range(n)]
     for j in range(n - 1):
         for i in range(n - 1):
-            if i == c - 1 and j in (c - 1, c): continue          # the two cells over the stair pit are re-laid below
+            if i in (c - 2, c - 1) and c - 2 <= j <= c + 1: continue          # the cells over the stair pit (x -20..0, y -20..20) are re-laid below
             bm.faces.new((V[j][i], V[j][i + 1], V[j + 1][i + 1], V[j + 1][i]))
     obj(bm, 'terrain', 'theban', True)
     # the two cells round the pit, re-laid as a fine mesh that follows the ground, levels off at the pit and leaves the stair open
@@ -315,10 +350,10 @@ def valley():
     bp, br = bmesh.new(), bmesh.new()
     for (x, y, L, W, hd) in SHELTERS:
         z = ground(x, y); M = Matrix.Translation(Vector((x, y, z))) @ Matrix.Rotation(math.radians(hd), 4, 'Z')
-        n = max(2, int(L / 4))
-        for k in range(n + 1):
+        npost = max(2, int(L / 4))                   # (not `n`: ground() uses that)
+        for k in range(npost + 1):
             for dy in (-W / 2 + 0.2, W / 2 - 0.2):
-                vs = box(bp, -L / 2 + k * L / n - 0.06, -L / 2 + k * L / n + 0.06, dy - 0.06, dy + 0.06, -0.3, 2.9); bmesh.ops.transform(bp, verts=vs, matrix=M)
+                vs = box(bp, -L / 2 + k * L / npost - 0.06, -L / 2 + k * L / npost + 0.06, dy - 0.06, dy + 0.06, -0.3, 2.9); bmesh.ops.transform(bp, verts=vs, matrix=M)
         vs = box(br, -L / 2 - 0.3, L / 2 + 0.3, -W / 2 - 0.3, W / 2 + 0.3, 2.9, 3.02); bmesh.ops.transform(br, verts=vs, matrix=M)
         vs = box(bp, -L / 2 + 0.5, L / 2 - 0.5, -0.25, 0.25, 0.4, 0.48); bmesh.ops.transform(bp, verts=vs, matrix=M)
     obj(bp, 'shelter_posts', 'c_6a6f73'); obj(br, 'shelter_roofs', 'c_cfc7b4')
@@ -326,7 +361,7 @@ def valley():
     box(bm, rx - rl / 2, rx + rl / 2, ry - rw_ / 2, ry + rw_ / 2, rz - 0.5, rz + 3.4)
     obj(bm, 'rest_house', 'c_dcd3bf')
     bm = bmesh.new()
-    path = [(156, 157), (110, 105), (73, 60), (40, 22), (12, 4), (-20, -14), (-60, -30), (-122, -30)]
+    path = [(156, 157), (110, 105), (73, 60), (40, 22), (12, 4), (-20, -14), (-60, -30), (-122, -30), (-160, -120)]
     for (ax, ay), (bx_, by) in zip(path, path[1:]):
         L = math.hypot(bx_ - ax, by - ay); m = max(1, int(L / 8))
         for q in range(m):
@@ -339,6 +374,34 @@ def valley():
     for f in bm.faces:
         if f.normal.z < 0: f.normal_flip()
     obj(bm, 'deco_path', 'c_c9bda3')
+    # the visitor centre (single storey; OSM footprint, size approximate), the ticket and road-train booths,
+    # the asphalt road up the wadi to the drop-off, and the long shelter there
+    vx, vy = 345.0, 566.0; vz = ground(vx, vy)
+    bm = bmesh.new(); box(bm, vx - 32, vx + 32, vy - 16, vy + 16, vz - 0.5, vz + 5.2)
+    obj(bm, 'visitor_centre', 'c_d8ccb4')
+    bm = bmesh.new(); box(bm, vx - 36, vx + 36, vy - 22, vy - 16, vz + 4.2, vz + 4.5)
+    for q in range(9): box(bm, vx - 34 + q * 8.5 - 0.15, vx - 34 + q * 8.5 + 0.15, vy - 21.6, vy - 21.3, vz, vz + 4.2)
+    box(bm, vx - 44, vx - 40, vy - 30, vy - 27, vz, vz + 2.8); box(bm, vx - 52, vx - 48, vy - 30, vy - 27, vz, vz + 2.8)
+    obj(bm, 'visitor_canopy', 'c_bfb39b')
+    bm = bmesh.new()
+    for q in range(8): box(bm, vx - 28 + q * 7.5, vx - 24 + q * 7.5, vy - 16.05, vy - 15.98, vz + 1.0, vz + 3.6)
+    obj(bm, 'deco_vc_glass', 'c_27323a')
+    bm = bmesh.new()
+    road = [(vx - 46, vy - 34), (300, 470), (240, 330), (190, 222), (158, 162)]
+    for (ax, ay), (bx_, by) in zip(road, road[1:]):
+        L = math.hypot(bx_ - ax, by - ay); m = max(1, int(L / 6))
+        for q in range(m):
+            t0, t1 = q / m, (q + 1) / m
+            p0 = Vector((ax + (bx_ - ax) * t0, ay + (by - ay) * t0, 0)); p1 = Vector((ax + (bx_ - ax) * t1, ay + (by - ay) * t1, 0))
+            dd = (p1 - p0).normalized(); sd = Vector((-dd.y, dd.x, 0)) * 2.6
+            bm.faces.new([bm.verts.new((p.x, p.y, ground(p.x, p.y) + 0.08)) for p in (p0 - sd, p0 + sd, p1 + sd, p1 - sd)])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    for f in bm.faces:
+        if f.normal.z < 0: f.normal_flip()
+    obj(bm, 'deco_road', 'c_3d3c3b')
+    # the "taf-taf" road train plies this road (the game runs one between these two points)
+    empty('train_0_a', (road[0][0], road[0][1], ground(*road[0]) + 0.1)); empty('train_0_b', (road[-1][0], road[-1][1], ground(*road[-1]) + 0.1))
+    empty('tp_visitor_centre', (vx - 20, vy - 30, vz + 0.4)); empty('poi_visitor_centre', (vx, vy - 20, vz + 2.0)); empty('poi_qurn', (qx * 0.5, qy * 0.5, ground(qx * 0.5, qy * 0.5) + 2.0))
     empty('tp_valley', (9.0, 3.0, 0.4)); empty('tp_valley_view', (120, 120, ground(120, 120) + 0.5))
     empty('poi_kv62', (4.0, 0.0, 1.5)); empty('poi_valley', (60, 40, ground(60, 40) + 2.0))
     out = os.path.join(G.ROOT, 'assets', 'models', 'valley_kings.glb')

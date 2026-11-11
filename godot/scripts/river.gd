@@ -28,6 +28,7 @@ func setup(main_node: Node, root: Node3D) -> void:
 		meshes[String(n.name)] = mesh
 	src.free()
 	var lanes := {}
+	var trains := {}
 	var ferry := {}
 	for n in root.find_children("*", "Node3D", true, false):
 		var nm := String(n.name)
@@ -47,6 +48,10 @@ func setup(main_node: Node, root: Node3D) -> void:
 			var k := nm.split("_")[1]
 			if not lanes.has(k): lanes[k] = {}
 			lanes[k][nm.split("_")[2]] = e.global_position
+		elif nm.begins_with("train_"):
+			var k := nm.split("_")[1]
+			if not trains.has(k): trains[k] = {}
+			trains[k][nm.split("_")[2]] = e.global_position
 		elif nm == "ferry_a" or nm == "ferry_b":
 			ferry[nm] = e.global_position
 		elif nm == "tp_east_landing":
@@ -61,6 +66,10 @@ func setup(main_node: Node, root: Node3D) -> void:
 			var g := _boat(p[0])
 			if g: movers.append({"g": g, "kind": "lane", "a": lanes[k]["a"], "b": lanes[k]["b"], "t": randf() * 2.0, "speed": p[1], "bob": randf() * 6.0, "off": (j * 2 - 1) * 14.0})
 		i += 1
+	for k in trains:                                           # a road train shuttling along a road (it follows the ground)
+		if trains[k].has("a") and trains[k].has("b"):
+			var g := _boat("taftaf")
+			if g: movers.append({"g": g, "kind": "train", "a": trains[k]["a"], "b": trains[k]["b"], "t": 0.0, "speed": 4.0, "wait": 15.0})
 	if ferry.size() == 2:
 		var g := _boat("ferry")
 		if g: movers.append({"g": g, "kind": "ferry", "a": ferry["ferry_a"], "b": ferry["ferry_b"], "t": 0.0, "speed": 3.0, "bob": 0.0, "wait": 20.0})
@@ -96,6 +105,27 @@ func update(dt: float, eye: Vector3) -> void:
 			var side := (b - a).normalized().cross(Vector3.UP) * float(m["off"]) * (1.0 if going else -1.0)     # keep right
 			var pos := a.lerp(b, u) + side + Vector3(0, sin(time * 0.6 + m["bob"]) * 0.05, 0)
 			_face(g, a if going else b, b if going else a, pos, sin(time * 0.5 + m["bob"]) * 0.02)
+		elif m["kind"] == "train":
+			if m["wait"] > 0.0:
+				m["wait"] -= dt
+			else:
+				m["t"] += m["speed"] * dt / (m["a"] as Vector3).distance_to(m["b"])
+				if m["t"] >= 1.0:
+					m["t"] = 0.0
+					m["wait"] = 20.0
+					var sw: Vector3 = m["a"]
+					m["a"] = m["b"]
+					m["b"] = sw
+			var pa: Vector3 = (m["a"] as Vector3).lerp(m["b"], m["t"])
+			var dirn: Vector3 = ((m["b"] as Vector3) - (m["a"] as Vector3)).normalized()
+			var space := get_world_3d().direct_space_state
+			var ys := []
+			for off in [5.0, -5.0]:                                # the ground under its front and back
+				var q := PhysicsRayQueryParameters3D.create(pa + dirn * off + Vector3(0, 80, 0), pa + dirn * off + Vector3(0, -120, 0))
+				var hit := space.intersect_ray(q)
+				ys.append(hit["position"].y if not hit.is_empty() else pa.y)
+			var flat := Vector2(dirn.x, dirn.z).normalized()
+			g.global_transform = Transform3D(Basis(Vector3.UP, atan2(-flat.y, flat.x)) * Basis(Vector3(0, 0, 1), atan2(ys[0] - ys[1], 10.0)), Vector3(pa.x, (ys[0] + ys[1]) * 0.5 + 0.05, pa.z))
 		else:                                                    # the ferry: cross, wait at the landing, cross back
 			if m["wait"] > 0.0:
 				m["wait"] -= dt
