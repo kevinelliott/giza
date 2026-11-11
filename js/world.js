@@ -8,7 +8,7 @@ import {
   WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE,
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
-  TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY
+  TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -16,6 +16,7 @@ import {
 import { terrainHeight, inPit, groundUnder, GRID, SPHINX_PIT } from './terrain.js';
 import { TOMBS, TOWN, TREES, TEMPLES, EXTENT, PARKING, SITES as GEO_SITES } from './geodata.js';
 import { buildSphinxGeometry, rockify } from './sphinx.js';
+import { buildSerapeum } from './models.js';
 import { buildCamel, animateCamelLegs, buildTraffic, buildVisitors, buildSummitMast, buildLightShow } from './life.js';
 const SITES_SPHINX_ROT = GEO_SITES.sphinx.rot;
 
@@ -742,7 +743,7 @@ function buildSky(scene, renderer) {
   return { sun, sky };
 }
 
-export function buildWorld(scene, mats, { renderer, camera } = {}) {
+export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) {
   const group = new THREE.Group();
   scene.add(group);
   const collidables = [];
@@ -989,6 +990,16 @@ export function buildWorld(scene, mats, { renderer, camera } = {}) {
   for (let i = 0; i < 4; i++) { const c = buildCamel(deco.camel, 0, 0, 0); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
   const cc = { x: -180, z: 640 }, cr = 55;
 
+  // Blender-built sites
+  if (models.serapeum) {
+    buildSerapeum(models.serapeum, mats, group, collidables, landmarks);
+    // overburden: an unseen shell that keeps the sun out of the catacombs
+    const o = SERAPEUM.origin;
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(340, 40, 160),
+      new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }));
+    shell.position.set(o.x - 120, o.y + 4, o.z - 8); shell.castShadow = true;
+    group.add(shell);
+  }
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);
   const touristTick = buildVisitors(group);

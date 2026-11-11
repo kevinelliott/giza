@@ -6,8 +6,9 @@ import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { DayCycle, Sandstorm, Stars, Clouds } from './atmosphere.js';
 import { animateCamelLegs } from './life.js';
+import { loadModels } from './models.js';
 import { Quest } from './quest.js';
-import { TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
+import { SERAPEUM, TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
 import { GEO, EXTENT } from './geodata.js';
 
 const canvas = document.getElementById('game');
@@ -35,7 +36,9 @@ function saveSettings() {
 // ---- Build the plateau ----------------------------------------------
 setStatus('Quarrying limestone and raising the pyramids…');
 const mats = makeMaterials();
-const world = buildWorld(scene, mats, { renderer, camera });
+const models = await loadModels(setStatus);
+setStatus('Quarrying limestone and raising the pyramids…');
+const world = buildWorld(scene, mats, { renderer, camera, models });
 
 setStatus('Surveying passages and computing collisions…');
 const collider = buildCollider(scene, world.collidables);
@@ -1066,7 +1069,7 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
-  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
+  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.

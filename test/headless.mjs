@@ -40,6 +40,21 @@ const { TELEPORTS, PYRAMIDS, SPHINX } = await import('../js/data.js');
   if (Math.abs(d - 486.9) > 0.5) throw new Error('Khufu–Khafre spacing off: ' + d);
 }
 
+// Blender-built model: check the GLB carries what the loader expects.
+{
+  const { readFileSync } = await import('node:fs');
+  const buf = readFileSync(new URL('../assets/models/serapeum.glb', import.meta.url));
+  if (buf.readUInt32LE(0) !== 0x46546c67) throw new Error('serapeum.glb is not a GLB');
+  const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
+  const names = json.nodes.map(n => n.name);
+  for (const need of ['rock', 'spawn', 'insc_amasis_lid', 'insc_cambyses_lid', 'insc_khabash_lid', 'insc_ptolemaic_end', 'poi_entrance'])
+    if (!names.includes(need)) throw new Error('serapeum.glb is missing node ' + need);
+  const { INSCRIPTIONS } = await import('../js/inscriptions.js');
+  for (const n of names.filter(n => n.startsWith('insc_')))
+    if (!INSCRIPTIONS[n.slice(5)]) throw new Error('no inscription defined for panel ' + n);
+  console.log('serapeum.glb OK —', json.meshes.length, 'meshes,', names.filter(n => n.startsWith('insc_')).length, 'inscription panels');
+}
+
 const scene = new THREE.Scene();
 const mats = makeMaterials();
 console.log('materials OK');

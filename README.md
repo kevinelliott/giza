@@ -110,6 +110,25 @@ modified Copernicus Sentinel data 2025. Copernicus GLO-30 DEM © DLR e.V.
 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under
 COPERNICUS by the European Union and ESA.
 
+## Blender models, inscriptions and the research tracker
+
+- **Blender pipeline.** Sites that deserve real modelling are built by Blender
+  scripts (`tools/blender/`, run with `pip install bpy`), exported as GLB with
+  the lighting baked in by Cycles, and loaded by `js/models.js`. First site:
+  the **Serapeum of Saqqara** — the Apis-bull catacombs 13.6 km south of Giza
+  (fast-travel to it): a ~360 m rock-cut gallery system with 24 stone
+  sarcophagi at their published size (3.85 × 2.32 × 2.32 m, 0.98 m lids), in
+  sunken vaulted chambers, lit by floor tubes as it is today, including the
+  boxes of Amasis II, Cambyses II and Khabash and the scratched Ptolemaic
+  box with its empty cartouches.
+- **Hieroglyphs.** Inscriptions are drawn from real Unicode hieroglyphs
+  (`js/inscriptions.js`, Noto Sans Egyptian Hieroglyphs, SIL OFL), written in
+  Gardiner sign codes, each marked `attested`, `composed` (from a published
+  translation) or `placeholder`.
+- **Research tracker.** [`research/`](research/README.md) records, per site,
+  what has been researched (with sources), what was built from it, and what
+  is still open — read it before researching, update it after.
+
 ## What's modelled
 
 **To scale, at their mapped positions and real ground levels:**
@@ -208,6 +227,10 @@ js/geodata.js      # GENERATED: DEM, mapped sites, tombs, town, palms
 js/terrain.js      # real topography: DEM + levelled platforms, height lookup
 js/sphinx.js       # the sculpted Sphinx (SDF + surface nets) and its material
 js/life.js         # visitors, carriages, camel rides, rideable camels, light show
+js/models.js       # loads the Blender-built GLB models, baked-light materials
+js/inscriptions.js # hieroglyphic inscriptions (Gardiner codes -> textures)
+tools/blender/     # Blender (bpy) model builders -> assets/models/*.glb
+research/          # per-site research tracker: sources, done, todo
 js/materials.js    # procedural stone / sand textures + materials
 js/builders.js     # geometry: pyramid faces, tunnels, rooms, stairs, sarcophagi
 js/world.js        # assembles the plateau, terrain, sky and lighting

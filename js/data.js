@@ -344,6 +344,41 @@ export const KHUFU_VALLEY = {
          'lie buried beneath the modern village of Nazlet el-Samman.'
 };
 
+// ---- The Serapeum of Saqqara ------------------------------------------
+// Not on the Giza plateau: the Apis-bull catacombs lie at Saqqara, ~13.6 km
+// to the south-south-east (29.876 N, 31.210 E). The model (built in Blender,
+// tools/blender/serapeum.py) sits at that real offset, underground.
+export const SERAPEUM = {
+  name: 'Serapeum of Saqqara',
+  origin: { x: 7311, y: -80, z: 11440 },
+  spawn: { x: 7311 + 1.6, y: -80 + 0.3, z: 11440 - 49 },
+  // [empty name in the model, landmark name, blurb, radius]
+  pois: [
+    ['entrance', 'Serapeum of Saqqara — Greater Vaults',
+      'The catacombs of the sacred Apis bulls, begun under Psamtik I (664–610 BC) and extended by the Ptolemies to ~350 m. ' +
+      'Twenty-four colossal stone sarcophagi stand in vaulted side chambers. Rediscovered by Auguste Mariette in 1850.', 14],
+    ['amasis_lid', 'Lid of Amasis II\'s sarcophagus',
+      'The lid of the oldest hard-stone sarcophagus (c. 550 BC), moved to the entrance. Its inscription: "…he dedicated his ' +
+      'monument to the Living Apis, a great sarcophagus of granite."', 5],
+    ['amasis', 'Sarcophagus of Amasis II',
+      'Red granite, finely worked with palace-facade panelling and a band of Pyramid Texts round the top; the signs were ' +
+      'painted green. For the Apis that died in year 23 of Amasis II.', 6],
+    ['cambyses', 'Sarcophagus of Cambyses II',
+      'Grey granite, dedicated c. 524 BC by the first Persian ruler of Egypt — "to his father Apis-Osiris". Only the lid is ' +
+      'inscribed. It stands where it blocks the original entrance.', 7],
+    ['khabash', 'Sarcophagus of Khabash',
+      'A smaller box in an unused tunnel, dated to year 2 of the rebel king Khabash (c. 336 BC). Its lid was found on the ' +
+      'floor nearby — the two may never have closed over a bull.', 7],
+    ['ptolemaic', 'The inscribed Ptolemaic sarcophagus',
+      'Polished black stone with decoration merely scratched on: panelling, Pyramid Text spells — and royal cartouches left ' +
+      'EMPTY, as nobody knew under which ruler this Apis would die.', 7],
+    ['typical', 'An Apis sarcophagus',
+      'A typical box: 3.85 × 2.32 × 2.32 m with a 0.98 m lid — about 62 tonnes with its lid — let into a pit in a chamber whose ' +
+      'floor is 2–3 m below the gallery. It took 28 working days to move one in (stela of year 37 of Ptolemy II).', 6]
+  ],
+  blurb: 'The burial place of the sacred Apis bulls at Saqqara.'
+};
+
 // ---- Fast travel destinations (eye position, label) -----------------
 // Outdoor entries are flagged `ground`: their y is a drop height above the
 // terrain, resolved against the real topography when the terrain loads.
@@ -370,7 +405,8 @@ export const TELEPORTS = [
   { label: 'Central Field Quarry', pos: G(GIS_QUARRY.center.x, GIS_QUARRY.center.z - 56) },
   { label: 'Temple of Amenhotep II', pos: G(AMENHOTEP_TEMPLE.center.x - 6, AMENHOTEP_TEMPLE.center.z - 22) },
   { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
-  { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) }
+  { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) },
+  { label: 'Serapeum of Saqqara (13.6 km south)', pos: SERAPEUM.spawn }
 ];
 
 // ---------------------------------------------------------------------
