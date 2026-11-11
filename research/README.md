@@ -28,10 +28,11 @@ text not).
 | Serapeum of Saqqara (Greater Vaults) | schematic plan; sizes done | **Blender**, done (first pass) | 4 inscribed boxes: 2 composed, 2 placeholder | [serapeum](sites/serapeum.md) |
 | Great Pyramid of Khufu | done (survey) | **Blender**: Grand Gallery, antechamber, King's Chamber, Campbell's Chamber; lower passages procedural | Campbell's graffiti: 2 attested, 1 composed | [khufu](sites/khufu.md) |
 | Pyramid of Khafre | done (survey) | procedural; interior schematic | todo | [khafre](sites/khafre.md) |
-| Pyramid of Menkaure | done (survey) | procedural; real substructure layout (partial) | panelled chamber: attested niche count | [menkaure](sites/menkaure.md) |
+| Pyramid of Menkaure | done (survey) | **Blender**: whole substructure incl. floor ramp, vaulted burial chamber, six-niche room | panelled chamber: attested niche count | [menkaure](sites/menkaure.md) |
 | Great Sphinx + enclosure | done (map + satellite check) | sculpted SDF; partial | **Dream Stele done** (Lepsius' record of the real text) | [sphinx](sites/sphinx.md) |
-| Sphinx Temple, Khafre Valley Temple, Amenhotep II temple | done (satellite check) | interiors partial (plans from memory, not traced) | todo | [sphinx](sites/sphinx.md) |
-| Tomb of Meresankh III | plan done (Reisner) | **Blender**, first pass | 4 walls carry real photographs (2 positions unverified); architrave composed | [meresankh](sites/meresankh.md) |
+| Sphinx Temple, Khafre Valley Temple | done (plan agrees with OSM within 2 m) | **built from the published plan** (0.4 m grid) | todo (statue emplacements) | [sphinx](sites/sphinx.md) |
+| Amenhotep II temple | done (satellite) | outline only | todo | [sphinx](sites/sphinx.md) |
+| Tomb of Meresankh III | plan done (Reisner) | **Blender**; lofted statues | 5 photographs on walls, **positions verified** against the excavation report; architrave composed | [meresankh](sites/meresankh.md) |
 | Eastern & Western cemeteries, Central Field | footprints done (OSM) | generic mastabas | todo (Meresankh III, Hemiunu, Qar, Idu…) | [cemeteries](sites/cemeteries.md) |
 | Queens' pyramids, Khentkaus I, satellite pyramids | done (map) | procedural | todo | [minor-monuments](sites/minor-monuments.md) |
 | Workers' town, Wall of the Crow, workers' cemetery | partial | schematic | n/a | [minor-monuments](sites/minor-monuments.md) |
@@ -42,6 +43,7 @@ text not).
 - `tools/geo/build_geodata.py` — map footprints, elevation, Sentinel-2 (redistributable data).
 - `tools/geo/sat_view.py` — stitch ~0.26 m/px Esri imagery around a point **for measuring only** (not redistributable; never commit its output). Log measurements in the site file.
 - `tools/blender/*.py` — Blender (`pip install bpy`) model builders → `assets/models/*.glb`.
+- `tools/geo/temple_plans.py` — published temple plan → wall/pillar grid (`js/templedata.js`).
 - `js/inscriptions.js` — every inscription, in Gardiner sign codes, with its status.
 
 ## Sources used so far
@@ -56,4 +58,8 @@ text not).
 - Richard Mortel, photographs of the tomb of Meresankh III (CC BY 2.0, Wikimedia Commons) — four used as textures; all 30 reviewed.
 - Wikipedia: *Pyramid of Menkaure*, *Dream Stele*, *Tomb of Meresankh III* (wikitext, 2026-11-11).
 
-Reachable but not yet mined: Harvard *Digital Giza* (giza.fas.harvard.edu) — tomb plans, wall photos and drawings for the cemeteries; the place to start for mastaba reliefs.
+- Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974), PDF from gizapyramids.org — wall-by-wall description.
+- "Kahfre valley sphinx.svg" (HoremWeb, public domain, after Lehner & Verner) — temple plans.
+- Lepsius, *Denkmäler* III Bl. 68, NYPL scan (public domain) — Dream Stele.
+
+**Access notes.** gizapyramids.org serves the Giza Mastabas PDFs openly (text extracts with `pdftotext`; figures with `pdftoppm`) — the best source for the cemeteries. Harvard's *Digital Giza* pages load, but its image server (ids.lib.harvard.edu) refuses automated downloads: do not try to get round that; use the PDFs. Wikimedia throttles bursts — space requests a few seconds apart and never ask for a width larger than the original.

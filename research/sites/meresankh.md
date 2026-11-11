@@ -14,16 +14,28 @@
 | Ceilings painted red to imitate granite; modern plank floor, timber rails, floor tubes | materials/fittings | photos 55, 64, 70 |
 | Burial shaft in room b (modern stair inside) | pit with grating | plan; photo 68 |
 
-**Photographs used directly as wall textures** — Richard Mortel, CC BY 2.0, Wikimedia Commons series *"Tomb of Queen Meresankh III, wife of Khafra, 4th dynasty, ca. 2640 BCE; Giza (NN).jpg"*:
+**Wall positions are now verified** against the excavation report — Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974; PDF at gizapyramids.org, text extracted 2026-11-11), "Main Chamber" pp. 4–5:
 
-| Texture | Photo | Shows | Placed |
-| --- | --- | --- | --- |
-| `mer_pillar.jpg` | (55) | painted relief of a woman on a pillar, ladder border | east face of the pillar between a and b ✔ (photo shows room b's niches behind it) |
-| `mer_north.jpg` | (54) | Hetepheres II (yellow wig) and Meresankh III | west wall of a, north end — **position approximate** (caption says "north wall of the first room") |
-| `mer_east.jpg` | (62) | painted registers of craftsmen / offering bearers | east wall of a — **which wall is unverified** |
-| `mer_west.jpg` | (57) | painted hieroglyph band (ankh, eye…) on yellow | lintel band over the a→b openings — **position unverified** |
+- *North wall of the main room*: "the two standing figures of the queen" on the pillars, with the best-preserved colour, under "the lintel above the central opening".
+- *West wall, right (north) end*: "three principal standing figures, respectively of Hetepheres, Mersyankh, and the latter's son Nebemakhet" — Hetepheres in the robe with pointed shoulders and the yellow wig.
+- *East wall, north of the entrance*: "on the left the figure of Mersyankh's father, Kawab, occupies the full height"; registers of boats above and craftsmen (statue-making, metal workers) below.
+- *South wall*: three statue niches below five registers (banquet, furniture).
+- *West room*: west wall with palace-facade doors at either end, central false door, niches with two pairs of engaged female statues; burial pit in the floor.
+- *North room*: "ten female statues engaged in the north wall with a single line of text above them".
 
-All 30 photos of the series (45–74) were looked over as a contact sheet on 2026-11-11. Not yet used: 47–51 (reliefs at the entrance: scribes, animals), 52–53 (red figures in registers), 56 (Kawab, east wall), 58–61 (more painted bands), 63 (as 62), 66 (painted corner), 71 (incised text wall), 72 (painted head + signs), 73–74 (burial chamber).
+**Photographs used as wall textures** — Richard Mortel, CC BY 2.0, Wikimedia Commons series *"Tomb of Queen Meresankh III, wife of Khafra, 4th dynasty, ca. 2640 BCE; Giza (NN).jpg"*:
+
+| Texture | Photo | Shows | Placed | Verified |
+| --- | --- | --- | --- | --- |
+| `mer_pillar.jpg` | (55) | the queen, hand to chest, bright painted signs above | south face of the west pillar on the north wall | ✔ report (which of the two pillars is not established) |
+| `mer_west.jpg` | (57) | painted hieroglyph band on yellow | lintel over the north-wall pillars | ✔ visible there in photo 55 |
+| `mer_north.jpg` | (54) | Hetepheres II (yellow wig, pointed robe) and Meresankh | west wall of the main room, north end | ✔ report (Wikipedia's caption "north wall" is loose) |
+| `mer_east.jpg` | (62) | registers of craftsmen | east wall, north of the entrance, lower part | ✔ report (exact extent along the wall estimated) |
+| `mer_kawab.jpg` | (56) | Kawab, striding | east wall, north end, full height | ✔ report + caption |
+
+All 30 photos of the series (45–74) were looked over as a contact sheet on 2026-11-11. Not yet used: 47–51 (entrance jamb reliefs: Khemetnu presenting the document, animals), 52–53 (red figures in registers), 58–61 (more painted bands), 63 (as 62), 66 (painted corner), 71 (incised text wall), 72 (painted head + signs), 73–74 (burial chamber).
+
+**Statues:** now lofted figures (sheath dress, arms at the sides, tripartite wig framing the face), ten in the north room graded in height as in photo 64, two pairs in the west room's niches, and three niches in the south wall (report: "three statue niches"; group sizes 1 + 1 + 2 are a guess — plate IX would settle it). They are generic women, not portraits.
 
 ## Inscriptions
 
@@ -33,8 +45,8 @@ All 30 photos of the series (45–74) were looked over as a contact sheet on 202
 
 ## Todo
 
-- Wall-by-wall map: assign every photo to its wall using Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974 — on Digital Giza), then texture every wall. East wall: Kawab (56), boat-building, sculptors; south wall: scribes statues niche; west wall of a: false doors.
-- The six small scribe statues in the south wall niche (3 placeholder seated figures now).
+- Texture the remaining walls from the report's figures 4–12 (line drawings of every wall, in the same PDF, pp. after the plates) — these are the authoritative layout; the PDF's plates could be rendered with `pdftoppm` and used directly. South wall registers, west wall false door and palace-facade doors, the west room's four walls.
+- Harvard's Digital Giza has the same drawings as images (drawings 50829, 50836, 50837…), but its image server refuses automated downloads — use the PDF.
 - Burial chamber (photos 73–74) and the black granite sarcophagus (now in Cairo, JE 54935).
 - The surface chapel of mastaba G 7530-7540 and the real entrance stair.
-- Statue detail: the ten figures are simple engaged forms; faces/wigs differ per figure in reality.
+- Statue detail: individual faces, wigs and the smaller girls' proportions (the report identifies the ten as Hetepheres II, Meresankh and daughters).

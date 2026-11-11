@@ -8,11 +8,11 @@
 | Item | Built as | Source |
 | --- | --- | --- |
 | Grand Gallery | 46.7 m on a 26.5° slope, 8.6 m high, 2.06 m wide above the ramps, 1.04 m channel, ramps 0.52 × 0.6 m, 7 corbels of 7.5 cm from 2.29 m, 27 slot pairs, Great Step | Petrie 1883 (standard figures) |
-| Antechamber | 2.97 × 1.65 × 3.8 m, granite south part, granite leaf, 3 portcullis slots per side | Petrie |
+| Antechamber | 2.97 × 1.65 × 3.8 m, granite south part, granite leaf, 3 portcullis slots per side; **the passages either side are true size, 1.05 × 1.11 m — the player must crouch** | Petrie |
 | King's Chamber | 10.47 × 5.23 × 5.85 m, granite, entrance at the east end of the north wall, two shaft mouths | Petrie |
 | Sarcophagus | 2.28 × 0.98 × 1.05 m, lidless, broken corner, near the west wall | Petrie |
 | Campbell's Chamber | gabled top relieving chamber, uneven granite beam tops | Vyse 1837 (general form) |
-| Modern fittings | wooden cleated walkway, handrails, wooden steps at the Great Step, lamps | general knowledge of the site today |
+| Modern fittings | wooden cleated walkway, handrails, a wooden ramp up the Great Step, lamps | general knowledge of the site today |
 
 - Chevron blocks over the entrance; al-Ma'mun's tunnel mouth; boat pits from OSM outlines; mortuary temple 52.5 × 40 m with basalt floor.
 
@@ -23,8 +23,9 @@
 | Campbell's: Khnum-Khufu cartouche | attested | Fuller name; placement not from a photo. |
 | Campbell's: gang name | composed | "The gang, Friends of Khufu" — gang names of this kind are recorded in the chambers; exact signs/position not checked against Vyse's/Perring's drawings. |
 
+Walk-tested in the browser: from the ground outside, up the entrance stair, down and up the passages, up the gallery and its ramp to the low passage (standing: blocked; crouching: through to the King's Chamber).
+
 ## Schematic / todo
-- The two low passages either side of the antechamber are 1.2 × 2.0 m (really 1.05 × 1.11 m).
 - Campbell's Chamber is reached by fast travel only; the four chambers below it (Davison, Wellington, Nelson, Lady Arbuthnot) and Vyse's shaft are not built. Graffiti positions need Perring's plates.
 - Gallery: wall courses are drawn level, not parallel to the slope; the niches above the ramp slots and the groove along the third corbel are missing.
 - King's Chamber: the real joint pattern (5 courses, 100 blocks) and the cracked ceiling beams are approximated by a regular grid.

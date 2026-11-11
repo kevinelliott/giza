@@ -132,10 +132,14 @@ COPERNICUS by the European Union and ESA.
 - **Tomb of Meresankh III** (`meresankh.py`): the rock-cut chapel from
   Reisner's plan, with the ten women carved along the north wall and real
   photographs of its painted reliefs on the walls.
+- **Menkaure's substructure** (`menkaure.py`): descending passage, panelled
+  chamber, large chamber with the ramp cut in its floor, the vaulted granite
+  burial chamber and the room of the six niches.
 - **Dream Stele**: carries Lepsius' 1849 record of the actual lunette and
-  text. **Menkaure** has his real substructure layout with the panelled
-  chamber. **Khafre's valley temple** has its T-shaped pillared hall, and the
-  **Sphinx Temple** its court.
+  text. **Khafre's valley temple and the Sphinx Temple** are built wall by
+  wall from a published plan (`tools/geo/temple_plans.py`).
+- In the Great Pyramid the low passages either side of the antechamber are
+  true size (1.05 × 1.11 m): crouch (`C`) to reach the King's Chamber.
 - **Hieroglyphs.** Inscriptions are drawn from real Unicode hieroglyphs
   (`js/inscriptions.js`, Noto Sans Egyptian Hieroglyphs, SIL OFL), written in
   Gardiner sign codes, each marked `attested`, `composed` (from a published
