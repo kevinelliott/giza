@@ -343,7 +343,12 @@ export function sandShaderPatch(shader, ground) {
           vec3 gRat = texture2D(gzGround, gUv).rgb * 2.0;
           sampledDiffuseColor.rgb *= mix(vec3(1.0), gRat, 0.8);
           // mapped roads (asphalt) and tracks (compacted, darker sand)
-          vec2 rM = texture2D(gzRoads, gUv).rg;
+          vec3 rM3 = texture2D(gzRoads, gUv).rgb;
+          vec2 rM = rM3.rg;
+          // the built-up area (roads.png B): packed earth and worn asphalt between the buildings
+          float gzUrban = smoothstep(0.25, 0.7, rM3.b);
+          vec3 gzEarth = vec3(0.21, 0.18, 0.14) * (0.78 + 0.34 * gzNoise(vWp.xz * 0.13 + 7.0)) * (0.93 + 0.14 * gzNoise(vWp.xz * 3.1));
+          sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, gzEarth, gzUrban * 0.92);
           float gzRoadK = smoothstep(0.3, 0.65, rM.r);
           vec3 asphalt = vec3(0.32, 0.30, 0.28) * (0.82 + 0.3 * gzNoise(vWp.xz * 0.8)) * (0.9 + 0.2 * tonal);
           sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, asphalt, gzRoadK);

@@ -20,6 +20,7 @@ const Player := preload("res://scripts/player.gd")
 const Life := preload("res://scripts/life.gd")
 const Quest := preload("res://scripts/quest.gd")
 const Map := preload("res://scripts/map.gd")
+const Traffic := preload("res://scripts/traffic.gd")
 
 # Blender interiors: material name -> [colour, roughness, bake gain, strata, joint height, joint width]
 const BAKED := {
@@ -80,6 +81,7 @@ var shot_at := ""
 var shot_look := ""
 var frames := 0
 var life: Node3D
+var traffic: Node3D
 var quest: Node3D
 var minimap: Control
 var fullmap: Control
@@ -131,6 +133,9 @@ func _ready() -> void:
 	life = Life.new()
 	add_child(life)
 	life.setup(self, world)
+	traffic = Traffic.new()
+	add_child(traffic)
+	traffic.setup(self, world)
 	quest = Quest.new()
 	add_child(quest)
 	quest.setup(world["artifacts"], pois.slice(0, world["landmarks"].size()), shot_path == "")
@@ -667,6 +672,7 @@ func _process(dt: float) -> void:
 	var night: float = get_meta("night", 0.0)
 	_update_ride(dt)
 	life.update(dt, p, night * (1.0 - storm_k), riding)
+	traffic.update(dt, p, night)
 	var sph: Dictionary = world["sphinx"]
 	quest.update(dt, p, {"fly": player.fly, "on_floor": player.is_on_floor(), "speed": Vector2(player.velocity.x, player.velocity.z).length(),
 		"outdoors": not inside, "night": night > 0.5, "storm": storm_k > 0.5, "riding": riding != null,

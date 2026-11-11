@@ -49,11 +49,35 @@ void fragment() {
 			glass = win;
 		}
 		win *= inside;
+		// balconies on the upper floors of some bays: a slab, a parapet or railing, and the shade under it
+		float bal = step(0.5, fl) * step(style, 1.5) * step(0.55, hash2(vec2(bay_id, 7.0) + seed * 3.0)) * inside * step(ly, hgt - 1.0);
+		if (bal > 0.5) {
+			float bx = step(0.16, fu) * step(fu, 0.86);
+			float slab = bx * step(fy, 0.055);
+			float rail = bx * step(0.055, fy) * step(fy, 0.34);
+			vec3 railc = mix(c * 1.08 + 0.02, vec3(0.2, 0.2, 0.21), step(0.6, fract(seed * 5.3)) * step(0.5, fract(u * 9.0)));
+			c = mix(c, railc, rail * 0.9);
+			c = mix(c, vec3(0.42, 0.40, 0.37), slab);
+			c *= 1.0 - 0.3 * bx * step(0.9, fy);                           // shade cast by the balcony above
+			win *= 1.0 - rail;
+			// an air-conditioner on the wall beside it
+			float ac = step(0.885, fu) * step(fu, 0.975) * step(0.36, fy) * step(fy, 0.5) * step(0.5, hash2(vec2(bay_id, fl) + 2.0));
+			c = mix(c, vec3(0.78, 0.78, 0.75) * (0.8 + 0.2 * step(0.5, fract(ly * 22.0))), ac);
+		}
 		if (fl < 0.5 && seed > 0.3 && hash2(vec2(bay_id, seed)) > 0.3) {
 			float sh = step(0.07, fu) * step(fu, 0.93) * step(fy, 0.82);
 			c = mix(c, vec3(0.15, 0.16, 0.17) * (0.85 + 0.15 * step(0.5, fract(ly * 6.0))), sh);
 			lit = sh * step(0.55, hash2(vec2(bay_id, 3.0) + seed)) * 0.7;
 			win = 0.0;
+			// a signboard over the shop, and on some a striped awning
+			float sg = step(0.05, fu) * step(fu, 0.95) * step(0.84, fy) * step(fy, 0.99);
+			float sh1 = hash2(vec2(bay_id, 11.0) + seed);
+			vec3 signc = sh1 < 0.25 ? vec3(0.75, 0.1, 0.08) : (sh1 < 0.5 ? vec3(0.05, 0.3, 0.6) : (sh1 < 0.7 ? vec3(0.9, 0.75, 0.1) : (sh1 < 0.85 ? vec3(0.08, 0.45, 0.2) : vec3(0.92, 0.92, 0.9))));
+			float letters = step(0.55, noise2(vec2(u * 7.0, floor(fy * 14.0)) + seed * 9.0)) * step(0.87, fy) * step(fy, 0.96) * step(0.12, fu) * step(fu, 0.88);
+			c = mix(c, mix(signc, vec3(1.0) - signc * 0.8, letters * 0.8), sg);
+			float aw = step(0.6, hash2(vec2(bay_id, 5.0) + seed)) * step(0.04, fu) * step(fu, 0.96) * step(0.7, fy) * step(fy, 0.84);
+			c = mix(c, mix(signc * 0.9, vec3(0.9), step(0.5, fract(u * 2.2))), aw);
+			lit = max(lit, sg * 0.5);
 		}
 		c = mix(c, mix(vec3(0.004), vec3(0.012, 0.02, 0.03), glass), win * 0.9);
 		lit = max(lit, win * step(0.64, wh));

@@ -36,7 +36,13 @@ void fragment() {
 	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.35);
 	vec3 ratio = texture(ground_tex, g).rgb * 2.0;
 	c *= mix(vec3(1.0), ratio, 0.55);
-	vec2 rm = texture(roads_tex, g).rg;
+	vec3 rmask = texture(roads_tex, g).rgb;
+	vec2 rm = rmask.rg;
+	// the built-up area (roads.png B): packed earth, dust and worn asphalt between the buildings
+	float urban = smoothstep(0.25, 0.7, rmask.b);
+	vec3 earth = vec3(0.50, 0.46, 0.40) * (0.78 + 0.34 * fbm(wp.xz * 0.13 + 7.0)) * (0.93 + 0.14 * noise2(wp.xz * 3.1));
+	earth = mix(earth, vec3(0.33, 0.32, 0.31), smoothstep(0.55, 0.75, fbm(wp.xz * 0.045 + 19.0)) * 0.6);     // patches of old tarmac
+	c = mix(c, earth, urban * 0.92);
 	float road = smoothstep(0.3, 0.65, rm.r);
 	c = mix(c, vec3(0.1, 0.095, 0.09) * (0.82 + 0.3 * noise2(wp.xz * 0.8)), road);
 	c *= mix(1.0, 0.84, smoothstep(0.25, 0.6, rm.g));

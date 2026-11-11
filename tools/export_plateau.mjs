@@ -19,6 +19,7 @@ const { buildWorld } = await import('../js/world.js');
 const { GRID, terrainHeight } = await import('../js/terrain.js');
 const D = await import('../js/data.js');
 const { GEO, EXTENT, ROUTES } = await import('../js/geodata.js');
+const { ROADS, LAMPS, BUS_STOPS } = await import('../js/roadnet.js');
 
 const scene = new THREE.Scene();
 const mats = makeMaterials();
@@ -134,6 +135,8 @@ const out = {
   landmarks: world.landmarks.map(l => ({ name: l.name, blurb: l.blurb, radius: l.radius, pos: [r(l.pos.x), r(l.pos.y), r(l.pos.z)] })),
   // life: site roads plied by carriages and camel rides, saddled camels to ride
   routes: ROUTES,
+  // the drivable road graph (tools/geo/build_roadnet.py): [kind, rank, half width, speed, x, z, ...]; street lamps [x, z, heading]
+  roads: ROADS, lamps: LAMPS, busStops: BUS_STOPS,
   rideables: world.rideables.map(c => ({ x: r(c.position.x), z: r(c.position.z), rot: r(c.rotation.y), saddle: c.userData.saddle })),
   // quest
   artifacts: D.ARTIFACTS.map(a => ({ id: a.id, type: a.type, name: a.name, blurb: a.blurb, pos: [r(a.pos.x), r(a.pos.y), r(a.pos.z)] })),

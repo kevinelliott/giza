@@ -497,6 +497,14 @@ function buildTown(mats, collidables, group, out, clearings) {
         const tx = cx - e.x * (0.2 + 0.15 * t), tz = cz - e.y * (0.2 + 0.15 * t) + (t % 2) * 1.6;
         box(tx, roofY, tz, 1.1, 1.3, 1.1, -rot, (seed + t * 0.3) % 1 > 0.5 ? [0.12, 0.12, 0.13] : [0.85, 0.85, 0.82], 3, seed, roofY, roofY);
       }
+      // satellite dishes: almost every roof has a cluster, all turned the same way (south-east)
+      const dishes = 1 + Math.floor(hash(cx * 0.7, cz * 1.9) * Math.min(5, area / 40));
+      for (let t = 0; t < dishes; t++) {
+        const a = hash(cx + t * 3.1, cz - t * 1.7) * 6.283, rr2 = Math.sqrt(area) * 0.28 * hash(cz + t, cx - t);
+        const dx = cx + Math.cos(a) * rr2, dz = cz + Math.sin(a) * rr2;
+        box(dx, roofY, dz, 0.08, 0.7, 0.08, 0, [0.35, 0.35, 0.36], 3, seed, roofY, roofY);
+        box(dx + 0.12, roofY + 0.55, dz + 0.12, 0.95, 0.95, 0.07, 0.785, [0.82, 0.82, 0.8], 3, seed, roofY, roofY);
+      }
       if (style === 0 && seed2 < 0.55) {
         for (let i = 0; i < Math.min(n, 6); i++) {
           const v = pts[i], dx = cx - v.x, dz = cz - v.y, dl = Math.hypot(dx, dz) || 1;
