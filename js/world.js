@@ -284,11 +284,15 @@ function buildOutlineWalls(flat, height, thick, mat, collidables, group) {
   group.add(mesh); collidables.push(mesh);
 }
 
-// Walls and pillars from a rasterised plan: rows of [i0, i1, type] runs,
-// merged down the rows into as few boxes as possible.
+// Walls and piers from a rasterised plan: rows of [i0, i1, type] runs, merged
+// down the rows into as few boxes as possible. The valley temple's sixteen
+// granite monoliths and the beams they carry are built to Petrie's
+// measurements: pillars 1.04 m square (the two at the junction 1.47 m) and
+// 4.425 m high; beams 1.04 m deep over the double colonnade, 1.22 m over the
+// single one, so the colonnades stand 5.65 m (222.4 in) high.
 function buildTemplePlan(mats, collidables, group, floorY) {
   const P = TEMPLE_PLAN, c = P.cell;
-  const H = [7.5, 4.6, 4.1, 4.4];                    // valley wall, Sphinx-Temple wall, valley pillar, Sphinx-Temple pier
+  const H = [6.2, 4.6, 0, 4.4];                      // valley wall (hall roof level), Sphinx-Temple wall, -, Sphinx-Temple pier
   const geoms = [[], [], [], []];
   let prev = new Map();
   for (let j = 0; j <= P.nz; j++) {
@@ -300,9 +304,19 @@ function buildTemplePlan(mats, collidables, group, floorY) {
     for (const [key, j0] of prev) {
       const [i0, i1, t] = key.split(':').map(Number), h = H[t] + 0.3;
       geoms[t].push(boxAt((i1 - i0) * c, h, (j - j0) * c, P.x0 + (i0 + i1) / 2 * c, floorY - 0.3 + h / 2, P.z0 + (j0 + j) / 2 * c));
-      if (t === 2) geoms[t].push(boxAt((i1 - i0) * c + 0.2, 0.9, (j - j0) * c + 0.2, P.x0 + (i0 + i1) / 2 * c, floorY + H[t] + 0.45, P.z0 + (j0 + j) / 2 * c));   // architrave stub
     }
     prev = cur;
+  }
+  const PH = 4.425, top = floorY + 5.65;
+  const cross = P.pillars.filter(p => p[0] === P.pillars[0][0]).sort((a, b) => a[1] - b[1]);
+  for (const [x, z, big] of P.pillars) { const w = big ? 1.47 : 1.04; geoms[2].push(boxAt(w, PH + 0.2, w, x, floorY - 0.2 + (PH + 0.2) / 2, z)); }
+  // single colonnade (N-S): beams 1.22 m deep from wall to wall
+  const cx = cross[0][0], span = cross[1][1] - cross[0][1];
+  geoms[2].push(boxAt(1.04, 1.22, cross[cross.length - 1][1] - cross[0][1] + 2 * span, cx, top - 0.61, (cross[0][1] + cross[cross.length - 1][1]) / 2));
+  // double colonnade (E-W): two lines of beams 1.04 m deep from the junction pillars to the west wall
+  for (const zr of [cross[2][1], cross[3][1]]) {
+    const xs = P.pillars.filter(p => p[1] === zr).map(p => p[0]), x0 = Math.min(...xs) - 3.251;
+    geoms[2].push(boxAt(cx - x0, 1.04, 1.04, (cx + x0) / 2, floorY + PH + 0.52, zr));
   }
   [mats.granite, mats.bedrock, mats.granite, mats.granite].forEach((mat, t) => {
     if (!geoms[t].length) return;
@@ -1089,7 +1103,8 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
     const c = MERESANKH.center, y = terrainHeight(c.x, c.z) - 7.5;
     const { anchors } = place(models.meresankh, { x: c.x - 1.7, y, z: c.z + 3.55 }, MERESANKH.pois);
     if (anchors.tp_meresankh) Object.assign(MERESANKH.tp, { x: anchors.tp_meresankh.x, y: anchors.tp_meresankh.y, z: anchors.tp_meresankh.z });
-    shell(c.x, y + 2, c.z, 30, 14, 30);
+    if (anchors.tp_burial) Object.assign(MERESANKH.tpBurial, { x: anchors.tp_burial.x, y: anchors.tp_burial.y, z: anchors.tp_burial.z });
+    shell(c.x, y - 1, c.z, 34, 20, 36);
   }
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);

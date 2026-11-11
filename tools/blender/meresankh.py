@@ -4,7 +4,7 @@
     python3 tools/blender/meresankh.py      ->  assets/models/meresankh.glb
 
 Plan and heights scaled off Reisner's published plan and section (scale bar
-on the drawing; see research/sites/meresankh.md): main room (a) 7.1 x 3.4 m,
+on the drawing; see research/sites/meresankh.md): main room (a) 7.10 x 3.35 m,
 2.6 m high; north room (c) 2.7 x 4.7 m, 2.1 m high, its north wall carved
 with ten standing women under an inscribed architrave; west offering room
 (b) 5.3 x 2.7 m with the burial shaft and statue niches, reached through a
@@ -18,33 +18,50 @@ from mathutils import Vector, Matrix
 import gizalib as G
 
 random.seed(7)
-G.reset({'plaster': (0.66, 0.6, 0.5), 'ceiling_red': (0.5, 0.3, 0.27), 'statue': (0.7, 0.66, 0.58),
+G.reset({'granite_black': (0.07, 0.07, 0.08), 'plaster': (0.66, 0.6, 0.5), 'ceiling_red': (0.5, 0.3, 0.27), 'statue': (0.7, 0.66, 0.58),
          'wood': (0.4, 0.27, 0.15), 'dark': (0.02, 0.02, 0.02), 'fixture': (1, 0.95, 0.8), 'rock': (0.6, 0.52, 0.4)})
 
 voids = []
 def void(name, *b):
     bm = bmesh.new(); G.box(bm, *b); voids.append(G.obj(bm, name))
 
-void('a', 0, 3.4, 0, 7.12, 0, 2.6)
-void('c', -0.4, 4.3, 7.1, 9.8, 0, 2.1)
-void('b', -3.0, -0.3, 2.4, 7.7, 0, 2.6)
-void('ab1', -0.35, 0.05, 2.4, 3.65, 0, 2.2)                 # two openings a -> b, a painted pillar between
-void('ab2', -0.35, 0.05, 4.4, 5.4, 0, 2.2)
-void('door', 3.35, 4.9, 1.1, 2.1, 0, 2.0)                   # entrance passage (east)
-void('stairwell', 4.85, 6.2, 1.1, 7.6, 0, 5.0)
-void('niche_n', 0.2, 3.9, 9.75, 10.2, 0.22, 1.78)           # the ten statues
-void('niche_w1', -3.38, -2.95, 2.85, 3.85, 0.3, 2.0)        # statue pairs, west wall of (b)
-void('niche_w2', -3.38, -2.95, 6.3, 7.3, 0.3, 2.0)
-for nx0, nx1 in ((0.45, 1.0), (1.18, 1.72), (1.9, 2.8)):   # three statue niches, south wall of (a)
-    void('niche_s', nx0, nx1, -0.4, 0.05, 0.5, 1.4)
-void('shaft', -2.7, -0.7, 4.4, 6.2, -4.5, 0.02)             # burial shaft (covered by a grating today)
+# Measured values from Dunham & Simpson (Giza Mastabas 1, 1974):
+#  main room 7.10 (N-S) x 3.35 x 2.60 m; entrance in the east wall, 1.60 m from the
+#  SE corner, 1.26 m wide (east wall north of it is 4.24 m long);
+#  west (offering) room 5.45 x 2.62 m, 2.35-2.22 m high;
+#  burial pit ~2.08 m square, 5.13 m deep, burial chamber opening north from it:
+#  5.70 m long, 2.97-3.30 m wide, 1.97 m high, floor 0.32 m below the pit floor;
+#  canopic pit 0.70 m square, 0.48 m deep in the pit's SE corner;
+#  south-wall niches A 0.50 x 0.77 (0.34 deep), B 0.40 x 0.635 (0.32), C 0.75 x 0.372 (0.32);
+#  west room, west wall from the south: palace-facade panel 1.13 m, niche 1.13 m wide and
+#  0.20 m deep with two statues, false door, niche with two statues, palace-facade panel.
+AX, AY, AH = 3.35, 7.10, 2.6
+BX0, BX1, BY0, BY1, BH = -0.35 - 2.62, -0.35, 2.2, 7.65, 2.3
+PX0, PX1, PY0, PY1, PZ = -2.7, -0.62, 3.89, 5.97, -5.13           # burial pit
+KY1, KZ = PY1 + 5.70, PZ - 0.32                                   # burial chamber
+void('a', 0, AX, 0, AY + 0.02, 0, AH)
+void('c', -0.4, 4.3, AY, AY + 2.7, 0, 2.1)
+void('b', BX0, BX1, BY0, BY1, 0, BH)
+void('ab1', -0.4, 0.05, 2.3, 3.5, 0, 2.15)                  # two doorways a -> b, the central pillar between
+void('ab2', -0.4, 0.05, 4.23, 5.2, 0, 2.15)
+void('door', AX - 0.05, 4.9, 1.60, 2.86, 0, 2.0)            # entrance passage (east)
+void('stairwell', 4.85, 6.2, 1.60, 7.6, 0, 5.0)
+void('niche_n', 0.2, 3.9, AY + 2.65, AY + 3.1, 0.22, 1.78)  # the ten statues
+void('niche_w1', BX0 - 0.2, BX0 + 0.05, BY0 + 1.13, BY0 + 2.26, 0.25, 1.85)     # two statues each
+void('niche_w2', BX0 - 0.2, BX0 + 0.05, BY1 - 2.26, BY1 - 1.13, 0.25, 1.85)
+NICHES = ((0.35, 0.50, 0.77, 0.34), (1.30, 0.40, 0.635, 0.32), (2.15, 0.75, 0.372, 0.32))   # x0, width, height, depth: A (west), B, C
+for nx0, nw, nh, nd in NICHES:
+    void('niche_s', nx0, nx0 + nw, -nd, 0.05, 0.3, 0.3 + nh)
+void('pit', PX0, PX1, PY0, PY1, PZ, 0.02)
+void('canopic', PX1 - 0.7, PX1, PY0, PY0 + 0.7, PZ - 0.48, PZ + 0.05)
+void('burial', -3.2, -0.1, PY1 - 0.05, KY1, KZ, KZ + 1.97)
 room = G.union(voids, 'chapel')
 G.void_to_room(room, 0.45)
 room.data.materials.clear()
-for m in ('plaster', 'ceiling_red', 'dark', 'wood'): room.data.materials.append(G.M[m])
+for m in ('plaster', 'ceiling_red', 'dark', 'wood', 'rock'): room.data.materials.append(G.M[m])
 for p in room.data.polygons:
     c, n = p.center, p.normal
-    if c.z < -0.05: p.material_index = 2                                   # down the shaft
+    if c.z < -0.05: p.material_index = 4                                   # pit and burial chamber: bare rock
     elif n.z < -0.7 and c.z > 1.9 and c.x < 4.8: p.material_index = 1      # painted ceilings
     elif n.z > 0.7 and c.z < 0.05 and c.x < 4.8: p.material_index = 3      # modern plank floor
     else: p.material_index = 0
@@ -53,8 +70,8 @@ for p in room.data.polygons:
 solids, deco = [], []
 # pillars between (a) and (c), carrying an architrave
 for x in (1.05, 2.4):                                      # 1.0 and 2.4 m from the west wall (plan)
-    solids.append(G.box_obj('pillar', 'plaster', x - 0.34, x + 0.34, 6.85, 7.4, 0, 2.1))
-solids.append(G.box_obj('architrave', 'plaster', 0, 3.4, 6.85, 7.35, 2.1, 2.6))
+    solids.append(G.box_obj('pillar', 'plaster', x - 0.34, x + 0.34, AY - 0.25, AY + 0.3, 0, 2.1))
+solids.append(G.box_obj('architrave', 'plaster', 0, AX, AY - 0.25, AY + 0.25, 2.1, AH))
 
 def loft(bm, secs, seg=10):
     """Skin a stack of ellipses: secs = [(z, rx, ry, cx, cy), ...]."""
@@ -93,19 +110,60 @@ def figure(x, y, z, h, face=(0, -1), seated=False, wig=1.0):
 # ten women along the north wall, graded in height (smaller, more worn at the west end)
 heights = [1.05, 1.15, 1.3, 1.5, 1.5, 1.5, 1.5, 1.45, 1.4, 1.35]
 for i, h in enumerate(heights):
-    solids.append(figure(0.42 + i * 0.362, 10.0, 0.22, h, wig=0.85 if i in (2, 8, 9) else 1.0))
-for y0 in (3.1, 3.6):  solids.append(figure(-3.2, y0, 0.3, 1.5, face=(1, 0)))
-for y0 in (6.55, 7.05): solids.append(figure(-3.2, y0, 0.3, 1.5, face=(1, 0)))
-for x0 in (0.72, 1.45, 2.17, 2.53): solids.append(figure(x0, -0.2, 0.5, 0.82, face=(0, 1)))
-# false door between the two west niches
-deco.append(G.box_obj('deco_falsedoor', 'dark', -3.02, -2.985, 4.5, 5.5, 0.1, 1.9))
+    solids.append(figure(0.42 + i * 0.362, AY + 2.9, 0.22, h, wig=0.85 if i in (2, 8, 9) else 1.0))
+# west room: two pairs of standing women (Hetepheres II and Mersyankh), short flaring wigs
+for y0 in (BY0 + 1.13 + 0.33, BY0 + 1.13 + 0.8, BY1 - 2.26 + 0.33, BY1 - 2.26 + 0.8):
+    solids.append(figure(BX0 - 0.03, y0, 0.25, 1.5, face=(1, 0), wig=0.9))
 
-# modern fittings: grating over the shaft, rails, tube lights
+def scribe(x, y, z, h):
+    """A rock-cut figure 'in scribal position': cross-legged, papyrus on the lap."""
+    bm = bmesh.new(); s_ = h / 0.62
+    S = lambda secs: [(zz * s_, rx * s_, ry * s_, cx * s_, cy * s_) for zz, rx, ry, cx, cy in secs]
+    loft(bm, S([(0.0, 0.26, 0.17, 0, 0), (0.1, 0.27, 0.18, 0, 0), (0.17, 0.2, 0.15, 0, 0.02)]), 10)         # crossed legs
+    loft(bm, S([(0.12, 0.14, 0.1, 0, 0.05), (0.3, 0.15, 0.1, 0, 0.05), (0.42, 0.17, 0.09, 0, 0.05), (0.47, 0.05, 0.05, 0, 0.04)]), 10)
+    loft(bm, S([(0.46, 0.05, 0.055, 0, 0.03), (0.5, 0.07, 0.08, 0, 0.03), (0.56, 0.075, 0.085, 0, 0.03), (0.61, 0.04, 0.05, 0, 0.03)]), 8)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    for f in bm.faces: f.smooth = True
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi, 3, 'Z'))        # facing +Y (north)
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(x, y, z))
+    return G.obj(bm, 'scribe', 'statue')
+(ax, aw, ah, ad), (bx, bw, bh, bd), (cx, cw, ch, cd) = NICHES
+solids.append(scribe(ax + aw / 2, -ad / 2, 0.3, ah * 0.9))               # A: Khemetnu the Elder (Reisner)
+solids.append(scribe(bx + bw / 2, -bd / 2, 0.3, bh * 0.9))               # B: Khemetnu the Younger
+for k in range(4):                                                        # C: four figures
+    solids.append(scribe(cx + cw * (k + 0.5) / 4, -cd / 2, 0.3, ch * 0.92))
+# false door at the centre of the west room's west wall
+deco.append(G.box_obj('deco_falsedoor', 'dark', BX0 + 0.012, BX0 + 0.03, BY0 + 2.36, BY1 - 2.36, 0.1, 1.9))
+
+# burial chamber: the black granite sarcophagus (2.16 x 0.87 x 0.795 m) near the west
+# wall, its lid (0.175 m thick, 2.35 m with its lugs) propped up as it was found
+SX, SY = -3.2 + 0.25 + 0.435, PY1 + 2.9
+bm = bmesh.new(); G.box(bm, SX - 0.435, SX + 0.435, SY - 1.08, SY + 1.08, KZ, KZ + 0.795)
+sarc = G.obj(bm, 'sarc', 'granite_black')
+cav = G.box_obj('cav', None, SX - 0.3, SX + 0.3, SY - 0.93, SY + 0.93, KZ + 0.16, KZ + 1.0)
+mod = sarc.modifiers.new('c', 'BOOLEAN'); mod.operation = 'DIFFERENCE'; mod.object = cav; mod.solver = 'EXACT'
+bpy.context.view_layer.objects.active = sarc; bpy.ops.object.modifier_apply(modifier=mod.name)
+bpy.data.objects.remove(cav, do_unlink=True)
+solids.append(sarc)
+bm = bmesh.new(); G.box(bm, -0.435, 0.435, -1.175, 1.175, 0, 0.175)
+bmesh.ops.rotate(bm, verts=bm.verts, cent=(0.435, 0, 0), matrix=Matrix.Rotation(math.radians(-24), 3, 'Y'))
+bmesh.ops.translate(bm, verts=bm.verts, vec=(SX, SY, KZ + 0.8))
+solids.append(G.obj(bm, 'lid', 'granite_black'))
+G.empty('insc_meresankh_sarc', (SX + 0.447, SY, KZ + 0.4), (0, 1, 0), (0, 0, 1), 2.16, 0.78)
+
+# modern fittings: rails round the pit, the timber stair that winds down it (visual
+# only — use fast travel for the burial chamber), tube lights
 bm = bmesh.new()
-for k in range(9):
-    y = 4.4 + k * 0.22
-    G.box(bm, -2.72, -0.68, y, y + 0.12, 0.0, 0.05)
-solids.append(G.obj(bm, 'grate', 'wood'))
+turns, n = 4, 40
+for k in range(n):
+    t = k / n * turns; side = int(t) % 4; u = t - int(t)
+    z = PZ * (k + 1) / n
+    w = 0.62
+    if side == 0: G.box(bm, PX0, PX0 + w, PY1 - (u + 0.1) * 2.08, PY1 - u * 2.08, z, z + 0.04)
+    elif side == 1: G.box(bm, PX0 + u * 2.08, PX0 + (u + 0.1) * 2.08, PY0, PY0 + w, z, z + 0.04)
+    elif side == 2: G.box(bm, PX1 - w, PX1, PY0 + u * 2.08, PY0 + (u + 0.1) * 2.08, z, z + 0.04)
+    else: G.box(bm, PX1 - (u + 0.1) * 2.08, PX1 - u * 2.08, PY1 - w, PY1, z, z + 0.04)
+deco.append(G.obj(bm, 'deco_pitstair', 'wood'))
 def rail(a, b):
     a, b = Vector(a), Vector(b); d = b - a; L = d.length; d.normalize(); side = Vector((-d.y, d.x, 0))
     bm = bmesh.new()
@@ -118,40 +176,56 @@ def rail(a, b):
         for v in r['verts']:
             p = v.co.copy(); v.co = a + d * t * L + d * p.x * 0.06 + side * p.y * 0.06 + Vector((0, 0, (p.z + 0.5) * 1.0))
     solids.append(G.obj(bm, 'rail', 'wood'))
-rail((0.1, 9.25, 0), (4.0, 9.25, 0))
-rail((-2.8, 4.25, 0), (-0.6, 4.25, 0)); rail((-2.8, 6.35, 0), (-0.6, 6.35, 0))
+rail((0.1, AY + 2.15, 0), (4.0, AY + 2.15, 0))
+for a_, b_ in (((PX0 - 0.1, PY0 - 0.1), (PX1 + 0.1, PY0 - 0.1)), ((PX1 + 0.1, PY0 - 0.1), (PX1 + 0.1, PY1 + 0.1)),
+               ((PX1 + 0.1, PY1 + 0.1), (PX0 - 0.1, PY1 + 0.1)), ((PX0 - 0.1, PY1 + 0.1), (PX0 - 0.1, PY0 - 0.1))):
+    rail((*a_, 0), (*b_, 0))
 
 # entrance stair up to the street (north along the stairwell), daylight at the top
 bm = bmesh.new()
 N, RISE, RUN = 12, 0.21, 0.36
 for i in range(N):
-    y0 = 2.3 + i * RUN
+    y0 = 3.0 + i * RUN
     G.box(bm, 4.85, 6.2, y0, y0 + RUN + 0.02, -0.2, (i + 1) * RISE)
-G.box(bm, 4.85, 6.2, 2.3 + N * RUN, 7.6, -0.2, N * RISE)
+G.box(bm, 4.85, 6.2, 3.0 + N * RUN, 7.6, -0.2, N * RISE)
 solids.append(G.obj(bm, 'steps_entrance', 'rock'))
 G.lights.append(G.box_obj('daylight', 'fixture', 5.0, 6.05, 7.52, 7.58, N * RISE, N * RISE + 2.1))
 ld = bpy.data.lights.new('door', 'AREA'); ld.energy = 260; ld.size = 1.2; ld.color = (0.9, 0.95, 1.0)
 lo = bpy.data.objects.new('bake_light', ld); lo.location = (5.5, 7.3, N * RISE + 1.2); lo.rotation_euler = (math.radians(90), 0, 0); G.col.objects.link(lo)
 
-for loc in ((1.7, 1.2, 0.12), (2.9, 5.2, 0.12), (-1.6, 3.2, 0.12), (2.0, 8.6, 0.12), (-1.7, 7.2, 0.12)):
+for loc in ((1.7, 1.2, 0.12), (2.9, 5.2, 0.12), (-0.7, 2.6, 0.12), (2.0, AY + 1.5, 0.12), (-1.7, 7.3, 0.12)):
     G.light(loc, 30, size=0.07)
+G.light((-0.5, PY1 + 1.0, KZ + 0.12), 40, size=0.07); G.light((-0.5, KY1 - 0.6, KZ + 0.12), 40, size=0.07)
+G.light((PX0 + 1.0, PY0 + 1.0, PZ + 0.12), 25, size=0.06)
 
 # anchors and panels
-G.empty('tp_meresankh', (2.6, 1.6, 0.25))
-G.empty('poi_chapel', (1.7, 3.4, 1.4))
-G.empty('poi_statues', (2.0, 8.7, 1.4))
-G.empty('poi_offering', (-1.7, 3.3, 1.4))
-G.empty('insc_meresankh_architrave', (2.05, 9.745, 1.9), (1, 0, 0), (0, 0, 1), 3.7, 0.2)
-# Photographs as wall textures; positions after Dunham & Simpson, Giza Mastabas 1 (1974):
-#  north wall of the main room = the two pillars with standing figures of the queen
-#  under the painted lintel; west wall, right (north) end = Hetepheres II, Mersyankh and
-#  Nebemakhet; east wall north of the entrance = Kawab at full height at the north end,
-#  registers of boats and craftsmen beside him.
-G.empty('tex_mer_pillar', (1.05, 6.838, 1.06), (1, 0, 0), (0, 0, 1), 0.66, 1.9)
-G.empty('tex_mer_west', (1.7, 6.838, 2.35), (1, 0, 0), (0, 0, 1), 3.3, 0.4)
-G.empty('tex_mer_north', (0.012, 6.2, 1.18), (0, 1, 0), (0, 0, 1), 1.3, 1.58)
-G.empty('tex_mer_east', (3.388, 4.55, 1.0), (0, -1, 0), (0, 0, 1), 2.5, 1.7)
-G.empty('tex_mer_kawab', (3.388, 6.3, 1.12), (0, -1, 0), (0, 0, 1), 0.95, 1.95)
+G.empty('tp_meresankh', (2.4, 2.2, 0.25))
+G.empty('tp_burial', (-1.2, PY1 + 1.2, KZ + 0.3))
+G.empty('poi_chapel', (1.7, 3.6, 1.4))
+G.empty('poi_statues', (2.0, AY + 1.6, 1.4))
+G.empty('poi_offering', (-1.0, 3.0, 1.4))
+G.empty('poi_scribes', (1.6, 0.9, 1.0))
+G.empty('poi_burial', (-1.4, PY1 + 2.6, KZ + 1.2))
+G.empty('insc_meresankh_architrave', (2.05, AY + 2.645, 1.9), (1, 0, 0), (0, 0, 1), 3.7, 0.2)
+# palace-facade panels at either end of the west room's west wall (1.13 m each)
+G.empty('insc_meresankh_palace', (BX0 + 0.012, BY0 + 0.565, 1.05), (0, 1, 0), (0, 0, 1), 1.05, 1.9)
+G.empty('insc_meresankh_palace', (BX0 + 0.012, BY1 - 0.565, 1.05), (0, 1, 0), (0, 0, 1), 1.05, 1.9)
+# Photographs (Richard Mortel, CC BY 2.0) as wall textures, placed after the report:
+#  north wall: EAST pillar = the queen facing left, short wig, hand on breast, four columns
+#  of text above (photo 55); WEST pillar = the queen facing right, four columns (photo 72,
+#  head and text only); painted lintel above (57). West wall, north end: Hetepheres II,
+#  Mersyankh and Nebemakhet (54). East wall north of the entrance (4.24 m): Kawab at full
+#  height at the north end (56), registers with craftsmen (62). South door jamb: the queen
+#  with Khemetnu presenting the document (47). West room south wall (2.62 m): offering
+#  list (71).
+G.empty('tex_mer_pillar', (2.4, AY - 0.262, 1.06), (1, 0, 0), (0, 0, 1), 0.66, 1.9)
+G.empty('tex_mer_wpillar', (1.05, AY - 0.262, 1.62), (1, 0, 0), (0, 0, 1), 0.66, 0.84)
+G.empty('tex_mer_west', (AX / 2, AY - 0.262, 2.35), (1, 0, 0), (0, 0, 1), 3.3, 0.4)
+G.empty('tex_mer_north', (0.012, 6.15, 1.18), (0, 1, 0), (0, 0, 1), 1.3, 1.58)
+G.empty('tex_mer_east', (AX - 0.012, 4.45, 1.0), (0, -1, 0), (0, 0, 1), 2.6, 1.7)
+G.empty('tex_mer_kawab', (AX - 0.012, 6.5, 1.12), (0, -1, 0), (0, 0, 1), 0.95, 1.95)
+G.empty('tex_mer_jamb', (4.1, 1.612, 1.0), (-1, 0, 0), (0, 0, 1), 1.2, 1.9)
+G.empty('tex_mer_list', (BX0 + 1.31, BY0 + 0.012, 1.2), (-1, 0, 0), (0, 0, 1), 2.4, 1.8)
 
 final = [room, G.join(solids, 'solids')]
 G.join(deco, 'deco')

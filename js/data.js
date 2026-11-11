@@ -234,8 +234,9 @@ export function khufuLowerInterior() {
 // Schematic: the ramp really starts in the middle of the upper chamber's
 // floor; the six-niche "cellar" is not built; passages are enlarged.
 const MK_HALF = 102.2 / 2, MK_H = 65;
-const mkDoor = { x: 0, y: 4, z: -(MK_HALF * (1 - 4 / MK_H)) };
-const mkA = { x: 0, y: 4 - 31.7 * Math.sin(26 * DEG), z: mkDoor.z + 31.7 * Math.cos(26 * DEG) };
+const MK_ENT = 165.3 * 0.0254;                       // Petrie: entrance floor 165.3 in above the base
+const mkDoor = { x: 0, y: MK_ENT, z: -(MK_HALF * (1 - MK_ENT / MK_H)) };
+const mkA = { x: 0, y: MK_ENT - 31.7 * Math.sin(26 * DEG), z: mkDoor.z + 31.7 * Math.cos(26 * DEG) };
 const mkU0 = mkA.z + 3.63 + 12.6, mkUc = mkU0 + 1.92;
 export const MENKAURE_INTERIOR = {
   entrance: mkDoor,
@@ -277,17 +278,18 @@ export const MENKAURE_SUB = {
   tp: { x: 0, y: 0, z: 0 },
   pois: [
     ['panelled', 'Menkaure — Panelled Chamber',
-      'Panelled Chamber — its rock walls are carved and plastered as a palace façade, eleven niches on each long ' +
-      'wall: the first decoration inside any pyramid since Djoser.', 3],
+      'Panelled Chamber — its rock walls, sides and ends, are carved as a palace façade: the first decoration inside ' +
+      'any pyramid since Djoser. The passages are true size (about 1.05 × 1.2 m): crouch (C) to move on.', 3],
     ['upper', 'Menkaure — Large Chamber',
-      'The large chamber, 14.2 × 3.84 m and 4.87 m high — the burial room of the first design. High in the north wall ' +
-      'opens the abandoned passage of that design; in the floor, a ramp leads down to the final burial chamber.', 6],
+      'The second chamber, 14.23 × 3.86 m and 4.87 m high — the burial room of the first design; two rock pilasters ' +
+      'mark off its west end. High in the north wall opens the abandoned passage of that design; in the floor, a ramp ' +
+      'leads down west to the final burial chamber.', 6],
     ['burial', 'Menkaure — Burial Chamber',
       'Burial Chamber — lined with red granite under granite beams recut into a vault. The basalt sarcophagus Vyse ' +
       'found here in 1837, carved as a palace façade, was lost at sea in 1838 when the Beatrice sank off Spain.', 4],
     ['niches', 'Menkaure — Room of the six niches',
-      'Down a short stair: a rock-cut room with six deep niches, four in the east wall and two in the north — perhaps ' +
-      'for the canopic chests and the crowns of Upper and Lower Egypt.', 3]
+      'Down six steps — the oldest known flight of steps in any building, Petrie thought: a rock-cut room with six ' +
+      'deep loculi, four in the east wall and two in the north, each over 2.5 m deep.', 3]
   ]
 };
 
@@ -296,6 +298,7 @@ export const MENKAURE_SUB = {
 export const MERESANKH = {
   name: 'Tomb of Meresankh III', center: { x: 341.4, z: 156.1 },
   tp: { x: 341.4, y: 1, z: 156.1, ground: true },
+  tpBurial: { x: 341.4, y: 1, z: 156.1, ground: true },
   pois: [
     ['chapel', 'Tomb of Meresankh III',
       'The rock-cut chapel of Queen Meresankh III, granddaughter of Khufu and wife of Khafre, found by Reisner in 1927 ' +
@@ -305,7 +308,13 @@ export const MERESANKH = {
       'daughters — under an architrave naming the queen. Nothing quite like it survives in any other tomb.', 4],
     ['offering', 'Offering room',
       'The west room: statue niches, a false door, and the shaft down to the burial chamber where her black granite ' +
-      'sarcophagus (now in Cairo) was found.', 4]
+      'sarcophagus (now in Cairo) was found.', 4],
+    ['scribes', 'The scribes in the wall',
+      'Three small niches low in the south wall hold rock-cut figures of scribes — thought to be the steward Khemetnu, ' +
+      'who oversaw the making of the tomb, his son, and four grandsons.', 2.5],
+    ['burial', 'Burial chamber of Meresankh III',
+      'Down a 5.1 m pit: the burial chamber, 5.7 m long and under 2 m high. Her black granite sarcophagus — a gift ' +
+      'from her mother Hetepheres II, re-inscribed for her — stood by the west wall with its lid propped up, as here.', 4]
   ]
 };
 
@@ -529,6 +538,7 @@ export const TELEPORTS = [
   { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
   { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) },
   { label: 'Tomb of Meresankh III', pos: MERESANKH.tp },
+  { label: 'Tomb of Meresankh III — burial chamber', pos: MERESANKH.tpBurial },
   { label: 'Pyramid of Menkaure — Panelled Chamber', pos: Object.assign(MENKAURE_SUB.tp, { x: P.menkaure.center.x, y: P.menkaure.baseY + MENKAURE_INTERIOR.chambers[0].center.y - 1.0, z: P.menkaure.center.z + MENKAURE_INTERIOR.chambers[0].center.z }) },
   { label: 'Serapeum of Saqqara (13.6 km south)', pos: SERAPEUM.spawn }
 ];

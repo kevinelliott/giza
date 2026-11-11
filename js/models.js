@@ -19,7 +19,10 @@ export const PANEL_TEXTURES = {
   mer_north: 'assets/textures/mer_north.jpg',
   mer_east: 'assets/textures/mer_east.jpg',
   mer_west: 'assets/textures/mer_west.jpg',
-  mer_kawab: 'assets/textures/mer_kawab.jpg'
+  mer_kawab: 'assets/textures/mer_kawab.jpg',
+  mer_jamb: 'assets/textures/mer_jamb.jpg',
+  mer_list: 'assets/textures/mer_list.jpg',
+  mer_wpillar: 'assets/textures/mer_wpillar.jpg'
 };
 
 export async function loadModels(onStatus) {

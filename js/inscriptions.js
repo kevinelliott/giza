@@ -74,7 +74,13 @@ Object.assign(INSCRIPTIONS, {
   // Menkaure — the panelled antechamber: palace-facade niches cut in the
   // rock and plastered, eleven on each long wall (Maragioglio & Rinaldi).
   menkaure_panel_long: { status: 'attested', style: 'incised', ink: '#3d2f22', panelling: 11, rows: [] },
-  menkaure_panel_short: { status: 'placeholder', style: 'incised', ink: '#3d2f22', panelling: 5, rows: [] },
+  menkaure_panel_short: { status: 'attested', style: 'incised', ink: '#3d2f22', panelling: 3, rows: [] },   // "both the sides and the ends" (Petrie)
+  // Meresankh III — palace-facade panels at the ends of the offering room's west wall
+  meresankh_palace: { status: 'attested', style: 'incised', ink: '#4a3a2a', panelling: 3, rows: [] },
+  // Meresankh III — sarcophagus (Cairo JE 54935): palace-facade panelling, six panels on
+  // each long side; a line of text round the upper edge naming Hetepheres II as the giver.
+  meresankh_sarc: { status: 'composed', style: 'incised', ink: '#c9c4b8', panelling: 6, band: true,
+    rows: [[g('M23 X1 G39 X1'), g('M23 X1 N41 X1'), g('R4 X1 Q3 D2 D21 S29'), g('X8 N35 G39 X1 S29'), g('U6 D21 S29 S34 N35 Aa1')]] },
   // Meresankh III — architrave over the ten statues (north wall): her
   // titles. "King's daughter of his body, king's wife, Meresankh".
   meresankh_architrave: { status: 'composed', style: 'incised', ink: '#5a4030',
