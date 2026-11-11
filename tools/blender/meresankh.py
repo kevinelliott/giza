@@ -35,7 +35,8 @@ void('stairwell', 4.85, 6.2, 1.1, 7.6, 0, 5.0)
 void('niche_n', 0.2, 3.9, 9.75, 10.2, 0.22, 1.78)           # the ten statues
 void('niche_w1', -3.38, -2.95, 2.85, 3.85, 0.3, 2.0)        # statue pairs, west wall of (b)
 void('niche_w2', -3.38, -2.95, 6.3, 7.3, 0.3, 2.0)
-void('niche_s', 1.0, 2.5, -0.4, 0.05, 0.5, 1.35)            # small figures, south wall of (a)
+for nx0, nx1 in ((0.45, 1.0), (1.18, 1.72), (1.9, 2.8)):   # three statue niches, south wall of (a)
+    void('niche_s', nx0, nx1, -0.4, 0.05, 0.5, 1.4)
 void('shaft', -2.7, -0.7, 4.4, 6.2, -4.5, 0.02)             # burial shaft (covered by a grating today)
 room = G.union(voids, 'chapel')
 G.void_to_room(room, 0.45)
@@ -51,32 +52,40 @@ for p in room.data.polygons:
 
 solids, deco = [], []
 # pillars between (a) and (c), carrying an architrave
-for x in (1.15, 2.55):
-    solids.append(G.box_obj('pillar', 'plaster', x - 0.27, x + 0.27, 6.85, 7.35, 0, 2.1))
+for x in (1.05, 2.4):                                      # 1.0 and 2.4 m from the west wall (plan)
+    solids.append(G.box_obj('pillar', 'plaster', x - 0.34, x + 0.34, 6.85, 7.4, 0, 2.1))
 solids.append(G.box_obj('architrave', 'plaster', 0, 3.4, 6.85, 7.35, 2.1, 2.6))
 
-def figure(x, y, z, h, face=(0, -1), seated=False):
-    """A rock-cut statue, engaged in the wall behind it; `face` = direction it looks."""
+def loft(bm, secs, seg=10):
+    """Skin a stack of ellipses: secs = [(z, rx, ry, cx, cy), ...]."""
+    rings = []
+    for z, rx, ry, cx, cy in secs:
+        rings.append([bm.verts.new((cx + rx * math.cos(2 * math.pi * k / seg), cy + ry * math.sin(2 * math.pi * k / seg), z)) for k in range(seg)])
+    for a, b in zip(rings, rings[1:]):
+        for k in range(seg):
+            bm.faces.new((a[k], a[(k + 1) % seg], b[(k + 1) % seg], b[k]))
+    bm.faces.new(rings[0][::-1]); bm.faces.new(rings[-1])
+
+def figure(x, y, z, h, face=(0, -1), seated=False, wig=1.0):
+    """A rock-cut statue of a woman in a sheath dress and tripartite wig,
+    engaged in the wall behind her (local +Y is into the wall)."""
     bm = bmesh.new()
-    s = h / 1.5
-    if seated:
-        G.box(bm, -0.16 * s, 0.16 * s, -0.12 * s, 0.14 * s, 0, 0.42 * s)
-        G.box(bm, -0.14 * s, 0.14 * s, 0.0, 0.14 * s, 0.42 * s, 0.8 * s)
-    else:
-        v = G.box(bm, -0.17 * s, 0.17 * s, -0.09 * s, 0.14 * s, 0, 1.18 * s)       # long sheath dress
-        for vt in v:
-            if vt.co.z > 0.5 * s: vt.co.x *= 1.22                                    # shoulders
-            else: vt.co.x *= 0.8                                                    # narrow at the ankles
-        for sx in (-1, 1):                                                           # arms at the sides
-            G.box(bm, sx * 0.21 * s, sx * 0.27 * s, -0.05 * s, 0.08 * s, 0.5 * s, 1.14 * s)
-    hz = (0.8 if seated else 1.18) * s
-    bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=7, radius=0.095 * s, matrix=Matrix.Translation((0, -0.03 * s, hz + 0.13 * s)))
-    # tripartite wig: a cap over the crown and a lappet falling either side of the face
-    G.box(bm, -0.15 * s, 0.15 * s, -0.09 * s, 0.13 * s, hz + 0.2 * s, hz + 0.27 * s)
+    s = h / 1.62
+    S = lambda secs: [(zz * s, rx * s, ry * s, cx * s, cy * s) for zz, rx, ry, cx, cy in secs]
+    loft(bm, S([(0.0, 0.11, 0.09, 0, 0), (0.1, 0.105, 0.08, 0, 0), (0.45, 0.12, 0.085, 0, 0), (0.8, 0.165, 0.105, 0, 0.005),
+                (1.0, 0.125, 0.085, 0, 0), (1.17, 0.16, 0.11, 0, -0.01), (1.3, 0.205, 0.09, 0, 0.01), (1.36, 0.06, 0.055, 0, 0), (1.43, 0.05, 0.05, 0, 0)]))
+    for sx in (-1, 1):                                    # arms hanging at the sides, open hands
+        loft(bm, S([(0.66, 0.035, 0.045, sx * 0.2, 0), (0.75, 0.04, 0.045, sx * 0.205, 0), (1.0, 0.04, 0.045, sx * 0.215, 0), (1.27, 0.05, 0.05, sx * 0.21, 0.005)]), 6)
+        G.box(bm, sx * 0.1 * s - 0.05 * s, sx * 0.1 * s + 0.05 * s, -0.17 * s, -0.02 * s, 0, 0.06 * s)      # feet
+    # head; the wig frames it: a cap and two lappets falling to the collar-bones
+    loft(bm, S([(1.42, 0.05, 0.06, 0, -0.03), (1.47, 0.08, 0.095, 0, -0.035), (1.54, 0.088, 0.1, 0, -0.035), (1.6, 0.075, 0.09, 0, -0.03), (1.64, 0.03, 0.04, 0, -0.03)]), 10)
+    w = wig
+    loft(bm, S([(1.28, 0.15 * w, 0.075, 0, 0.05), (1.4, 0.155 * w, 0.085, 0, 0.045), (1.56, 0.14 * w, 0.1, 0, 0.03), (1.65, 0.11 * w, 0.095, 0, 0.01), (1.69, 0.05, 0.05, 0, 0.0)]), 10)
     for sx in (-1, 1):
-        G.box(bm, sx * 0.095 * s, sx * 0.16 * s, -0.07 * s, 0.13 * s, hz - 0.06 * s, hz + 0.22 * s)
-    G.box(bm, -0.1 * s, 0.1 * s, 0.04 * s, 0.13 * s, hz - 0.02 * s, hz + 0.22 * s)       # back of the wig, in the wall
-    ang = math.atan2(face[0], -face[1]) if True else 0
+        loft(bm, S([(1.24, 0.045, 0.05, sx * 0.105 * w, -0.035), (1.4, 0.05, 0.06, sx * 0.11 * w, -0.03), (1.58, 0.045, 0.07, sx * 0.1 * w, -0.02)]), 6)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    for f in bm.faces: f.smooth = True
+    ang = math.atan2(face[0], -face[1])
     bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(-ang, 3, 'Z'))
     bmesh.ops.translate(bm, verts=bm.verts, vec=(x, y, z))
     return G.obj(bm, 'figure', 'statue')
@@ -84,10 +93,10 @@ def figure(x, y, z, h, face=(0, -1), seated=False):
 # ten women along the north wall, graded in height (smaller, more worn at the west end)
 heights = [1.05, 1.15, 1.3, 1.5, 1.5, 1.5, 1.5, 1.45, 1.4, 1.35]
 for i, h in enumerate(heights):
-    solids.append(figure(0.42 + i * 0.362, 10.02, 0.22, h))
+    solids.append(figure(0.42 + i * 0.362, 10.0, 0.22, h, wig=0.85 if i in (2, 8, 9) else 1.0))
 for y0 in (3.1, 3.6):  solids.append(figure(-3.2, y0, 0.3, 1.5, face=(1, 0)))
 for y0 in (6.55, 7.05): solids.append(figure(-3.2, y0, 0.3, 1.5, face=(1, 0)))
-for x0 in (1.3, 1.75, 2.2): solids.append(figure(x0, -0.22, 0.5, 1.1, face=(0, 1), seated=True))
+for x0 in (0.72, 1.45, 2.17, 2.53): solids.append(figure(x0, -0.2, 0.5, 0.82, face=(0, 1)))
 # false door between the two west niches
 deco.append(G.box_obj('deco_falsedoor', 'dark', -3.02, -2.985, 4.5, 5.5, 0.1, 1.9))
 
@@ -133,10 +142,16 @@ G.empty('poi_chapel', (1.7, 3.4, 1.4))
 G.empty('poi_statues', (2.0, 8.7, 1.4))
 G.empty('poi_offering', (-1.7, 3.3, 1.4))
 G.empty('insc_meresankh_architrave', (2.05, 9.745, 1.9), (1, 0, 0), (0, 0, 1), 3.7, 0.2)
-G.empty('tex_mer_pillar', (0.012, 4.025, 1.1), (0, 1, 0), (0, 0, 1), 0.72, 1.95)
-G.empty('tex_mer_east', (3.388, 4.7, 1.25), (0, -1, 0), (0, 0, 1), 2.4, 1.8)
-G.empty('tex_mer_north', (0.012, 6.1, 1.18), (0, 1, 0), (0, 0, 1), 1.3, 1.58)
-G.empty('tex_mer_west', (0.014, 3.9, 2.4), (0, 1, 0), (0, 0, 1), 3.0, 0.36)
+# Photographs as wall textures; positions after Dunham & Simpson, Giza Mastabas 1 (1974):
+#  north wall of the main room = the two pillars with standing figures of the queen
+#  under the painted lintel; west wall, right (north) end = Hetepheres II, Mersyankh and
+#  Nebemakhet; east wall north of the entrance = Kawab at full height at the north end,
+#  registers of boats and craftsmen beside him.
+G.empty('tex_mer_pillar', (1.05, 6.838, 1.06), (1, 0, 0), (0, 0, 1), 0.66, 1.9)
+G.empty('tex_mer_west', (1.7, 6.838, 2.35), (1, 0, 0), (0, 0, 1), 3.3, 0.4)
+G.empty('tex_mer_north', (0.012, 6.2, 1.18), (0, 1, 0), (0, 0, 1), 1.3, 1.58)
+G.empty('tex_mer_east', (3.388, 4.55, 1.0), (0, -1, 0), (0, 0, 1), 2.5, 1.7)
+G.empty('tex_mer_kawab', (3.388, 6.3, 1.12), (0, -1, 0), (0, 0, 1), 0.95, 1.95)
 
 final = [room, G.join(solids, 'solids')]
 G.join(deco, 'deco')

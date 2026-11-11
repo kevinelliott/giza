@@ -201,7 +201,7 @@ export const KHUFU_UPPER = {
       'A 1 m channel runs between two ramps cut with 27 pairs of slots, whose purpose is still argued over.', 12],
     ['antechamber', 'Antechamber',
       'Antechamber — granite, with the "granite leaf" hanging across it and three slots that held portcullis slabs, ' +
-      'lowered to seal the King\'s Chamber. (The low passages either side are enlarged here; really 1.05 × 1.11 m.)', 3],
+      'lowered to seal the King\'s Chamber. The passages either side are true size, 1.05 × 1.11 m — crouch (C) to get through.', 3],
     ['king', "King's Chamber",
       "King's Chamber — 10.47 × 5.23 m and 5.85 m high, walled in 100 blocks of red Aswan granite, roofed by nine " +
       'granite beams of up to ~80 tonnes. Two narrow shafts rise from the north and south walls.', 6],
@@ -263,6 +263,31 @@ export const MENKAURE_INTERIOR = {
     { chamberId: 'menkaure-panelled', face: 'north' }, { chamberId: 'menkaure-panelled', face: 'south' },
     { chamberId: 'menkaure-upper', face: 'north' }, { chamberId: 'menkaure-upper', face: 'west' },
     { chamberId: 'menkaure-burial', face: 'east' }
+  ]
+};
+
+// With the Blender-built substructure loaded (assets/models/menkaure.glb) only
+// the timber stair up to the entrance is procedural.
+export const MENKAURE_ENTRY = {
+  entrance: mkDoor, rampBase: MENKAURE_INTERIOR.rampBase,
+  corridors: [{ path: [MENKAURE_INTERIOR.rampBase, mkDoor], w: [3, 2.2], h: [3, 2.6], wallFrom: 99 }],
+  chambers: [], doors: []
+};
+export const MENKAURE_SUB = {
+  tp: { x: 0, y: 0, z: 0 },
+  pois: [
+    ['panelled', 'Menkaure — Panelled Chamber',
+      'Panelled Chamber — its rock walls are carved and plastered as a palace façade, eleven niches on each long ' +
+      'wall: the first decoration inside any pyramid since Djoser.', 3],
+    ['upper', 'Menkaure — Large Chamber',
+      'The large chamber, 14.2 × 3.84 m and 4.87 m high — the burial room of the first design. High in the north wall ' +
+      'opens the abandoned passage of that design; in the floor, a ramp leads down to the final burial chamber.', 6],
+    ['burial', 'Menkaure — Burial Chamber',
+      'Burial Chamber — lined with red granite under granite beams recut into a vault. The basalt sarcophagus Vyse ' +
+      'found here in 1837, carved as a palace façade, was lost at sea in 1838 when the Beatrice sank off Spain.', 4],
+    ['niches', 'Menkaure — Room of the six niches',
+      'Down a short stair: a rock-cut room with six deep niches, four in the east wall and two in the north — perhaps ' +
+      'for the canopic chests and the crowns of Upper and Lower Egypt.', 3]
   ]
 };
 
@@ -490,7 +515,7 @@ export const TELEPORTS = [
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
   { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
   { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60) },
-  { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 46, SPHINX.center.z, 0.5) },
+  { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 40.5, SPHINX.center.z, 0.5) },
   { label: 'Tomb of Khentkaus I', pos: G(KHENTKAUS.center.x, KHENTKAUS.center.z - 38) },
   { label: "Workers' Town", pos: G(WORKERS_VILLAGE.center.x - 30, WORKERS_VILLAGE.center.z - 62) },
   { label: 'Menkaure Valley Temple', pos: G(MENKAURE_VALLEY.center.x, MENKAURE_VALLEY.center.z - 34) },
@@ -504,7 +529,7 @@ export const TELEPORTS = [
   { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
   { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) },
   { label: 'Tomb of Meresankh III', pos: MERESANKH.tp },
-  { label: 'Pyramid of Menkaure — Panelled Chamber', pos: { x: P.menkaure.center.x, y: P.menkaure.baseY + MENKAURE_INTERIOR.chambers[0].center.y - 1.0, z: P.menkaure.center.z + MENKAURE_INTERIOR.chambers[0].center.z } },
+  { label: 'Pyramid of Menkaure — Panelled Chamber', pos: Object.assign(MENKAURE_SUB.tp, { x: P.menkaure.center.x, y: P.menkaure.baseY + MENKAURE_INTERIOR.chambers[0].center.y - 1.0, z: P.menkaure.center.z + MENKAURE_INTERIOR.chambers[0].center.z }) },
   { label: 'Serapeum of Saqqara (13.6 km south)', pos: SERAPEUM.spawn }
 ];
 

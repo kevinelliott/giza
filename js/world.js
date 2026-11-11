@@ -9,7 +9,7 @@ import {
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM,
-  KHUFU_UPPER, khufuLowerInterior, MENKAURE_INTERIOR, MERESANKH
+  KHUFU_UPPER, khufuLowerInterior, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -18,6 +18,7 @@ import { terrainHeight, inPit, groundUnder, GRID, SPHINX_PIT } from './terrain.j
 import { TOMBS, TOWN, TREES, TEMPLES, EXTENT, PARKING, SITES as GEO_SITES } from './geodata.js';
 import { buildSphinxGeometry, rockify } from './sphinx.js';
 import { placeModel } from './models.js';
+import { TEMPLE_PLAN } from './templedata.js';
 import { inscriptionTexture } from './inscriptions.js';
 import { buildCamel, animateCamelLegs, buildTraffic, buildVisitors, buildSummitMast, buildLightShow } from './life.js';
 const SITES_SPHINX_ROT = GEO_SITES.sphinx.rot;
@@ -56,7 +57,7 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
   // Interior is computed first so the north-face entrance hole can be cut
   // exactly where the entrance passage begins.
   const def = isKhufu ? (opts.upper ? khufuLowerInterior() : KHUFU_INTERIOR)
-    : (p.id === 'menkaure' ? MENKAURE_INTERIOR : simpleInterior(p));
+    : (p.id === 'menkaure' ? (opts.sub ? MENKAURE_ENTRY : MENKAURE_INTERIOR) : simpleInterior(p));
   const e = def.entrance;
   // The Great Pyramid's doorway runs lower and wider so the entrance ramp can
   // pass cleanly through the face into the descending passage.
@@ -172,9 +173,9 @@ function buildSphinx(mats, collidables, group, baseY, steleTex) {
     // Lepsius' 1849 record of the stele (public domain): the lunette with
     // Thutmose IV offering to the Sphinx twice over, and the text below. The
     // lower third of the real stone has flaked away, as here.
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(2.12, 2.48), new THREE.MeshStandardMaterial({
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 2.58), new THREE.MeshStandardMaterial({
       map: steleTex, transparent: true, roughness: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-    face.rotation.y = Math.PI / 2; face.position.set(9.9 + 0.36, 3.6 - 1.28, 0);
+    face.rotation.y = Math.PI / 2; face.position.set(9.9 + 0.36, 3.6 - 1.33, 0);
     g.add(face);
   }
   g.position.set(s.center.x, baseY || 0, s.center.z);
@@ -283,33 +284,32 @@ function buildOutlineWalls(flat, height, thick, mat, collidables, group) {
   group.add(mesh); collidables.push(mesh);
 }
 
-// A massive block of masonry with rooms cut out of it: `rooms` are
-// [x0, x1, z0, z1] rectangles in metres from the centre. The solid left
-// between them becomes the walls (built as merged boxes on a 0.5 m grid).
-function carveBlock(cx, cz, hx, hz, height, rooms, mat, collidables, group) {
-  const c = 0.5, nx = Math.round(2 * hx / c), nz = Math.round(2 * hz / c);
-  const open = (i, j) => { const x = -hx + (i + 0.5) * c, z = -hz + (j + 0.5) * c; return rooms.some(r => x > r[0] && x < r[1] && z > r[2] && z < r[3]); };
-  const y0 = groundUnder(cx, cz, hx, hz) - 0.3;
-  const geoms = [];
+// Walls and pillars from a rasterised plan: rows of [i0, i1, type] runs,
+// merged down the rows into as few boxes as possible.
+function buildTemplePlan(mats, collidables, group, floorY) {
+  const P = TEMPLE_PLAN, c = P.cell;
+  const H = [7.5, 4.6, 4.1, 4.4];                    // valley wall, Sphinx-Temple wall, valley pillar, Sphinx-Temple pier
+  const geoms = [[], [], [], []];
   let prev = new Map();
-  for (let j = 0; j <= nz; j++) {
-    const cur = new Map();
-    if (j < nz) for (let i = 0; i < nx;) {
-      if (open(i, j)) { i++; continue; }
-      let k = i; while (k < nx && !open(k, j)) k++;
-      const key = i + ':' + k;
+  for (let j = 0; j <= P.nz; j++) {
+    const cur = new Map(), row = j < P.nz ? P.rows[j] : [];
+    for (let k = 0; k < row.length; k += 3) {
+      const key = row[k] + ':' + row[k + 1] + ':' + row[k + 2];
       cur.set(key, prev.has(key) ? prev.get(key) : j); prev.delete(key);
-      i = k;
     }
-    for (const [key, j0] of prev) {                    // runs that ended: emit one box per run of rows
-      const [i0, i1] = key.split(':').map(Number);
-      geoms.push(boxAt((i1 - i0) * c, height + 0.3, (j - j0) * c, cx - hx + (i0 + i1) / 2 * c, y0 + (height + 0.3) / 2, cz - hz + (j0 + j) / 2 * c));
+    for (const [key, j0] of prev) {
+      const [i0, i1, t] = key.split(':').map(Number), h = H[t] + 0.3;
+      geoms[t].push(boxAt((i1 - i0) * c, h, (j - j0) * c, P.x0 + (i0 + i1) / 2 * c, floorY - 0.3 + h / 2, P.z0 + (j0 + j) / 2 * c));
+      if (t === 2) geoms[t].push(boxAt((i1 - i0) * c + 0.2, 0.9, (j - j0) * c + 0.2, P.x0 + (i0 + i1) / 2 * c, floorY + H[t] + 0.45, P.z0 + (j0 + j) / 2 * c));   // architrave stub
     }
     prev = cur;
   }
-  const mesh = new THREE.Mesh(mergeGeometries(geoms, false), mat);
-  mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
-  group.add(mesh); collidables.push(mesh);
+  [mats.granite, mats.bedrock, mats.granite, mats.granite].forEach((mat, t) => {
+    if (!geoms[t].length) return;
+    const mesh = new THREE.Mesh(mergeGeometries(geoms[t], false), mat);
+    mesh.userData.collidable = true; mesh.castShadow = true; mesh.receiveShadow = true;
+    group.add(mesh); collidables.push(mesh);
+  });
 }
 
 // Rows of square pillars (the granite-pillared halls of the temples).
@@ -871,7 +871,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   const defs = {};
   for (const key of ['khufu', 'khafre', 'menkaure']) {
     const p = PYRAMIDS[key];
-    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && !!models.khufuUpper });
+    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && !!models.khufuUpper, sub: key === 'menkaure' && !!models.menkaure });
     defs[key] = def;
     landmarks.push({ name: p.name, blurb: p.blurb, pos: pyrApex(p), radius: 130 });
     // chamber landmarks
@@ -894,35 +894,15 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 70,
     pos: { x: SPHINX.center.x, y: SPHINX.floorY + 12, z: SPHINX.center.z } });
   const st = SPHINX_TEMPLE.center, kv = KHAFRE_VALLEY.center;
-  // Sphinx Temple: an open court ringed by piers inside massive core walls,
-  // two entrances in the east front (plan after the satellite view + Ricke)
-  carveBlock(st.x, st.z, 23, 21.5, 5.5, [
-    [-10, 10, -11.5, 11.5],                                   // the court
-    [12, 15.5, -16, 16], [15.5, 23.1, -14.5, -12], [15.5, 23.1, 12, 14.5],   // east vestibule + two doorways
-    [10, 12, -1.5, 1.5], [-14, -10, -4, 4]                    // court door, west sanctuary niche
-  ], mats.bedrock, collidables, group);
-  buildPillars(st.x - 8.2, st.z, 1, 6, 1, 3.7, 1.5, 4.6, mats.granite, collidables, group);
-  buildPillars(st.x + 8.2, st.z, 1, 6, 1, 3.7, 1.5, 4.6, mats.granite, collidables, group);
-  buildPillars(st.x, st.z - 9.8, 4, 1, 3.6, 1, 1.5, 4.6, mats.granite, collidables, group);
-  buildPillars(st.x, st.z + 9.8, 4, 1, 3.6, 1, 1.5, 4.6, mats.granite, collidables, group);
+  // The Sphinx Temple and Khafre's valley temple, built cell by cell from the
+  // published plan (js/templedata.js): core walls, the Sphinx Temple's court
+  // and piers, the valley temple's antechamber, T-shaped hall of sixteen
+  // granite pillars, magazines and the passage out to the causeway.
+  buildTemplePlan(mats, collidables, group, SPHINX.floorY);
+  { const fl = new THREE.Mesh(new THREE.BoxGeometry(46, 0.1, 44), new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.35 }));
+    fl.position.set(kv.x, SPHINX.floorY + 0.06, kv.z); fl.receiveShadow = true; group.add(fl); }      // alabaster paving
   landmarks.push({ name: SPHINX_TEMPLE.name, blurb: SPHINX_TEMPLE.blurb, radius: 30,
     pos: { x: st.x, y: SPHINX_TEMPLE.baseY + 4, z: st.z } });
-  // Khafre's valley temple (after Hoelscher's plan): two doorways in the east
-  // front, a long antechamber, the T-shaped hall with its sixteen granite
-  // pillars and architraves, and the passage out of the NW corner to the
-  // causeway. Granite-cased walls, alabaster floor.
-  carveBlock(kv.x, kv.z, 22.3, 22.3, 8, [
-    [13, 22.4, -15.5, -13], [13, 22.4, 13, 15.5],            // the two entrances
-    [9, 13, -16, 16],                                         // antechamber (N-S)
-    [6.5, 9, -1.4, 1.4],                                      // door into the hall
-    [-0.5, 6.5, -12.5, 12.5],                                 // T hall: crossbar
-    [-17, -0.5, -4.6, 4.6],                                   // T hall: stem
-    [-22.4, -0.5, -12.5, -10.2]                               // passage to the causeway (NW)
-  ], mats.granite, collidables, group);
-  buildPillars(kv.x + 3, kv.z, 1, 6, 1, 3.6, 1.05, 4.1, mats.granite, collidables, group, 0.9);
-  buildPillars(kv.x - 9, kv.z, 5, 2, 3.2, 3.9, 1.05, 4.1, mats.granite, collidables, group, 0.9);
-  { const fl = new THREE.Mesh(new THREE.BoxGeometry(44, 0.1, 44), new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.35 }));
-    fl.position.set(kv.x, terrainHeight(kv.x, kv.z) + 0.06, kv.z); fl.receiveShadow = true; group.add(fl); }
   landmarks.push({ name: KHAFRE_VALLEY.name, blurb: KHAFRE_VALLEY.blurb, radius: 34,
     pos: { x: kv.x, y: KHAFRE_VALLEY.baseY + 5, z: kv.z } });
   // Amenhotep II's temple: ~22 m square and turned ~33 deg off the grid (satellite)
@@ -960,7 +940,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   // really do descend 40-50 m from the plateau to the edge of the valley.
   const causeways = [];
   const cause = (a, b, w) => { buildCauseway(a, b, w, mats.bedrock, collidables, group); causeways.push([a.x, a.z, b.x, b.z]); };
-  cause({ x: kmt.x + 34, z: kmt.z + 2 }, { x: kv.x - 24, z: kv.z - 12 }, 8);
+  cause({ x: kmt.x + 34, z: kmt.z + 2 }, { x: TEMPLE_PLAN.x0 - 1, z: SPHINX.center.z + 43 }, 8);     // meets the valley temple's NW corner (plan)
   cause({ x: mmt.x + 29, z: mmt.z }, { x: MENKAURE_VALLEY.center.x - 28, z: MENKAURE_VALLEY.center.z }, 7);
   // Khufu's runs ENE off the escarpment; past its foot it lies buried under
   // the village, where only the excavated valley-temple pit is shown.
@@ -1099,6 +1079,11 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
     const { anchors } = place(models.khufuUpper, { x: kc.x + o.x, y: o.y, z: kc.z + o.z }, KHUFU_UPPER.pois);
     const set = (dst, a) => a && Object.assign(dst, { x: a.x, y: a.y, z: a.z });
     set(KHUFU_UPPER.tpKing, anchors.tp_king); set(KHUFU_UPPER.tpCampbell, anchors.tp_campbell);
+  }
+  if (models.menkaure) {
+    const m = PYRAMIDS.menkaure;
+    const { anchors } = place(models.menkaure, { x: m.center.x, y: m.baseY, z: m.center.z }, MENKAURE_SUB.pois);
+    const a = anchors.tp_menkaure; if (a) Object.assign(MENKAURE_SUB.tp, { x: a.x, y: a.y, z: a.z });
   }
   if (models.meresankh) {
     const c = MERESANKH.center, y = terrainHeight(c.x, c.z) - 7.5;

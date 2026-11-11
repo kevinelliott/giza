@@ -16,8 +16,8 @@ Sizes follow research/sites/khufu.md (Petrie 1883 and standard references):
                   shaft mouths in the north and south walls.
   Campbell's      the topmost of five relieving chambers, gabled, with the
                   builders' red-ochre graffiti (Khufu's cartouche).
-NOT to scale on purpose: the two low passages either side of the antechamber
-are 1.2 m wide x 2.0 m high (really 1.05 x 1.11 m) so you can walk through.
+The two low passages either side of the antechamber are true size
+(1.05 x 1.11 m): the player has to crouch, as every visitor does.
 
 Origin = the foot of the gallery (game point J2). Y is north, so the gallery
 climbs toward -Y.
@@ -37,7 +37,7 @@ TAN = math.tan(math.radians(26.5))
 R = 41.79                 # horizontal run of the gallery (46.7 m on the slope)
 STEP = 1.55               # depth of the Great Step
 TOP = R * TAN             # level of the Great Step / chamber floors (20.84)
-PW, PH = 0.6, 2.0         # half-width / height of the (enlarged) low passages
+PW, PH = 0.525, 1.11      # half-width / height of the low passages (true size: crouch!)
 Y = lambda s: -s          # s = horizontal distance south of the origin
 
 # ---- voids -------------------------------------------------------------

@@ -47,7 +47,7 @@ const { TELEPORTS, PYRAMIDS, SPHINX } = await import('../js/data.js');
   if (buf.readUInt32LE(0) !== 0x46546c67) throw new Error('serapeum.glb is not a GLB');
   const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
   const names = json.nodes.map(n => n.name);
-  for (const [file, needs] of [['khufu_upper.glb', ['tp_king', 'tp_campbell', 'poi_gallery', 'insc_campbell_khufu']], ['meresankh.glb', ['tp_meresankh', 'poi_statues', 'tex_mer_pillar']]]) {
+  for (const [file, needs] of [['khufu_upper.glb', ['tp_king', 'tp_campbell', 'poi_gallery', 'insc_campbell_khufu']], ['meresankh.glb', ['tp_meresankh', 'poi_statues', 'tex_mer_pillar', 'tex_mer_kawab']], ['menkaure.glb', ['tp_menkaure', 'poi_burial', 'poi_niches', 'insc_menkaure_panel_long']]]) {
     const b = readFileSync(new URL('../assets/models/' + file, import.meta.url));
     const j = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString('utf8'));
     const nn = j.nodes.map(n => n.name);

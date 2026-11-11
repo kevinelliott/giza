@@ -154,7 +154,7 @@ export function buildTraffic(group, camelMat) {
 // ---- visitors who walk -------------------------------------------------
 export function buildVisitors(group) {
   const spots = [
-    { x: 7, z: -150, r: 38, n: 34 }, { x: 150, z: -110, r: 25, n: 10 }, { x: 440, z: 452, r: 22, n: 26 },
+    { x: 7, z: -150, r: 38, n: 34 }, { x: 150, z: -110, r: 25, n: 10 }, { x: 448, z: 452, r: 22, n: 26 },
     { x: -330, z: 222, r: 30, n: 14 }, { x: -575, z: 660, r: 22, n: 8 }, { x: -737, z: 1149, r: 18, n: 16 },
     { x: 4, z: -235, r: 55, n: 18 }, { x: 395, z: 395, r: 14, n: 8 }, { x: -160, z: 352, r: 22, n: 10 }
   ];
