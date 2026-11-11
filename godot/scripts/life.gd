@@ -11,7 +11,9 @@ var caravan := []
 var birds := []
 var rideables: Array[Node3D] = []
 var people := []
-var mm := {}                      # part name -> MultiMesh
+var camel_scene: PackedScene = load("res://models/camel.glb")
+var horse_scene: PackedScene = load("res://models/horse.glb")
+var person_scene: PackedScene = load("res://models/person.glb")
 var show_lights := []
 var show_level := 0.0
 var t := 0.0
@@ -77,9 +79,9 @@ func setup(main_node: Node, world: Dictionary) -> void:
 		var body := StaticBody3D.new()          # waiting camels are solid (until you are on one)
 		var cs := CollisionShape3D.new()
 		var bs := BoxShape3D.new()
-		bs.size = Vector3(3.4, 2.6, 1.4)
+		bs.size = Vector3(2.2, 1.9, 0.9)
 		cs.shape = bs
-		cs.position.y = 1.9
+		cs.position.y = 1.25
 		body.add_child(cs)
 		g.add_child(body)
 		g.set_meta("solid", cs)
@@ -94,99 +96,101 @@ func setup(main_node: Node, world: Dictionary) -> void:
 	_light_show(world)
 
 
-# ---- camels (faces +X; legs are joints at the hip) --------------------------
-func build_camel(saddle: int) -> Node3D:
-	var g := Node3D.new()
-	var m := _mat(0xb18752, 0.95)
-	_box(g, Vector3(3.4, 1.6, 1.4), Vector3(0, 2.0, 0), m)
-	_box(g, Vector3(1.1, 1.0, 1.1), Vector3(-0.5, 3.0, 0), m)
-	_box(g, Vector3(1.0, 0.8, 1.0), Vector3(0.7, 2.9, 0), m)
-	_box(g, Vector3(0.7, 2.0, 0.7), Vector3(2.0, 2.6, 0), m)
-	var head := _box(g, Vector3(0.9, 0.7, 0.6), Vector3(2.4, 3.6, 0), m)
-	var legs := []
-	for l in [[-1.2, 0.5], [-1.2, -0.5], [1.2, 0.5], [1.2, -0.5]]:
-		legs.append(_box(g, Vector3(0.35, 2.0, 0.35), Vector3(l[0], 2.0, l[1]), m, Vector3(0, -1.0, 0)))
-	if saddle >= 0:
-		var b := _mat(saddle, 0.9)
-		_box(g, Vector3(1.9, 0.12, 1.75), Vector3(-0.1, 3.55, 0), b)
-		_box(g, Vector3(0.2, 0.28, 0.5), Vector3(0.75, 3.72, 0), b)
-	g.set_meta("legs", legs)
-	g.set_meta("head", head)
+# ---- Blender-built, rigged creatures (tools/blender/creatures.py) -------------
+# colours: {material slot: 0xRRGGBB}; show: which optional "opt_*" dress to keep
+func _spawn(scene: PackedScene, colours: Dictionary, show: Array) -> Node3D:
+	var g: Node3D = scene.instantiate()
+	for n in g.find_children("*", "", true, false):
+		var nm := String(n.name)
+		if nm.begins_with("opt_") and n is Node3D:
+			(n as Node3D).visible = show.has(nm.substr(4))
+		if n is MeshInstance3D:
+			var mi: MeshInstance3D = n
+			for i in mi.mesh.get_surface_count():
+				var src := mi.mesh.surface_get_material(i)
+				if src != null and colours.has(src.resource_name):
+					mi.set_surface_override_material(i, _mat(colours[src.resource_name], 0.85))
+		elif n is AnimationPlayer:
+			var ap: AnimationPlayer = n
+			for a in ap.get_animation_list(): ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
+			g.set_meta("ap", ap)
+			g.set_meta("anim", "")
 	return g
+
+
+func _play(g: Node3D, anim: String, speed := 1.0, offset := -1.0) -> void:
+	var ap: AnimationPlayer = g.get_meta("ap")
+	if g.get_meta("anim") != anim:
+		g.set_meta("anim", anim)
+		ap.play(anim, 0.25)
+		if offset >= 0.0: ap.seek(fmod(offset, ap.current_animation_length), true)
+	ap.speed_scale = speed
+
+
+const COATS := [0x9a7446, 0x8f6a3e, 0xa9824f, 0x86633a, 0xb39a70]
+
+func build_camel(saddle: int) -> Node3D:
+	var c := _spawn(camel_scene, {"coat": COATS[rng.randi() % COATS.size()], "saddle": maxi(saddle, 0)}, ["saddle"] if saddle >= 0 else [])
+	var s := 0.94 + rng.randf() * 0.12
+	c.scale = Vector3(s, s, s)
+	return c
+
+
+func animate_camel(c: Node3D, _time: float, speed: float, ph := 0.0) -> void:
+	if speed < 0.08: _play(c, "idle", 1.0, ph)
+	else: _play(c, "walk", speed / 1.06, ph)
 
 
 func set_solid(c: Node3D, on: bool) -> void:
 	(c.get_meta("solid") as CollisionShape3D).disabled = not on
 
 
-func animate_camel(c: Node3D, time: float, speed: float, ph := 0.0) -> void:
-	var k := minf(1.0, speed / 1.2)
-	var legs: Array = c.get_meta("legs")
-	for i in 4:
-		legs[i].rotation.z = sin(time * (2.2 + speed * 0.9) + ph + (0.0 if i % 2 else PI) + (0.6 if i > 1 else 0.0)) * 0.32 * k
-	(c.get_meta("head") as Node3D).rotation.z = sin(time * 1.6 + ph) * 0.08
-
-
-func _figure(shirt: int, skin: int, seated: bool) -> Node3D:
-	var g := Node3D.new()
-	var ty := 0.35 if seated else 1.15
-	_box(g, Vector3(0.42, 0.62, 0.26), Vector3(0, ty, 0), _mat(shirt))
-	var head := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.12
-	sm.height = 0.24
-	sm.radial_segments = 8
-	sm.rings = 5
-	head.mesh = sm
-	head.material_override = _mat(skin)
-	head.position.y = ty + 0.45
-	g.add_child(head)
-	_box(g, Vector3(0.27, 0.12, 0.27), Vector3(0, ty + 0.55, 0), _mat(0xf0ece2))
-	if not seated:
-		for x in [-0.09, 0.09]: _box(g, Vector3(0.17, 0.86, 0.2), Vector3(0, 0.43, x), _mat(shirt))
+func _person(colours: Dictionary, show: Array, anim: String) -> Node3D:
+	var g := _spawn(person_scene, colours, show)
+	_play(g, anim, 1.0, rng.randf() * 3.0)
 	return g
 
 
 # ---- horse carriages and camel rides on the site roads -------------------------
 func _carriage(c: Dictionary) -> Node3D:
 	var g := Node3D.new()
-	var horse := _mat(c["horse"], 0.8)
-	_box(g, Vector3(1.8, 0.75, 0.55), Vector3(2.3, 1.45, 0), horse)
-	var neck := _box(g, Vector3(0.35, 0.95, 0.32), Vector3(3.2, 1.95, 0), horse)
-	neck.rotation.z = -0.5
-	_box(g, Vector3(0.62, 0.3, 0.26), Vector3(3.55, 2.35, 0), horse)
-	var legs := []
-	for l in [[1.6, 0.18], [1.6, -0.18], [3.0, 0.18], [3.0, -0.18]]:
-		legs.append(_box(g, Vector3(0.15, 1.1, 0.15), Vector3(l[0], 1.1, l[1]), horse, Vector3(0, -0.55, 0)))
-	_box(g, Vector3(0.5, 0.4, 0.62), Vector3(2.8, 1.95, 0), _mat(c["plume"], 0.8))
-	_box(g, Vector3(2.2, 0.08, 0.08), Vector3(1.4, 1.25, 0.4), _mat(0x3a2a1a, 0.8))
-	_box(g, Vector3(2.2, 0.08, 0.08), Vector3(1.4, 1.25, -0.4), _mat(0x3a2a1a, 0.8))
-	_box(g, Vector3(1.7, 0.55, 1.35), Vector3(-0.2, 1.15, 0), _mat(c["cart"], 0.5))
-	_box(g, Vector3(1.5, 0.08, 1.45), Vector3(-0.35, 2.45, 0), _mat(0x1d1d1d, 0.6))
-	for sz in [-0.62, 0.62]: _box(g, Vector3(0.06, 1.0, 0.06), Vector3(-1.0, 1.9, sz), _mat(0x2a2a2a, 0.8))
+	var horse := _spawn(horse_scene, {"coat": c["horse"], "harness": c["plume"]}, ["harness"])
+	horse.position = Vector3(2.35, 0, 0)
+	g.add_child(horse)
+	_box(g, Vector3(2.3, 0.07, 0.07), Vector3(1.5, 1.05, 0.42), _mat(0x3a2a1a, 0.8))
+	_box(g, Vector3(2.3, 0.07, 0.07), Vector3(1.5, 1.05, -0.42), _mat(0x3a2a1a, 0.8))
+	_box(g, Vector3(1.7, 0.5, 1.3), Vector3(-0.2, 1.05, 0), _mat(c["cart"], 0.5))
+	_box(g, Vector3(0.75, 0.12, 1.2), Vector3(-0.55, 1.36, 0), _mat(0x5a1f1f, 0.7))       # passenger bench
+	_box(g, Vector3(0.12, 0.5, 1.2), Vector3(-0.95, 1.6, 0), _mat(0x5a1f1f, 0.7))
+	_box(g, Vector3(0.5, 0.1, 1.0), Vector3(0.4, 1.42, 0), _mat(0x2a2a2a, 0.7))            # driver's box
+	_box(g, Vector3(1.5, 0.06, 1.45), Vector3(-0.45, 2.55, 0), _mat(0x1d1d1d, 0.6))
+	for sx in [-1.15, 0.25]:
+		for sz in [-0.66, 0.66]: _box(g, Vector3(0.05, 1.25, 0.05), Vector3(sx, 1.93, sz), _mat(0x2a2a2a, 0.8))
 	var wheels := []
-	for sz in [-0.74, 0.74]:
-		var w := Node3D.new()
-		w.position = Vector3(-0.2, 0.62, sz)
-		var rim := MeshInstance3D.new()
-		var tm := TorusMesh.new()
-		tm.inner_radius = 0.55
-		tm.outer_radius = 0.65
-		tm.rings = 16
-		tm.ring_segments = 6
-		rim.mesh = tm
-		rim.material_override = _mat(c["wheel"], 0.6)
-		rim.rotation.x = PI / 2
-		w.add_child(rim)
-		for k in 3:
-			var sp := _box(w, Vector3(1.15, 0.04, 0.04), Vector3.ZERO, _mat(c["wheel"], 0.6))
-			sp.rotation.z = k * PI / 3
-		g.add_child(w)
-		wheels.append(w)
-	var driver := _figure(0xe9e3d6, 0x8d5f3f, true)
-	driver.position = Vector3(0.55, 1.4, 0)
+	for w_def in [[-0.55, 0.62, 0.6], [0.45, 0.45, 0.43]]:
+		for sz in [-0.74, 0.74]:
+			var w := Node3D.new()
+			w.position = Vector3(w_def[0], w_def[1], sz)
+			var rim := MeshInstance3D.new()
+			var tm := TorusMesh.new()
+			tm.inner_radius = w_def[2] - 0.05
+			tm.outer_radius = w_def[2] + 0.02
+			tm.rings = 20
+			tm.ring_segments = 6
+			rim.mesh = tm
+			rim.material_override = _mat(c["wheel"], 0.6)
+			rim.rotation.x = PI / 2
+			w.add_child(rim)
+			for k in 4:
+				var sp := _box(w, Vector3(w_def[2] * 2.0, 0.035, 0.035), Vector3.ZERO, _mat(c["wheel"], 0.6))
+				sp.rotation.z = k * PI / 4
+			w.set_meta("r", w_def[2])
+			g.add_child(w)
+			wheels.append(w)
+	var driver := _person({"robe": 0xe9e3d6, "shirt": 0xe9e3d6, "skin": 0x8d5f3f, "scarf": 0xf0ece2}, ["robe", "scarf"], "sit")
+	driver.position = Vector3(0.4, 0.58, 0)
 	g.add_child(driver)
-	g.set_meta("legs", legs)
+	g.set_meta("horse", horse)
 	g.set_meta("wheels", wheels)
 	return g
 
@@ -204,15 +208,17 @@ func _traffic(flat_routes: Array) -> void:
 		for k in maxi(1, roundi(length / 700.0)):
 			var g := _carriage(CARRIAGES[(ri + k) % CARRIAGES.size()])
 			add_child(g)
-			movers.append({"g": g, "r": route, "s": rng.randf() * length * 2.0, "speed": 3.2 + rng.randf() * 1.4, "carriage": true, "ph": rng.randf() * 6.0})
+			movers.append({"g": g, "r": route, "s": rng.randf() * length * 2.0, "speed": 2.6 + rng.randf() * 1.0, "carriage": true, "ph": rng.randf() * 6.0})
 		for k in maxi(1, roundi(length / 900.0)):
 			var c := build_camel(SADDLES[k % 4])
-			var rider := _figure([0xf2f2f2, 0x2b4f8c, 0xc23b2f, 0xe8c547][(ri + k) % 4], 0xe6c2a0, true)
-			rider.position = Vector3(-0.2, 3.62, 0)
+			var rider := _person({"shirt": SHIRTS[(ri + k) % SHIRTS.size()], "trousers": TROUSERS[k % TROUSERS.size()], "skin": 0xe6c2a0, "hat": 0xd9c79a},
+				["hat"] if k % 2 == 0 else [], "sit")
+			rider.position = Vector3(-0.1, 1.5, 0)
 			c.add_child(rider)
-			var guide := _figure(0x3d5a7a, 0x8d5f3f, false)        # a cameleer leads it
-			guide.position = Vector3(3.6, 0, 0.9)
+			var guide := _person({"robe": [0x3d5a7a, 0xd8d2c2, 0x6b6b6b][k % 3], "skin": 0x8d5f3f, "scarf": 0xf0ece2, "shoes": 0x4a3a2a}, ["robe", "scarf"], "walk")   # a cameleer leads it
+			guide.position = Vector3(2.4, 0, 0.75)
 			c.add_child(guide)
+			c.set_meta("guide", guide)
 			add_child(c)
 			movers.append({"g": c, "r": route, "s": rng.randf() * length * 2.0, "speed": 1.1 + rng.randf() * 0.3, "carriage": false, "ph": rng.randf() * 6.0})
 		ri += 1
@@ -249,75 +255,43 @@ func _birds() -> void:
 			"y": 70 + rng.randf() * 90, "sp": 0.05 + rng.randf() * 0.08, "ph": rng.randf() * 7})
 
 
-# ---- visitors who walk (one MultiMesh per body part) ----------------------------
-func _part(key: String, mesh: Mesh, n: int) -> void:
-	var m := MultiMesh.new()
-	m.transform_format = MultiMesh.TRANSFORM_3D
-	m.use_colors = true
-	m.mesh = mesh
-	m.instance_count = n
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.85
-	mesh.surface_set_material(0, mat)
-	var mi := MultiMeshInstance3D.new()
-	mi.multimesh = m
-	mi.custom_aabb = AABB(Vector3(-1600, -50, -800), Vector3(2800, 300, 2400))
-	add_child(mi)
-	mm[key] = m
-
+# ---- visitors who walk ------------------------------------------------------------
+const HAIR := [0x15100c, 0x2a1c12, 0x4a3320, 0x8a6a3a, 0x6b6b6b, 0x1a1a1a]
 
 func _visitors() -> void:
-	var total := 0
-	for s in SPOTS: total += int(s[3])
-	var torso := BoxMesh.new()
-	torso.size = Vector3(0.36, 0.68, 0.22)
-	var head := SphereMesh.new()
-	head.radius = 0.115
-	head.height = 0.23
-	head.radial_segments = 8
-	head.rings = 5
-	var leg := BoxMesh.new()
-	leg.size = Vector3(0.13, 0.86, 0.15)
-	var arm := BoxMesh.new()
-	arm.size = Vector3(0.09, 0.6, 0.1)
-	_part("torso", torso, total)
-	_part("head", head, total)
-	_part("legL", leg, total)
-	_part("legR", leg.duplicate(), total)
-	_part("armL", arm, total)
-	_part("armR", arm.duplicate(), total)
-	var k := 0
 	for sp in SPOTS:
 		for i in int(sp[3]):
 			var a := rng.randf() * TAU
 			var r := sqrt(rng.randf()) * float(sp[2])
-			var p := {"sx": float(sp[0]), "sz": float(sp[1]), "sr": float(sp[2]), "x": sp[0] + cos(a) * r, "z": sp[1] + sin(a) * r,
-				"wait": rng.randf() * 6.0, "speed": 0.7 + rng.randf() * 0.6, "s": 0.9 + rng.randf() * 0.17, "ph": rng.randf() * 9.0, "yaw": rng.randf() * 6.3}
+			var shirt: int = SHIRTS[rng.randi() % SHIRTS.size()]
+			var show := []
+			if rng.randf() < 0.3: show.append("hat")
+			if rng.randf() < 0.3: show.append("pack")
+			var local := rng.randf() < 0.12                        # a few locals in galabiyas among the tourists
+			if local: show = ["robe", "scarf"]
+			var g := _person({"shirt": shirt, "robe": [0xd8d2c2, 0x4a5a6a, 0x7a6a55][rng.randi() % 3], "trousers": TROUSERS[rng.randi() % TROUSERS.size()],
+				"skin": SKINS[rng.randi() % SKINS.size()], "hair": HAIR[rng.randi() % HAIR.size()], "hat": [0xe6d9b0, 0xf2f2f2, 0x3a4a6a][rng.randi() % 3],
+				"pack": [0x2f4a3a, 0x7a2a2a, 0x2a3a6a, 0x222222][rng.randi() % 4], "scarf": 0xf0ece2}, show, "idle")
+			var h := 0.9 + rng.randf() * 0.17
+			g.scale = Vector3(h, h, h) * Vector3(0.92 + rng.randf() * 0.2, 1.0, 0.92 + rng.randf() * 0.2)
+			add_child(g)
+			var p := {"g": g, "sx": float(sp[0]), "sz": float(sp[1]), "sr": float(sp[2]), "x": sp[0] + cos(a) * r, "z": sp[1] + sin(a) * r,
+				"wait": rng.randf() * 6.0, "speed": 0.9 + rng.randf() * 0.5, "ph": rng.randf() * 9.0, "yaw": rng.randf() * 6.3}
 			p["tx"] = p["x"]
 			p["tz"] = p["z"]
-			var shirt: int = SHIRTS[rng.randi() % SHIRTS.size()]
-			var skin: int = SKINS[rng.randi() % SKINS.size()]
-			var trousers: int = TROUSERS[rng.randi() % TROUSERS.size()]
-			mm["torso"].set_instance_color(k, rgb(shirt))
-			mm["head"].set_instance_color(k, rgb(skin))
-			var sleeve := rgb(shirt if rng.randf() < 0.5 else skin)
-			mm["armL"].set_instance_color(k, sleeve)
-			mm["armR"].set_instance_color(k, sleeve)
-			mm["legL"].set_instance_color(k, rgb(trousers))
-			mm["legR"].set_instance_color(k, rgb(trousers))
 			people.append(p)
-			k += 1
 
 
 func _update_visitors(dt: float, eye: Vector3) -> void:
-	for k in people.size():
-		var p: Dictionary = people[k]
-		# far-off crowds keep still (nobody can see them walk)
-		var far := absf(p["sx"] - eye.x) + absf(p["sz"] - eye.z) > 700.0
-		if far and p.has("placed"): continue
+	for p in people:
+		var g: Node3D = p["g"]
+		var far: float = absf(p["x"] - eye.x) + absf(p["z"] - eye.z)
+		g.visible = far < 900.0
+		var ap: AnimationPlayer = g.get_meta("ap")
+		ap.active = far < 260.0                                # distant crowds hold their pose
+		if far > 500.0 and p.has("placed"): continue
 		p["placed"] = true
-		var walk := 0.0
+		var walking := false
 		var look := 0.0
 		if p["wait"] > 0.0:
 			p["wait"] -= dt
@@ -335,19 +309,12 @@ func _update_visitors(dt: float, eye: Vector3) -> void:
 			else:
 				p["x"] += dx / d * p["speed"] * dt
 				p["z"] += dz / d * p["speed"] * dt
-				p["yaw"] = atan2(dx, dz)
-				walk = 1.0
-		var ph: float = t * p["speed"] * 5.2 + p["ph"]
-		var sw := sin(ph) * 0.5 * walk
-		var y: float = main.terrain_height(p["x"], p["z"]) + absf(cos(ph)) * 0.035 * walk
-		var sc: float = p["s"]
-		var base := Transform3D(Basis(Vector3.UP, p["yaw"] + look * (1.0 - walk)).scaled(Vector3(sc, sc, sc)), Vector3(p["x"], y, p["z"]))
-		mm["torso"].set_instance_transform(k, base * Transform3D(Basis.IDENTITY, Vector3(0, 1.2, 0)))
-		mm["head"].set_instance_transform(k, base * Transform3D(Basis.IDENTITY, Vector3(0, 1.67, 0)))
-		mm["legL"].set_instance_transform(k, base * Transform3D(Basis(Vector3.RIGHT, sw), Vector3(-0.08, 0.88, 0)) * Transform3D(Basis.IDENTITY, Vector3(0, -0.43, 0)))
-		mm["legR"].set_instance_transform(k, base * Transform3D(Basis(Vector3.RIGHT, -sw), Vector3(0.08, 0.88, 0)) * Transform3D(Basis.IDENTITY, Vector3(0, -0.43, 0)))
-		mm["armL"].set_instance_transform(k, base * Transform3D(Basis(Vector3.RIGHT, -sw * 0.8), Vector3(-0.24, 1.43, 0)) * Transform3D(Basis.IDENTITY, Vector3(0, -0.3, 0)))
-		mm["armR"].set_instance_transform(k, base * Transform3D(Basis(Vector3.RIGHT, sw * 0.8), Vector3(0.24, 1.43, 0)) * Transform3D(Basis.IDENTITY, Vector3(0, -0.3, 0)))
+				p["yaw"] = lerp_angle(p["yaw"], atan2(dx, dz), minf(1.0, dt * 6.0))
+				walking = true
+		g.position = Vector3(p["x"], main.terrain_height(p["x"], p["z"]), p["z"])
+		g.rotation.y = p["yaw"] + (0.0 if walking else look) - PI / 2
+		if walking: _play(g, "walk", p["speed"] / 1.5)
+		else: _play(g, "idle")
 
 
 # ---- the Sound & Light show ---------------------------------------------------
@@ -388,18 +355,18 @@ func update(dt: float, eye: Vector3, night: float, riding: Node3D) -> void:
 		g.rotation.y = p.z
 		if absf(p.x - eye.x) + absf(p.y - eye.z) > 500.0: continue
 		if m["carriage"]:
-			var legs: Array = g.get_meta("legs")
-			for k in 4: legs[k].rotation.z = sin(t * 7.0 + m["ph"] + (k % 2) * PI + (1.2 if k > 1 else 0.0)) * 0.45
-			for w in g.get_meta("wheels"): w.rotation.z -= m["speed"] * dt / 0.6
+			_play(g.get_meta("horse"), "walk", m["speed"] / 1.7, m["ph"])
+			for w in g.get_meta("wheels"): w.rotation.z -= m["speed"] * dt / float(w.get_meta("r"))
 		else:
 			animate_camel(g, t, m["speed"], m["ph"])
+			_play(g.get_meta("guide"), "walk", m["speed"] / 1.5)
 	for c in caravan:
 		var s: float = (t * 1.1 + c["off"]) / 55.0
 		var x := -180.0 + cos(s) * 55.0
 		var z := 640.0 + sin(s) * 55.0
 		c["g"].position = Vector3(x, main.terrain_height(x, z), z)
 		c["g"].rotation.y = -s - PI / 2
-		animate_camel(c["g"], t * 1.3, 1.1, c["ph"])
+		animate_camel(c["g"], t, 1.1, c["ph"])
 	for b in birds:
 		var a: float = b["ph"] + t * b["sp"]
 		b["g"].position = Vector3(b["cx"] + cos(a) * b["r"], b["y"] + sin(a * 2.0) * 4.0, b["cz"] + sin(a) * b["r"])

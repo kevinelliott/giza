@@ -576,7 +576,7 @@ func _mount(c: Node3D) -> void:
 	life.set_solid(c, false)
 	player.teleport(c.position + Vector3(0, 0.3, 0))
 	player.speed_mul = 1.45
-	player.eye_extra = 2.8
+	player.eye_extra = 1.45
 	toast("Up you go! Walk to amble, Shift to trot — E to get down.", 3.2)
 
 
@@ -586,8 +586,8 @@ func _dismount() -> void:
 	player.speed_mul = 1.0
 	player.eye_extra = 0.0
 	var th := c.rotation.y
-	var x := c.position.x + sin(th) * 2.4
-	var z := c.position.z + cos(th) * 2.4
+	var x := c.position.x + sin(th) * 1.6
+	var z := c.position.z + cos(th) * 1.6
 	player.teleport(Vector3(x, terrain_height(x, z) + 0.5, z))
 	life.animate_camel(c, 0.0, 0.0)
 	life.set_solid(c, true)
@@ -598,8 +598,8 @@ func _update_ride(dt: float) -> void:
 		var want: float = player.yaw + PI / 2          # the camel faces +X, the player -Z
 		riding.rotation.y = lerp_angle(riding.rotation.y, want, minf(1.0, dt * 4.0))
 		var th := riding.rotation.y
-		var x := player.global_position.x + cos(th) * 0.2
-		var z := player.global_position.z - sin(th) * 0.2
+		var x := player.global_position.x + cos(th) * 0.1
+		var z := player.global_position.z - sin(th) * 0.1
 		riding.position = Vector3(x, terrain_height(x, z), z)
 		life.animate_camel(riding, life.t, Vector2(player.velocity.x, player.velocity.z).length() * 0.45)
 		return
