@@ -318,6 +318,62 @@
      "radius": 6
     }
    ]
+  },
+  {
+   "id": "luxor_nile",
+   "file": "luxor_nile.glb",
+   "title": "Luxor — the Nile",
+   "outdoor": true,
+   "river": true,
+   "position": [
+    30000,
+    0,
+    0
+   ],
+   "pois": [
+    {
+     "key": "corniche",
+     "name": "Luxor Corniche",
+     "blurb": "The East Bank river front: a stone embankment with the promenade above and the lower quay, where the boats lie, below.",
+     "radius": 30
+    },
+    {
+     "key": "river",
+     "name": "The Nile at Luxor",
+     "blurb": "The river here is about half a kilometre wide and flows north. Since the High Dam (1970) it no longer floods; its level changes by only a metre or two through the year.",
+     "radius": 200
+    },
+    {
+     "key": "cruisers",
+     "name": "Nile cruise ships",
+     "blurb": "The Luxor–Aswan \"floating hotels\": about 72 m long and 14 m in beam, three cabin decks under a sun deck. There are so many that they moor two and three abreast, and passengers walk through one ship to reach the next.",
+     "radius": 60
+    },
+    {
+     "key": "feluccas",
+     "name": "Feluccas",
+     "blurb": "Open wooden passenger sailboats with a single lateen sail on a very long yard — the traditional way to drift on the river at sunset. Press E beside the one at the steps to go out.",
+     "radius": 30
+    },
+    {
+     "key": "dahabiya",
+     "name": "Dahabiya",
+     "blurb": "A two-masted lateen houseboat: the way nineteenth-century travellers went up the Nile, revived today as small, quiet cruise boats, usually towed by a tug when the wind fails.",
+     "radius": 40
+    },
+    {
+     "key": "ferry",
+     "name": "National ferry",
+     "blurb": "The public ferry to the West Bank, used by townspeople and by visitors bound for the Valley of the Kings. Small covered motor launches make the same crossing for hire.",
+     "radius": 25
+    },
+    {
+     "key": "west",
+     "name": "West Bank landing",
+     "blurb": "The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.",
+     "radius": 40
+    }
+   ]
   }
  ]
 }

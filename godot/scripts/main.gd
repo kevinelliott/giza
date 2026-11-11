@@ -16,11 +16,14 @@ const GROUND := preload("res://scripts/ground.gdshader")
 const COURSE := preload("res://scripts/course.gdshader")
 const VCOL := preload("res://scripts/vcol.gdshader")
 const TOWN := preload("res://scripts/town.gdshader")
+const WATER := preload("res://scripts/water.gdshader")
+const DESERT := preload("res://scripts/desert.gdshader")
 const Player := preload("res://scripts/player.gd")
 const Life := preload("res://scripts/life.gd")
 const Quest := preload("res://scripts/quest.gd")
 const Map := preload("res://scripts/map.gd")
 const Traffic := preload("res://scripts/traffic.gd")
+const River := preload("res://scripts/river.gd")
 
 # Blender interiors: material name -> [colour, roughness, bake gain, strata, joint height, joint width]
 const BAKED := {
@@ -60,6 +63,7 @@ var insc_index: Array = []
 var travel := []          # [{label, pos, look?}]
 var pois := []            # [{name, blurb, radius, pos}]
 var zones: Array[AABB] = []   # the Blender interiors (pre-lit)
+var open_places: Array[AABB] = []   # sunlit places away from the plateau (Luxor, ...)
 var world := {}
 var heights := PackedFloat32Array()
 var player: CharacterBody3D
@@ -82,6 +86,7 @@ var shot_look := ""
 var frames := 0
 var life: Node3D
 var traffic: Node3D
+var rivers: Array = []
 var quest: Node3D
 var minimap: Control
 var fullmap: Control
@@ -277,6 +282,15 @@ func _materials() -> void:
 	town_mat = ShaderMaterial.new()
 	town_mat.shader = TOWN
 	outdoor["town"] = town_mat
+	var wm := ShaderMaterial.new()
+	wm.shader = WATER
+	outdoor["water"] = wm
+	for k in [["desert", Color("cdb085"), Color("b89a70")], ["theban", Color("d9bf96"), Color("c9a57c")], ["silt", Color("6f6a4c"), Color("5f5a44")]]:
+		var dm := ShaderMaterial.new()
+		dm.shader = DESERT
+		dm.set_shader_parameter("sand_color", k[1])
+		dm.set_shader_parameter("rock_color", k[2])
+		outdoor[k[0]] = dm
 
 
 func _outdoor_material(nm: String) -> Material:
@@ -334,6 +348,8 @@ func terrain_height(x: float, z: float) -> float:
 func _is_inside(p: Vector3) -> bool:
 	for z in zones:
 		if z.has_point(p): return true
+	for op in open_places:
+		if op.has_point(p): return false
 	for py in world["pyramids"]:
 		var y := p.y - float(py["baseY"])
 		var w: float = float(py["base"]) / 2.0 * (1.0 - maxf(0.0, y) / float(py["height"])) - 1.2
@@ -357,9 +373,22 @@ func _place_model(m: Dictionary) -> void:
 	var anchors := {}
 	var box := AABB()
 	var first := true
+	var open_air: bool = m.get("outdoor", false)       # a sunlit place (not a pre-lit interior)
 	for n in _walk(root):
 		var nm := String(n.name)
-		if n is MeshInstance3D:
+		if n is MeshInstance3D and open_air:
+			var omi: MeshInstance3D = n
+			var solid := false
+			for si in omi.mesh.get_surface_count():
+				var src := omi.mesh.surface_get_material(si)
+				var mn := src.resource_name if src != null else "limestone"
+				omi.set_surface_override_material(si, _outdoor_material(mn))
+				if mn != "water": solid = true
+			if (solid and not _is_deco(omi)) or nm.begins_with("riverbed"): omi.create_trimesh_collision()
+			for body in omi.get_children():
+				for cs in body.get_children():
+					if cs is CollisionShape3D and cs.shape is ConcavePolygonShape3D: cs.shape.backface_collision = true
+		elif n is MeshInstance3D:
 			_dress(n)
 			var b: AABB = (n as MeshInstance3D).global_transform * (n as MeshInstance3D).get_aabb()
 			box = b if first else box.merge(b)
@@ -368,7 +397,13 @@ func _place_model(m: Dictionary) -> void:
 			_panel(n)
 		elif nm.begins_with("poi_") or nm.begins_with("tp_") or nm == "spawn":
 			anchors[nm] = (n as Node3D).global_position
-	zones.append(box.grow(0.5))
+	if m.get("river", false):
+		var rv := River.new()
+		add_child(rv)
+		rv.setup(self, root)
+		rivers.append(rv)
+	if not open_air: zones.append(box.grow(0.5))
+	else: open_places.append(box.grow(60.0))
 	for k in anchors:
 		if k.begins_with("tp_") or k == "spawn":
 			var label: String = m["title"]
@@ -574,6 +609,20 @@ func _go(i: int) -> void:
 	player.teleport(p, true, hint)
 
 
+# ---- boats: E beside a boat you can board takes a trip on the river; E again goes ashore -------------
+func _boat_use() -> bool:
+	for rv in rivers:
+		if not rv.riding.is_empty():
+			rv.leave()
+			return true
+		var b = rv.nearest_boardable(player.global_position)
+		if b != null:
+			rv.board(b)
+			toast("Casting off — a turn on the river. E to go ashore.", 3.5)
+			return true
+	return false
+
+
 # ---- camel riding: walk up to a saddled camel and press E ------------------------
 func _nearest_camel() -> Node3D:
 	var best: Node3D = null
@@ -630,6 +679,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		if fullmap.visible: _toggle_map()
 		_toggle_menu()
 	elif ev.is_action_pressed("map"): _toggle_map()
+	elif ev.is_action_pressed("use") and _boat_use():
+		pass
 	elif ev.is_action_pressed("use"):
 		if riding: _dismount()
 		elif not player.fly and _nearest_camel() != null: _mount(_nearest_camel())
@@ -673,6 +724,7 @@ func _process(dt: float) -> void:
 	_update_ride(dt)
 	life.update(dt, p, night * (1.0 - storm_k), riding)
 	traffic.update(dt, p, night)
+	for rv in rivers: rv.update(dt, p)
 	var sph: Dictionary = world["sphinx"]
 	quest.update(dt, p, {"fly": player.fly, "on_floor": player.is_on_floor(), "speed": Vector2(player.velocity.x, player.velocity.z).length(),
 		"outdoors": not inside, "night": night > 0.5, "storm": storm_k > 0.5, "riding": riding != null,

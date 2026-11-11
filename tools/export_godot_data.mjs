@@ -24,5 +24,17 @@ const out = {
       position: [D.SERAPEUM.origin.x, D.SERAPEUM.origin.y, D.SERAPEUM.origin.z], pois: pois(D.SERAPEUM.pois) }
   ]
 };
+// Places beyond Giza (native build only). They are far too distant to sit at their true offset, so
+// Luxor has its own frame: origin = the East Bank ferry landing at river level, set 30 km east of Khufu.
+const LUXOR = [30000, 0, 0];
+out.models.push({ id: 'luxor_nile', file: 'luxor_nile.glb', title: 'Luxor — the Nile', outdoor: true, river: true, position: LUXOR, pois: pois([
+  ['corniche', 'Luxor Corniche', 'The East Bank river front: a stone embankment with the promenade above and the lower quay, where the boats lie, below.', 30],
+  ['river', 'The Nile at Luxor', 'The river here is about half a kilometre wide and flows north. Since the High Dam (1970) it no longer floods; its level changes by only a metre or two through the year.', 200],
+  ['cruisers', 'Nile cruise ships', 'The Luxor–Aswan "floating hotels": about 72 m long and 14 m in beam, three cabin decks under a sun deck. There are so many that they moor two and three abreast, and passengers walk through one ship to reach the next.', 60],
+  ['feluccas', 'Feluccas', 'Open wooden passenger sailboats with a single lateen sail on a very long yard — the traditional way to drift on the river at sunset. Press E beside the one at the steps to go out.', 30],
+  ['dahabiya', 'Dahabiya', 'A two-masted lateen houseboat: the way nineteenth-century travellers went up the Nile, revived today as small, quiet cruise boats, usually towed by a tug when the wind fails.', 40],
+  ['ferry', 'National ferry', 'The public ferry to the West Bank, used by townspeople and by visitors bound for the Valley of the Kings. Small covered motor launches make the same crossing for hire.', 25],
+  ['west', 'West Bank landing', 'The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.', 40]
+]) });
 writeFileSync(new URL('../godot/data/sites.json', import.meta.url), JSON.stringify(out, null, 1));
 console.log('sites.json:', out.models.map(m => `${m.id} (${m.pois.length} pois)`).join(', '));
