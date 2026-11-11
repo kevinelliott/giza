@@ -49,7 +49,7 @@ const OUTDOOR := {
 	"plaster": [Color("ddd5c4"), 0.9, 0.0, 0.2, 0.0, 1.0],
 	"wood": [Color("6b4a2b"), 0.85, 0.0, 0.6, 0.0, 1.0],
 }
-const PHOTOS := ["dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
+const PHOTOS := ["belzoni", "dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
 const HOURS := [9.5, 12.0, 16.0, 18.4, 21.5, 6.2]
 const LAT := 29.98
 
@@ -302,6 +302,10 @@ func _place_plateau() -> void:
 			var nm := src.resource_name if src != null else "limestone"
 			mi.set_surface_override_material(0, _outdoor_material(nm))
 			if String(mi.name).ends_with("__col"): mi.create_trimesh_collision()
+		# (Godot's importer reads the "_col" suffix itself and builds the static bodies.)
+		# The web build's floors are thin, two-sided sheets: collide with both sides here too.
+		if n is CollisionShape3D and (n as CollisionShape3D).shape is ConcavePolygonShape3D:
+			((n as CollisionShape3D).shape as ConcavePolygonShape3D).backface_collision = true
 
 
 func terrain_height(x: float, z: float) -> float:
@@ -693,6 +697,11 @@ func _process(dt: float) -> void:
 	if shot_path != "":
 		frames += 1
 		if frames == 24:
+			if shot_keys.contains("probe"):
+				for q in [Vector3(7.29, 12, -120), Vector3(0, 12, -118), Vector3(-322.21, 20, 236), Vector3(-322.21, 30, 250)]:
+					var rq := PhysicsRayQueryParameters3D.create(q, q + Vector3(0, -40, 0))
+					var hit := get_world_3d().direct_space_state.intersect_ray(rq)
+					print("PROBE ", q, " -> ", hit.get("position", "none"), " ", hit.get("collider", "").get_parent().name if hit.has("collider") else "")
 			if shot_keys.contains("map"): _toggle_map()
 			if shot_keys.contains("storm"):
 				storm = true
@@ -717,5 +726,6 @@ func _process(dt: float) -> void:
 			print("WALK from %s to %s: %.1f m in %.1f s, ground %.2f, on floor %s" % [walk_from, q, Vector2(q.x - walk_from.x, q.z - walk_from.z).length(), walk_t, terrain_height(q.x, q.z), player.is_on_floor()])
 			frames = 70
 		if frames == 70:
-			get_viewport().get_texture().get_image().save_png(shot_path)
+			var img := get_viewport().get_texture().get_image()
+			if img != null: img.save_png(shot_path)
 			get_tree().quit()

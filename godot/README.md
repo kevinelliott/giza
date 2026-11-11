@@ -5,7 +5,8 @@ the whole plateau to scale (terrain from the DEM, the three pyramids and their
 passages, the Sphinx, temples, mastaba fields, the modern town) and the four
 Blender interiors — the whole Great Pyramid at true size (al-Ma'mun's tunnel,
 Descending and Ascending Passages, Queen's and Subterranean Chambers, Grand
-Gallery, King's Chamber, Campbell's Chamber); Menkaure's substructure; the tomb of Meresankh III; the
+Gallery, King's Chamber, Campbell's Chamber); Khafre's two passage systems,
+burial chamber and lower chamber; Menkaure's substructure; the tomb of Meresankh III; the
 Serapeum of Saqqara — walkable in first person, with sky, sun and shadows,
 time of day, fast travel to 30-odd places and site captions.
 

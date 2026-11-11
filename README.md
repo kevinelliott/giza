@@ -117,8 +117,9 @@ COPERNICUS by the European Union and ESA.
 
 A compiled desktop version is in [`godot/`](godot/README.md): the same
 plateau, Blender models and data in the Godot 4.5 engine, exporting to macOS,
-Windows and Linux. It has the whole plateau and the interiors; the moving
-life, quest and minimap are still web-only. The "Native builds" GitHub Action
+Windows and Linux, with everything the web version has. Its camels, horses
+and people are Blender-built and animated (`tools/blender/creatures.py`);
+the web version still draws them as simple block figures. The "Native builds" GitHub Action
 produces the downloads.
 
 ## Blender models, inscriptions and the research tracker

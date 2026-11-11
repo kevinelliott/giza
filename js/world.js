@@ -9,7 +9,7 @@ import {
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM,
-  KHUFU_UPPER, KHUFU_LOWER, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
+  KHUFU_UPPER, KHUFU_LOWER, KHAFRE_ENTRY, KHAFRE_SUB, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -26,8 +26,16 @@ const SITES_SPHINX_ROT = GEO_SITES.sphinx.rot;
 // The ground: the real 30 m elevation model baked into a 10 m grid (see
 // terrain.js). Indexed so normals are smooth; cells are dropped where the
 // pyramids' passages and the Sphinx's pit go below grade.
-function buildTerrain(mat) {
+// Slots cut through the ground (world x0, x1, z0, z1): the cell under each is
+// left out of the terrain and re-laid as paving around the slot.
+const GROUND_SLOTS = [(() => {
+  const c = PYRAMIDS.khafre.center, g = KHAFRE_ENTRY.groundSlot;
+  return { x0: c.x + g.x0, x1: c.x + g.x1, z0: c.z + g.z0, z1: c.z + g.z1, y: PYRAMIDS.khafre.baseY };
+})()];
+function buildTerrain(mat, paving, withSlots) {
   const { x0, z0, step, nx, nz, h } = GRID;
+  const slots = withSlots ? GROUND_SLOTS : [];
+  const slotOf = (i, j) => slots.find(s => Math.floor((s.x0 - x0) / step) === i && Math.floor((s.z0 - z0) / step) === j);
   const pos = new Float32Array(nx * nz * 3), uv = new Float32Array(nx * nz * 2);
   const W = EXTENT.x1 - EXTENT.x0, D = EXTENT.z1 - EXTENT.z0;
   for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
@@ -38,6 +46,7 @@ function buildTerrain(mat) {
   const idx = [];
   for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) {
     if (inPit(x0 + (i + 0.5) * step, z0 + (j + 0.5) * step)) continue;
+    if (slotOf(i, j)) continue;
     const a = j * nx + i, b = a + nx, c = b + 1, d = a + 1;      // same split as terrainHeight()
     idx.push(a, b, c, a, c, d);
   }
@@ -57,13 +66,13 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
   // Interior is computed first so the north-face entrance hole can be cut
   // exactly where the entrance passage begins.
   const def = isKhufu ? KHUFU_INTERIOR
-    : (p.id === 'menkaure' ? (opts.sub ? MENKAURE_ENTRY : MENKAURE_INTERIOR) : simpleInterior(p));
+    : (p.id === 'menkaure' ? (opts.sub ? MENKAURE_ENTRY : MENKAURE_INTERIOR) : (opts.sub ? KHAFRE_ENTRY : simpleInterior(p)));
   const e = def.entrance;
   // The Great Pyramid's doorway runs lower and wider so the entrance ramp can
   // pass cleanly through the face into the descending passage.
   const hole = isKhufu ? null
     : { s0: e.x - 1.25, s1: e.x + 1.25, y0: Math.max(0.2, e.y - 2.6), y1: e.y + 2.8 };
-  const holes = isKhufu ? def.holes : [hole];
+  const holes = def.holes || [hole];
   // Real current state: Khufu lost its capstone (flat top at ~138.8 m);
   // Menkaure's summit is damaged (~62 m); Khafre keeps a near-intact apex.
   const truncate = p.id === 'khufu' ? 138.8 : (p.id === 'menkaure' ? 62 : null);
@@ -874,8 +883,18 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   });
 
   // Terrain
-  const terrain = buildTerrain(mats.sand);
+  const slotsOn = assumeModels || !!models.khafre;
+  const terrain = buildTerrain(mats.sand, null, slotsOn);
   group.add(terrain); collidables.push(terrain);
+  for (const s of slotsOn ? GROUND_SLOTS : []) {              // paving around each slot, in place of the ground cell
+    const cx0 = GRID.x0 + Math.floor((s.x0 - GRID.x0) / GRID.step) * GRID.step, cz0 = GRID.z0 + Math.floor((s.z0 - GRID.z0) / GRID.step) * GRID.step;
+    const cx1 = cx0 + GRID.step, cz1 = cz0 + GRID.step, geoms = [];
+    for (const [xa, xb, za, zb] of [[cx0, s.x0, cz0, cz1], [s.x1, cx1, cz0, cz1], [s.x0, s.x1, cz0, s.z0], [s.x0, s.x1, s.z1, cz1]])
+      geoms.push(new THREE.BoxGeometry(xb - xa, 0.1, zb - za).translate((xa + xb) / 2, s.y - 0.05, (za + zb) / 2));
+    const slab = new THREE.Mesh(mergeGeometries(geoms, false), mats.limestone);
+    slab.receiveShadow = true; slab.userData.collidable = true;
+    group.add(slab); collidables.push(slab);
+  }
 
   const deco0 = {
     trunk: new THREE.MeshStandardMaterial({ color: 0x6e4a26, roughness: 0.9 }),
@@ -888,7 +907,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   const defs = {};
   for (const key of ['khufu', 'khafre', 'menkaure']) {
     const p = PYRAMIDS[key];
-    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && (assumeModels || !!models.khufuUpper), sub: key === 'menkaure' && (assumeModels || !!models.menkaure) });
+    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && (assumeModels || !!models.khufuUpper), sub: (key === 'menkaure' && (assumeModels || !!models.menkaure)) || (key === 'khafre' && (assumeModels || !!models.khafre)) });
     defs[key] = def;
     landmarks.push({ name: p.name, blurb: p.blurb, pos: pyrApex(p), radius: 130 });
     // chamber landmarks
@@ -1109,6 +1128,13 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
     const m = PYRAMIDS.menkaure;
     const { anchors } = place(models.menkaure, { x: m.center.x, y: m.baseY, z: m.center.z }, MENKAURE_SUB.pois);
     const a = anchors.tp_menkaure; if (a) Object.assign(MENKAURE_SUB.tp, { x: a.x, y: a.y, z: a.z });
+  }
+  if (models.khafre) {
+    const k = PYRAMIDS.khafre;
+    const { anchors } = place(models.khafre, { x: k.center.x, y: k.baseY, z: k.center.z }, KHAFRE_SUB.pois);
+    const set = (dst, a) => a && Object.assign(dst, { x: a.x, y: a.y, z: a.z });
+    set(KHAFRE_SUB.tp, anchors.tp_burial_chamber); set(KHAFRE_SUB.tpLower, anchors.tp_lower_chamber);
+    set(KHAFRE_SUB.tpUpper, anchors.tp_upper_entrance); set(KHAFRE_SUB.tpLowerEntrance, anchors.tp_lower_entrance);
   }
   if (models.meresankh) {
     const c = MERESANKH.center, y = terrainHeight(c.x, c.z) - 7.5;

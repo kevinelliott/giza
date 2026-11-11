@@ -26,8 +26,8 @@ text not).
 | Site | Layout / position | 3D model | Surfaces & inscriptions | File |
 | --- | --- | --- | --- | --- |
 | Serapeum of Saqqara (Greater Vaults) | schematic plan; sizes done | **Blender**, done (first pass) | 4 inscribed boxes: 2 composed, 2 placeholder | [serapeum](sites/serapeum.md) |
-| Great Pyramid of Khufu | done (survey) | **Blender**: Grand Gallery, antechamber, King's Chamber, Campbell's Chamber; lower passages procedural | Campbell's graffiti: 2 attested, 1 composed | [khufu](sites/khufu.md) |
-| Pyramid of Khafre | done (survey) | procedural; interior schematic | todo | [khafre](sites/khafre.md) |
+| Great Pyramid of Khufu | done (survey) | **Blender, whole interior at true size**: al-Ma'mun's tunnel, Descending/Ascending Passages, plugs, Queen's Chamber and niche, Subterranean Chamber, Grand Gallery, antechamber, King's Chamber, Campbell's Chamber | Campbell's graffiti: 2 attested, 1 composed | [khufu](sites/khufu.md) |
+| Pyramid of Khafre | done (survey) | exterior procedural; **Blender interior**: both passage systems, portcullis, burial chamber with sunk coffer, lower chamber (Petrie ch. 9) | Belzoni's 1818 inscription (wording attested, lettering not from a photo) | [khafre](sites/khafre.md) |
 | Pyramid of Menkaure | done (survey) | **Blender**, to Petrie's measurements (true-size passages; lower-apartment depth still assumed) | panelled chamber: attested niche count | [menkaure](sites/menkaure.md) |
 | Great Sphinx + enclosure | done (map + satellite check) | sculpted SDF; partial | **Dream Stele done** (Lepsius' record of the real text) | [sphinx](sites/sphinx.md) |
 | Sphinx Temple, Khafre Valley Temple | done (plan agrees with OSM within 2 m) | **built from the published plan** (0.25 m grid); valley-temple pillars, beams and heights from Petrie | todo (statue emplacements) | [sphinx](sites/sphinx.md) |

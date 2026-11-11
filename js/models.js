@@ -11,10 +11,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { triplanarPatch } from './materials.js';
 import { inscriptionTexture, loadGlyphFont, INSCRIPTIONS } from './inscriptions.js';
 
-export const MODEL_FILES = { serapeum: 'serapeum.glb', khufuUpper: 'khufu_upper.glb', khufuLower: 'khufu_lower.glb', meresankh: 'meresankh.glb', menkaure: 'menkaure.glb' };
+export const MODEL_FILES = { serapeum: 'serapeum.glb', khufuUpper: 'khufu_upper.glb', khufuLower: 'khufu_lower.glb', khafre: 'khafre.glb', meresankh: 'meresankh.glb', menkaure: 'menkaure.glb' };
 // Photographs / drawings used directly as wall textures (see research/ for credits).
 export const PANEL_TEXTURES = {
   dream_stele: 'assets/textures/dream_stele.png',
+  belzoni: 'assets/textures/belzoni.png',
   mer_pillar: 'assets/textures/mer_pillar.jpg',
   mer_north: 'assets/textures/mer_north.jpg',
   mer_east: 'assets/textures/mer_east.jpg',

@@ -116,6 +116,78 @@
    ]
   },
   {
+   "id": "khafre",
+   "file": "khafre.glb",
+   "title": "Pyramid of Khafre",
+   "position": [
+    -334.41132,
+    8.7,
+    353.86264
+   ],
+   "pois": [
+    {
+     "key": "upper",
+     "name": "Khafre — upper passage",
+     "blurb": "The upper entrance passage: rough-dressed red granite, 1.05 m wide and 1.2 m high, descending at 25°55′. Its flaws were made good with plaster and painted red.",
+     "radius": 9
+    },
+    {
+     "key": "portcullis",
+     "name": "Khafre — granite portcullis",
+     "blurb": "A granite slab sliding in grooves cut in the passage walls. Perring attacked it in 1837, hoping for a passage above it; it now rests on rough limestone props.",
+     "radius": 3
+    },
+    {
+     "key": "horizontal",
+     "name": "Khafre — horizontal passage",
+     "blurb": "From the portcullis the passage runs level to the chamber, half as high again (1.8 m): fine picked limestone at first, then rock, plastered over.",
+     "radius": 9
+    },
+    {
+     "key": "junction",
+     "name": "Khafre — where the passages meet",
+     "blurb": "The lower passage rises through the floor here. When Belzoni reached this spot in 1818 he found a drop, and a second passage running away north and down.",
+     "radius": 4
+    },
+    {
+     "key": "chamber",
+     "name": "Khafre's burial chamber",
+     "blurb": "The great chamber — 14.17 × 4.97 m, cut in the rock and stuccoed, under a gable of limestone beams. The paving was torn up by Perring in 1837, looking for other rooms; the blocks still lie against the east wall.",
+     "radius": 6
+    },
+    {
+     "key": "coffer",
+     "name": "Khafre's sarcophagus",
+     "blurb": "A polished granite coffer, 2.63 × 1.07 m, sunk into the floor up to its sliding lid, which was pinned and cemented shut — and wrenched off all the same. The lid lies beside it.",
+     "radius": 2.5
+    },
+    {
+     "key": "belzoni",
+     "name": "Belzoni's inscription",
+     "blurb": "\"Scoperta da G. Belzoni. 2. mar. 1818\" — painted across the south wall by Giovanni Belzoni the day he found the way in. Arabic graffiti showed him he was not the first.",
+     "radius": 4
+    },
+    {
+     "key": "lower",
+     "name": "Khafre — lower chamber",
+     "blurb": "A second, rock-cut chamber, 10.46 × 3.13 m under a pent roof, reached by a short slope from the lower passage — perhaps a first burial chamber, perhaps a store.",
+     "radius": 5
+    },
+    {
+     "key": "recess",
+     "name": "Khafre — turning recess",
+     "blurb": "A recess opposite the way into the lower chamber: room to swing a coffin round the right-angled turn.",
+     "radius": 2.5
+    },
+    {
+     "key": "lowerpass",
+     "name": "Khafre — lower passage",
+     "blurb": "The lower entrance, cut in the pavement north of the pyramid and running wholly through the rock. It is the way visitors go in today.",
+     "radius": 9
+    }
+   ]
+  },
+  {
    "id": "menkaure",
    "file": "menkaure.glb",
    "title": "Pyramid of Menkaure — substructure",

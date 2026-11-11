@@ -288,6 +288,49 @@ export const MERESANKH = {
 // ---- Simple interiors for Khafre & Menkaure -------------------------
 // A descending passage from the north base down to a burial chamber that
 // stays at/above the base level (so it never clips the terrain surface).
+// ---- Khafre's substructure (tools/blender/khafre.py, after Petrie ch. 9) ----
+// Coordinates local to the base centre. The upper entrance is 11.54 m up the
+// north face, 12.2 m east of its middle; the lower one is cut in the pavement
+// 8.9 m north of the base (that distance is approximate).
+const KF_H = 143.5, KF_HALF = 107.625, KF_PX = 12.2, KF_EY = 11.54;
+const kfDoor = { x: KF_PX, y: KF_EY, z: -KF_HALF * (1 - KF_EY / KF_H) };
+const KF_CF = -206.4 * 0.0254, KF_LE = 118.5;
+export const KHAFRE_ENTRY = {
+  entrance: kfDoor, rampBase: { x: KF_PX + 16, y: 0, z: -KF_HALF - 12 },      // the stair comes in from the east, clear of the lower entrance
+  holes: [{ s0: KF_PX - 0.9, s1: KF_PX + 0.9, y0: KF_EY + 0.05, y1: KF_EY + 1.3 }],
+  corridors: [{ path: [{ x: KF_PX + 16, y: 0, z: -KF_HALF - 12 }, kfDoor], w: [2.2, 2.2], h: [3, 2.6], wallFrom: 99 }],
+  chambers: [], doors: [],
+  // the slot in the pavement over the lower entrance (the ground is cut away here)
+  groundSlot: { x0: KF_PX - 0.56, x1: KF_PX + 0.56, z0: -KF_LE + 0.2, z1: -114.9 }
+};
+export const KHAFRE_SUB = {
+  tp: { x: (1.199 + 15.365) / 2 + 2, y: KF_CF + 0.3, z: -0.3 }, tpLower: { x: 3.18, y: KF_CF - 7.5 - 1.05 + 0.3, z: -78.43 },
+  tpUpper: { x: KF_PX, y: KF_EY - 2 * Math.tan((25 + 55 / 60) * DEG) + 0.3, z: kfDoor.z + 2 },
+  tpLowerEntrance: { x: KF_PX, y: -4.6 * Math.tan((21 + 40 / 60) * DEG) + 0.3, z: -KF_LE + 4.6 },
+  pois: [
+    ['upper', 'Khafre — upper passage',
+      'The upper entrance passage: rough-dressed red granite, 1.05 m wide and 1.2 m high, descending at 25°55′. Its flaws were made good with plaster and painted red.', 9],
+    ['portcullis', 'Khafre — granite portcullis',
+      'A granite slab sliding in grooves cut in the passage walls. Perring attacked it in 1837, hoping for a passage above it; it now rests on rough limestone props.', 3],
+    ['horizontal', 'Khafre — horizontal passage',
+      'From the portcullis the passage runs level to the chamber, half as high again (1.8 m): fine picked limestone at first, then rock, plastered over.', 9],
+    ['junction', 'Khafre — where the passages meet',
+      'The lower passage rises through the floor here. When Belzoni reached this spot in 1818 he found a drop, and a second passage running away north and down.', 4],
+    ['chamber', "Khafre's burial chamber",
+      "The great chamber — 14.17 × 4.97 m, cut in the rock and stuccoed, under a gable of limestone beams. The paving was torn up by Perring in 1837, looking for other rooms; the blocks still lie against the east wall.", 6],
+    ['coffer', "Khafre's sarcophagus",
+      'A polished granite coffer, 2.63 × 1.07 m, sunk into the floor up to its sliding lid, which was pinned and cemented shut — and wrenched off all the same. The lid lies beside it.', 2.5],
+    ['belzoni', "Belzoni's inscription",
+      '"Scoperta da G. Belzoni. 2. mar. 1818" — painted across the south wall by Giovanni Belzoni the day he found the way in. Arabic graffiti showed him he was not the first.', 4],
+    ['lower', 'Khafre — lower chamber',
+      'A second, rock-cut chamber, 10.46 × 3.13 m under a pent roof, reached by a short slope from the lower passage — perhaps a first burial chamber, perhaps a store.', 5],
+    ['recess', 'Khafre — turning recess',
+      'A recess opposite the way into the lower chamber: room to swing a coffin round the right-angled turn.', 2.5],
+    ['lowerpass', 'Khafre — lower passage',
+      "The lower entrance, cut in the pavement north of the pyramid and running wholly through the rock. It is the way visitors go in today.", 9]
+  ]
+};
+
 export function simpleInterior(p) {
   const half = p.base / 2;
   const door = { x: 0, y: 0.6, z: -half + 1 };             // floor at the north base
@@ -491,6 +534,8 @@ export const TELEPORTS = [
   { label: "Great Pyramid — Queen's Chamber", pos: KHUFU_LOWER.tpQueen },
   { label: 'Great Pyramid — Subterranean Chamber', pos: KHUFU_LOWER.tpSub },
   { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
+  ...[["Pyramid of Khafre — burial chamber", KHAFRE_SUB.tp], ['Pyramid of Khafre — lower chamber', KHAFRE_SUB.tpLower], ['Pyramid of Khafre — lower entrance', KHAFRE_SUB.tpLowerEntrance]]
+    .map(([label, t]) => ({ label, pos: Object.assign(t, { x: P.khafre.center.x + t.x, y: P.khafre.baseY + t.y, z: P.khafre.center.z + t.z }) })),
   { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60) },
   { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 40.5, SPHINX.center.z, 0.5) },
   { label: 'Tomb of Khentkaus I', pos: G(KHENTKAUS.center.x, KHENTKAUS.center.z - 38) },

@@ -14,6 +14,8 @@ const out = {
       position: [kc.x, P.khufu.baseY, kc.z], pois: pois(D.KHUFU_LOWER.pois) },
     { id: 'khufu_upper', file: 'khufu_upper.glb', title: 'Great Pyramid — Grand Gallery and King\'s Chamber',
       position: [kc.x + o.x, o.y, kc.z + o.z], pois: pois(D.KHUFU_UPPER.pois) },
+    { id: 'khafre', file: 'khafre.glb', title: 'Pyramid of Khafre',
+      position: [P.khafre.center.x, P.khafre.baseY, P.khafre.center.z], pois: pois(D.KHAFRE_SUB.pois) },
     { id: 'menkaure', file: 'menkaure.glb', title: 'Pyramid of Menkaure — substructure',
       position: [P.menkaure.center.x, P.menkaure.baseY, P.menkaure.center.z], pois: pois(D.MENKAURE_SUB.pois) },
     { id: 'meresankh', file: 'meresankh.glb', title: 'Tomb of Queen Meresankh III',
