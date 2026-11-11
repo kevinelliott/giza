@@ -9,7 +9,7 @@ import {
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM,
-  KHUFU_UPPER, KHUFU_LOWER, KHAFRE_ENTRY, KHAFRE_SUB, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
+  TOWN_PLACES, KHUFU_UPPER, KHUFU_LOWER, KHAFRE_ENTRY, KHAFRE_SUB, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -935,6 +935,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   // all down on the valley-edge terrace ~42 m below the Great Pyramid.
   buildSphinxEnclosure(mats, collidables, group);
   buildSphinx(mats, collidables, group, SPHINX.floorY, models.textures && models.textures.dream_stele);
+  for (const [name, x, z, radius, blurb] of TOWN_PLACES) landmarks.push({ name, blurb, radius, pos: { x, y: terrainHeight(x, z) + 2, z } });
   landmarks.push({ name: SPHINX.name, blurb: SPHINX.blurb, radius: 70,
     pos: { x: SPHINX.center.x, y: SPHINX.floorY + 12, z: SPHINX.center.z } });
   const st = SPHINX_TEMPLE.center, kv = KHAFRE_VALLEY.center;

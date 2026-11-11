@@ -106,6 +106,11 @@ and bakes it into `js/geodata.js` plus three images in `assets/geo/`.
 
 Sources and licences are listed in [`tools/geo/README.md`](tools/geo/README.md).
 Wall photographs in the tomb of Meresankh III: Richard Mortel, CC BY 2.0
+Wall paintings in the tomb of Tutankhamun (north, west and east walls of the
+burial chamber): photographs by Diego Delso, delso.photo, CC BY-SA 4.0 — the
+texture files `assets/textures/kv62_*.jpg` are derived from them and carry the
+same licence. The KV62 entrance sign is cropped from a photograph by Benjamín
+Núñez González, CC BY-SA 4.0. Full list: `research/photos/*/CREDITS.md`.
 (Wikimedia Commons). Dream Stele drawing: C. R. Lepsius, *Denkmäler* (1849),
 public domain. Hieroglyph font: Noto Sans Egyptian Hieroglyphs (SIL OFL).
 Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains
@@ -117,10 +122,24 @@ COPERNICUS by the European Union and ESA.
 
 A compiled desktop version is in [`godot/`](godot/README.md): the same
 plateau, Blender models and data in the Godot 4.5 engine, exporting to macOS,
-Windows and Linux, with everything the web version has. Its camels, horses
-and people are Blender-built and animated (`tools/blender/creatures.py`);
-the web version still draws them as simple block figures. The "Native builds" GitHub Action
-produces the downloads.
+Windows and Linux. It has everything the web version has, and more that the
+web version does not have yet:
+
+- **Blender-built, animated camels, horses and people** (`tools/blender/creatures.py`).
+- **Road traffic on the mapped roads only** (`tools/geo/build_roadnet.py`,
+  `tools/blender/vehicles.py`): cars, Cairo taxis, microbuses, tuk-tuks,
+  pickups and city buses on the public streets, keeping right; inside the
+  antiquities fence only the electric visitor buses, as since April 2025.
+  Parked cars, street lamps, townspeople on the pavements.
+- **The Nile at Luxor** (`tools/blender/luxor_nile.py`, `boats.py`): the
+  corniche, the ferry crossing, cruise ships rafted at the quay, feluccas, a
+  dahabiya, motor launches — and a felucca or a launch you can take out (E).
+- **The Valley of the Kings** (`tools/blender/valley_kings.py`): the ground
+  from the 30 m elevation model, the tomb entrances placed from the Theban
+  Mapping Project survey, and **the tomb of Tutankhamun (KV62)** at survey
+  dimensions with its real wall paintings.
+
+The "Native builds" GitHub Action produces the downloads.
 
 ## Blender models, inscriptions and the research tracker
 

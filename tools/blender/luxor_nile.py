@@ -25,10 +25,10 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 COL = bpy.context.scene.collection
 MATS = {}
 
-WIDTH = 480.0        # channel width between the banks at the landing
+WIDTH = 500.0        # channel 490-515 m opposite Luxor Temple (OpenStreetMap)
 NORTH, SOUTH = 900.0, -900.0
-QUAY = 5.0           # height of the corniche promenade above the water
-DEPTH = 6.0
+QUAY = 6.5           # upper corniche 6-7 m above the water; the lower promenade ~2 m (photo estimates)
+DEPTH = 8.0          # deepest ~10 m (published); mean 4-6 m is an estimate
 
 
 def mat(name):
@@ -92,7 +92,7 @@ grid('riverbed', 'silt', -WIDTH - 60, 30, SOUTH, NORTH, 40, 40, bed)
 
 # ---- East Bank: the stone corniche wall, promenade, road, the upper town edge -----------------------
 bm = bmesh.new()
-box(bm, 0, 3.0, SOUTH, NORTH, -DEPTH, QUAY - 3.2)               # lower quay (where the boats lie)
+box(bm, 0, 3.0, SOUTH, NORTH, -DEPTH, 2.0)               # lower quay (where the boats lie)
 box(bm, 3.0, 4.2, SOUTH, NORTH, -DEPTH, QUAY)                   # the battered wall up to the promenade
 obj(bm, 'corniche_wall', 'limestone')
 bm = bmesh.new(); box(bm, 4.2, 16.0, SOUTH, NORTH, QUAY - 0.4, QUAY)
@@ -104,11 +104,11 @@ obj(bm, 'east_ground', 'c_b9a98a')
 # flights of steps down from the promenade to the lower quay, every 120 m, and at the ferry landing
 bm = bmesh.new()
 for y in [k * 120.0 for k in range(-7, 8)]:
-    n = 16
+    n = 20
     for i in range(n):
-        z = QUAY - (i + 1) * 3.2 / n
+        z = QUAY - (i + 1) * (QUAY - 2.0) / n
         box(bm, 3.0 - 0.02, 4.4, y + 2.0 + i * 0.32, y + 2.0 + (i + 1) * 0.32 + 0.02, z - 0.6, z)   # steps run north along the wall face
-    box(bm, 1.2, 3.0, y + 2.0 + n * 0.32, y + 9.5, QUAY - 3.4, QUAY - 3.2)
+    box(bm, 1.2, 3.0, y + 2.0 + n * 0.32, y + 9.5, 1.8, 2.0)
 obj(bm, 'steps_quay', 'limestone')
 # cut the wall back where the steps descend is not needed: the steps stand in front of the upper wall on the lower quay
 # promenade parapet and lamp standards
@@ -159,7 +159,7 @@ obj(bt, 'deco_palm_trunks', 'c_6e4a26', True); obj(bf, 'deco_palm_fronds', 'c_55
 bm = bmesh.new()
 box(bm, -14.0, 0.0, -6.0, 6.0, -0.4, 0.55)
 obj(bm, 'pontoon', 'c_7d8288')
-bm = bmesh.new(); box(bm, -1.0, 3.2, -1.2, 1.2, 0.5, QUAY - 3.15)
+bm = bmesh.new(); box(bm, -1.0, 3.2, -1.2, 1.2, 0.5, 2.05)
 obj(bm, 'gangway', 'c_8a8f94')
 # the town front: hotel and apartment blocks behind the corniche road
 bm = bmesh.new(); bw = bmesh.new()
@@ -177,11 +177,12 @@ while y < NORTH - 40:
 obj(bm, 'town_front', 'c_d9c7a3'); obj(bw, 'deco_town_windows', 'c_27323a')
 
 # ---- where the boats are ------------------------------------------------------------------------------
-# cruise ships lie along the East Bank lower quay north of the landing, rafted two and three abreast
+# cruise ships lie along the East Bank only, parallel to the bank with their bows upstream (south),
+# rafted three to five abreast at 14.2 m centres (measured on satellite)
 k = 0
-for y in (150, 240, 330, 430, 520, 640):
-    for abreast in range(random.choice((1, 2, 2, 3))):
-        empty('moor_cruiser_%d' % k, (-7.6 - abreast * 14.6, y, 0), 90); k += 1
+for y in (160, 250, 340, 440, 530, 650):
+    for abreast in range(random.choice((3, 3, 4, 5))):
+        empty('moor_cruiser_%d' % k, (-7.4 - abreast * 14.2, y, 0), -90); k += 1
 empty('moor_dahabiya_0', (-4.0, -210, 0), 90); empty('moor_dahabiya_1', (-4.0, -300, 0), 90)
 for i in range(7): empty('moor_felucca_%d' % i, (-2.2 - (i % 2) * 3.4, -60 - i * 7.0, 0), 90 + random.uniform(-8, 8))
 for i in range(9): empty('moor_launch_%d' % i, (-2.0 - (i % 3) * 3.0, 30 + (i // 3) * 11.0, 0), 90 + random.uniform(-6, 6))

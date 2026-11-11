@@ -48,6 +48,7 @@ func _init() -> void:
 	cam.add_child(lamp)
 	floor_max_angle = deg_to_rad(52)
 	floor_snap_length = 0.35
+	floor_block_on_wall = false          # (true makes the body stick when it rubs a wall on a sloping floor)
 	safe_margin = 0.01
 
 
@@ -153,18 +154,22 @@ func _physics_process(dt: float) -> void:
 	var hv := Vector3(velocity.x, 0, velocity.z)
 	move_and_slide()
 	# stair stepping: if a low obstacle stopped us, retry the move lifted by STEP
-	if hv.length() > 0.1 and is_on_wall() and (is_on_floor() or velocity.y <= 0.0):
+	# (not only when is_on_wall(): the edge of a low step reports its top face's normal, which reads as floor)
+	if hv.length() > 0.1 and (is_on_floor() or velocity.y <= 0.0):
 		var got := Vector2(global_position.x - before.x, global_position.z - before.z).length()
 		if got < hv.length() * dt * 0.6:
 			var here := global_transform
-			var up := Vector3(0, STEP, 0)
-			if not test_move(here, up):
+			for lift in [0.28, STEP]:                 # a low lift first: under a lintel there may be no room for the full one
+				var up := Vector3(0, lift, 0)
+				if test_move(here, up): continue
 				var lifted := here.translated(up)
 				var fwd := hv * dt + hv.normalized() * 0.08
-				if not test_move(lifted, fwd):
-					var res := KinematicCollision3D.new()
-					var down := Vector3(0, -STEP - 0.05, 0)
-					var moved := lifted.translated(fwd)
-					if test_move(moved, down, res):
-						global_position = moved.origin + res.get_travel()
-						velocity.y = 0
+				if test_move(lifted, fwd): continue
+				var res := KinematicCollision3D.new()
+				var moved := lifted.translated(fwd)
+				if test_move(moved, Vector3(0, -lift - 0.05, 0), res):
+					global_position = moved.origin + res.get_travel()
+				else:                             # nothing to land on within reach: go over the lip and let gravity take it
+					global_position = moved.origin + Vector3(0, -lift * 0.5, 0)
+				velocity.y = 0
+				break

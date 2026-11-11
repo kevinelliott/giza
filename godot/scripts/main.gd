@@ -39,6 +39,8 @@ const BAKED := {
 	"ceiling_red": [Color("a8685e"), 0.95, 1.1, 0.6, 0.0, 1.0],
 	"statue": [Color("8a8070"), 0.97, 1.2, 0.5, 0.0, 1.0],
 	"wood": [Color("6e4a2a"), 0.8, 1.0, 1.0, 0.0, 1.0],
+	"paint_yellow": [Color("b8862a"), 0.9, 1.1, 0.25, 0.0, 1.0],
+	"quartzite": [Color("8a6a44"), 0.6, 1.2, 0.5, 0.0, 1.0],
 }
 # The plateau, lit by the sun: same shader, no baked light.
 const OUTDOOR := {
@@ -53,7 +55,7 @@ const OUTDOOR := {
 	"plaster": [Color("ddd5c4"), 0.9, 0.0, 0.2, 0.0, 1.0],
 	"wood": [Color("6b4a2b"), 0.85, 0.0, 0.6, 0.0, 1.0],
 }
-const PHOTOS := ["belzoni", "dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
+const PHOTOS := ["belzoni", "kv62_north", "kv62_west", "kv62_east", "kv62_sign", "dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
 const HOURS := [9.5, 12.0, 16.0, 18.4, 21.5, 6.2]
 const LAT := 29.98
 
@@ -64,7 +66,9 @@ var travel := []          # [{label, pos, look?}]
 var pois := []            # [{name, blurb, radius, pos}]
 var zones: Array[AABB] = []   # the Blender interiors (pre-lit)
 var open_places: Array[AABB] = []   # sunlit places away from the plateau (Luxor, ...)
+var far_roots := []            # [[AABB, Node3D]]: models beyond the plateau, shown only while the player is near
 var world := {}
+var world_box := AABB(Vector3(-1500, -200, -700), Vector3(2600, 600, 2200))
 var heights := PackedFloat32Array()
 var player: CharacterBody3D
 var env: Environment
@@ -261,6 +265,12 @@ func _materials() -> void:
 	dark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	dark.albedo_color = Color(0.03, 0.025, 0.02)
 	baked["dark"] = dark
+	var glass := StandardMaterial3D.new()
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.albedo_color = Color(0.75, 0.88, 0.9, 0.16)
+	glass.roughness = 0.05
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	baked["glass"] = glass
 	var g := ShaderMaterial.new()
 	g.shader = GROUND
 	g.set_shader_parameter("ground_tex", load("res://textures/ground.jpg"))
@@ -379,6 +389,9 @@ func _place_model(m: Dictionary) -> void:
 		if n is MeshInstance3D and open_air:
 			var omi: MeshInstance3D = n
 			var solid := false
+			var ob: AABB = omi.global_transform * omi.get_aabb()
+			box = ob if first else box.merge(ob)
+			first = false
 			for si in omi.mesh.get_surface_count():
 				var src := omi.mesh.surface_get_material(si)
 				var mn := src.resource_name if src != null else "limestone"
@@ -397,6 +410,7 @@ func _place_model(m: Dictionary) -> void:
 			_panel(n)
 		elif nm.begins_with("poi_") or nm.begins_with("tp_") or nm == "spawn":
 			anchors[nm] = (n as Node3D).global_position
+	if open_air or not world_box.grow(200.0).intersects(box): far_roots.append([box.grow(1800.0), root])
 	if m.get("river", false):
 		var rv := River.new()
 		add_child(rv)
@@ -437,7 +451,15 @@ func _dress(mi: MeshInstance3D) -> void:
 		var nm := src.resource_name if src != null else "rock"
 		if steps: nm = "rock"
 		mi.set_surface_override_material(s, baked.get(nm, baked["rock"]))
-		if nm != "fixture" and nm != "dark": solid = true
+		if not nm.begins_with("fixture") and nm != "dark" and nm != "glass": solid = true
+	if String(mi.name).begins_with("fixture"): solid = false          # lamp fittings never block the way
+	if String(mi.name).begins_with("col_"):                          # collision-only helpers (unseen)
+		mi.create_trimesh_collision()
+		for body in mi.get_children():
+			for cs in body.get_children():
+				if cs is CollisionShape3D and cs.shape is ConcavePolygonShape3D: cs.shape.backface_collision = true
+		mi.visible = false
+		return
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if solid and not _is_deco(mi):
 		mi.create_trimesh_collision()
@@ -725,6 +747,7 @@ func _process(dt: float) -> void:
 	life.update(dt, p, night * (1.0 - storm_k), riding)
 	traffic.update(dt, p, night)
 	for rv in rivers: rv.update(dt, p)
+	for fr in far_roots: (fr[1] as Node3D).visible = (fr[0] as AABB).has_point(p)
 	var sph: Dictionary = world["sphinx"]
 	quest.update(dt, p, {"fly": player.fly, "on_floor": player.is_on_floor(), "speed": Vector2(player.velocity.x, player.velocity.z).length(),
 		"outdoors": not inside, "night": night > 0.5, "storm": storm_k > 0.5, "riding": riding != null,
@@ -771,6 +794,31 @@ func _process(dt: float) -> void:
 				walk_from = player.global_position
 		if walk_from != Vector3.INF:
 			walk_t += dt
+			if shot_keys.contains("trace") and int(walk_t) != int(walk_t - dt):
+				var tp := player.global_position
+				var hits := ""
+				for ci in player.get_slide_collision_count():
+					var kc := player.get_slide_collision(ci)
+					hits += " [%s n=%s]" % [kc.get_collider().get_parent().name, kc.get_normal()]
+				print("TRACE t=%d pos=%s h=%.2f vel=%s%s" % [int(walk_t), tp, player.height, player.velocity, hits])
+				print("   real_vel=", player.get_real_velocity(), " last_motion=", player.get_last_motion(), " delta=", player.get_position_delta(), " wall=", player.is_on_wall(), " wn=", player.get_wall_normal(), " floor=", player.is_on_floor(), " fn=", player.get_floor_normal(), " yaw=", player.yaw, " frozen=", player.frozen)
+				var here := player.global_transform
+				var hvv := Vector3(player.velocity.x, 0, player.velocity.z)
+				var k3 := KinematicCollision3D.new()
+				var up_blocked := player.test_move(here, Vector3(0, 0.5, 0), k3)
+				var lifted := here.translated(Vector3(0, 0.5, 0))
+				var fwd := hvv / 60.0 + hvv.normalized() * 0.08
+				var k4 := KinematicCollision3D.new()
+				var fwd_blocked := player.test_move(lifted, fwd, k4)
+				var k5 := KinematicCollision3D.new()
+				var moved := lifted.translated(fwd)
+				var down_hit := player.test_move(moved, Vector3(0, -0.55, 0), k5)
+				print("   DOWN hit=", down_hit, " travel=", k5.get_travel() if down_hit else Vector3.ZERO, " -> would be ", (moved.origin + k5.get_travel()) if down_hit else moved.origin)
+				print("   STEP up_blocked=", up_blocked, (" by %s n=%s" % [k3.get_collider().get_path(), k3.get_normal()]) if up_blocked else "", " fwd_blocked=", fwd_blocked, (" by %s n=%s at %s" % [k4.get_collider().get_path(), k4.get_normal(), k4.get_position()]) if fwd_blocked else "")
+				for dv in [player.velocity / 60.0, Vector3(-0.083, 0, 0), Vector3(-0.083, 0, 0.007), Vector3(0, 0, 0.05), Vector3(0, 0, -0.05), Vector3(0, -0.05, 0), Vector3(-0.083, -0.027, 0.007)]:
+					var k2 := KinematicCollision3D.new()
+					if player.test_move(player.global_transform, dv, k2):
+						print("   BLOCK ", dv, " by ", k2.get_collider().get_path(), " at ", k2.get_position(), " n=", k2.get_normal(), " travel=", k2.get_travel())
 			if walk_i < walk_path.size():
 				var to := walk_path[walk_i] - Vector2(player.global_position.x, player.global_position.z)
 				if to.length() < 0.45: walk_i += 1
@@ -780,6 +828,9 @@ func _process(dt: float) -> void:
 			elif walk_path.size() > 0: walk_t = walk_secs
 			if walk_t < walk_secs: return
 			if walk_path.size() > 0: print("PATH reached %d of %d waypoints" % [walk_i, walk_path.size()])
+			for ci in player.get_slide_collision_count():
+				var kc := player.get_slide_collision(ci)
+				print("  HIT ", kc.get_collider().get_parent().name, " normal ", kc.get_normal(), " at ", kc.get_position())
 			var q := player.global_position
 			print("WALK from %s to %s: %.1f m in %.1f s, ground %.2f, on floor %s" % [walk_from, q, Vector2(q.x - walk_from.x, q.z - walk_from.z).length(), walk_t, terrain_height(q.x, q.z), player.is_on_floor()])
 			frames = 70

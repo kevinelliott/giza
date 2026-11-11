@@ -36,7 +36,10 @@ text not).
 | Eastern & Western cemeteries, Central Field | footprints done (OSM) | generic mastabas | todo (Meresankh III, Hemiunu, Qar, Idu…) | [cemeteries](sites/cemeteries.md) |
 | Queens' pyramids, Khentkaus I, satellite pyramids | done (map) | procedural | todo | [minor-monuments](sites/minor-monuments.md) |
 | Workers' town, Wall of the Crow, workers' cemetery | partial | schematic | n/a | [minor-monuments](sites/minor-monuments.md) |
+| Valley of the Kings (Luxor): valley, KV62, KV9 | researched (TMP survey sheets, OSM, DEM); entrances ±10 m absolute | todo | KV62 wall programme researched; 2 caption groups composed; 14 reference photos | [valley-of-the-kings](sites/valley-of-the-kings.md) |
 | Modern town, roads, terrain | done (OSM, DEM, Sentinel-2) | generated | n/a | `tools/geo/README.md` |
+| Giza town, roads, vehicles, 2025 visitor-access rules, hotels | research only: access rules, bus stops, road courses and hotel positions sourced (OSM, Overture places, press); lane counts from satellite by eye; mosques and visitor-bus make not found | todo | 15 reference photos in `photos/giza-town/` | [giza-town-and-roads](sites/giza-town-and-roads.md) |
+| The Nile at Luxor and Cairo; boats modern (felucca, dahabiya, cruise ship, Luxor ferry, launch) and ancient (Khufu ship, Meketre and Punt boats, papyrus skiff) | research only: widths, landings and Pyramid-to-Nile distance measured (OSM + satellite); depth, current and level swing estimated | todo | 18 reference photos in `photos/nile-and-boats/` | [nile-and-boats](sites/nile-and-boats.md) |
 
 ## Tools
 
@@ -63,4 +66,8 @@ text not).
 - "Kahfre valley sphinx.svg" (HoremWeb, public domain, after Lehner & Verner) — temple plans.
 - Lepsius, *Denkmäler* III Bl. 68, NYPL scan (public domain) — Dream Stele.
 
+- Jenkins, *The Boat Beneath the Pyramid* (1980), PDF from gizapyramids.org — Khufu ship dimensions and construction. Couser, Ward & Vosmer 2012 (*Min of the Desert*) — Punt ship. Met Open Access API — Meketre boat models. OSM main API extracts for Luxor and Cairo.
+
 **Access notes.** gizapyramids.org serves the Giza Mastabas PDFs openly (text extracts with `pdftotext`; figures with `pdftoppm`) — the best source for the cemeteries. Harvard's *Digital Giza* pages load, but its image server (ids.lib.harvard.edu) refuses automated downloads: do not try to get round that; use the PDFs. Wikimedia throttles bursts — space requests a few seconds apart and never ask for a width larger than the original.
+
+**Valley of the Kings access notes (2026-11-11).** Theban Mapping Project tomb *pages* answer 403 to automated clients (do not work round it), but its survey sheets at `thebanmappingproject.com/sites/default/files/plans/KVnn.pdf` download normally and are vector PDFs: `pdftocairo -svg` gives the line-work, which can be scaled against the sheet's own scale bar, and `pdftotext -bbox` gives the printed spot elevations. TMP grid north is 27.04° clockwise of true north. The Copernicus 30 m DEM is useless on the wadi floor (reads up to 35 m high) — use the TMP datums. Commons: ask only for standard thumbnail widths (500, 1280, 1920); other widths and bursts get HTTP 429. Overpass (overpass-api.de) is unreachable through the proxy; `api.openstreetmap.org/api/0.6/map?bbox=` works for small boxes. The Commons API returns HTTP 429 with a `retry-after` header when several agents share the address: batch up to 50 titles in one `prop=imageinfo` call and honour the header. The Met collection API moved its search to `/public/collection/v1.1/search`. english.ahram.org.eg and egypttoday.com answer 403 to our client; journals.ekb.eg resets the connection.

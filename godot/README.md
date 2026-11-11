@@ -10,6 +10,10 @@ burial chamber and lower chamber; Menkaure's substructure; the tomb of Meresankh
 Serapeum of Saqqara — walkable in first person, with sky, sun and shadows,
 time of day, fast travel to 30-odd places and site captions.
 
+Beyond Giza (fast travel): the Nile at Luxor with its boats, and the Valley
+of the Kings with the tomb of Tutankhamun (KV62). Road traffic runs on the
+mapped streets; only the electric visitor buses run inside the site.
+
 Camels, horse carriages, visitors (Blender-built, rigged and animated:
 `tools/blender/creatures.py`), camel riding, the artifact hunt, minimap and
 full map, sandstorm and the Sound and Light show are all in.
@@ -21,7 +25,7 @@ notarised, so the first time macOS will refuse: right-click the app, choose
 **Open**, then **Open** again (or run `xattr -dr com.apple.quarantine "Giza Plateau.app"`).
 
 WASD move · mouse look · **C** crouch (the real passages need it) · Shift run ·
-Space jump · **F** fly · **L** lamp · **E** ride a camel · **T** time of day · **K** sandstorm ·
+Space jump · **F** fly · **L** lamp · **E** ride a camel / board a boat · **T** time of day · **K** sandstorm ·
 **M** map (click a blue dot to travel) · **O** / **-** / **=** minimap · **Tab** or **M** fast travel · Esc frees the mouse.
 
 ## Build

@@ -311,13 +311,14 @@ def skiff(P):
 
 # Sizes: research/sites/nile-and-boats.md
 PARAMS = {
-    'felucca': dict(L=9.0, B=3.0, mast=7.5, yard=14.0, trim='1f5fa8', cushion='b0302a', awning='f0ece0'),
-    'dahabiya': dict(L=42.0, B=6.6, mast=13.0, yard=30.0, cabins=8),
-    'cruiser': dict(L=72.0, B=14.2, decks=3, deck_h=2.75, awning='f2efe6'),
-    'ferry': dict(L=26.0, B=8.0),
-    'launch': dict(L=9.5, B=2.7, hull='f2f0ea', trim='1f8a4a', cushion='c23b2f', roof='f2f0ea'),
-    'khufu': dict(L=43.6, B=5.9, stem=6.0, stern=7.5, cabin=9.0),
-    'skiff': dict(L=4.6, B=1.0),
+    # tourist felucca: hull 8-10 m, mast ~0.9 x and yard ~1.9 x the hull length (scaled from photos); white hull, red-orange bottom
+    'felucca': dict(L=9.0, B=3.0, mast=8.1, yard=17.0, trim='c8452a', cushion='b0302a', awning='f0ece0'),
+    'dahabiya': dict(L=40.0, B=7.2, mast=13.0, yard=30.0, cabins=8),            # 38-42 x 7-7.5 m typical, draught 1.0-1.5
+    'cruiser': dict(L=72.0, B=14.0, decks=3, deck_h=2.7, awning='f2efe6'),      # 72 x 14 m, 11 m above water, draught 1.5
+    'ferry': dict(L=23.5, B=6.4),                                               # 23-24 x 6.4 m measured on satellite, two decks
+    'launch': dict(L=10.5, B=2.7, hull='f2f0ea', trim='c23b2f', cushion='c23b2f', roof='f2f0ea'),   # 9.5-11.5 x 2.4-3.0 m, white over red
+    'khufu': dict(L=43.4, B=5.9, stem=6.0, stern=7.0, cabin=9.0),               # Jenkins 1980: 43.4 x 5.9 m; posts 5.5-7 m (approximate)
+    'skiff': dict(L=4.6, B=1.0),                                                # entirely estimated
 }
 if __name__ == '__main__':
     built = [felucca(PARAMS['felucca']), dahabiya(PARAMS['dahabiya']), cruiser(PARAMS['cruiser']), ferry(PARAMS['ferry']),

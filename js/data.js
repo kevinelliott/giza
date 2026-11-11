@@ -615,3 +615,30 @@ export const ARTIFACTS = [
     blurb: 'The Great Pyramid lost its capstone long ago; today the summit is a flat platform ~8 m below the original apex.',
     pos: { x: 0, y: 139.3, z: 0 } }
 ];
+
+// ---------------------------------------------------------------------
+//  Named places in the town and on the visitor circuit, located from
+//  OpenStreetMap / Overture (research/sites/giza-town-and-roads.md).
+//  [name, x, z, radius, blurb]
+// ---------------------------------------------------------------------
+export const TOWN_PLACES = [
+  ['Marriott Mena House', -88, -653, 60, 'The palace wing of the Mena House: a khedival hunting lodge of 1869, a hotel since 1886, at the foot of the plateau. Churchill, Roosevelt and Chiang Kai-shek met here in 1943. Most of the hotel lies just beyond the edge of this map.'],
+  ['Mena House golf course', 280, -397, 120, 'Sixteen hectares of fairways between the hotel and Nazlet el-Semman — a golf course in the shadow of the Great Pyramid since 1899.'],
+  ['Old Mena House gate', -150, -281, 40, 'The old ticket office on the road up from the Mena House. Until April 2025 this was the main way in; the entrance is now the Great Gate on the Fayoum road, 2.4 km west.'],
+  ['Sphinx gate', 639, 412, 28, 'The ticket checkpoint at the foot of the Sphinx, facing the village. Since 2025 visitors mostly leave here rather than enter.'],
+  ['KFC and Pizza Hut', 664, 412, 16, 'The most photographed fast-food branch in Egypt: its upper windows look straight across the plaza at the Sphinx.'],
+  ['Guardian Guest House', 656, 468, 14, 'Four floors, ten rooms, no lift — and a roof terrace directly opposite the Sphinx entrance. One of a row of small inns along Abu al-Hol street.'],
+  ['Pyramids View Inn', 671, 478, 14, 'One of the roof-terrace guest houses of Nazlet el-Semman, sold on the view of all three pyramids at breakfast.'],
+  ['Panorama Pyramids Inn', 667, 519, 14, 'Another of the inns facing the Sphinx, with a rooftop café.'],
+  ['Sound and Light theatre', 540, 516, 55, 'The open-air terrace of seats where audiences watch the evening Sound and Light show play over the Sphinx and the pyramids — as they have since 1961.'],
+  ['Nazlet el-Semman stables', 763, 604, 40, 'The village has kept horses and camels for visitors for generations; the yards lie behind the houses. Since 2025 the animals work only in set zones on the south side of the plateau.'],
+  ['St George\'s Church', 684, -418, 30, 'The Coptic church of Mar Girgis, Nazlet el-Semman.'],
+  ['King Farouk\'s rest house', 170, -119, 30, 'A small royal rest house on the edge of the plateau north-east of the Great Pyramid, built for King Farouk in the 1940s.'],
+  ['9 Pyramids Lounge', -224, 1264, 40, 'An open-air restaurant on the southern ridge, opened in October 2020: 1.3 km from the Great Pyramid, looking north at all of them.'],
+  ['Khufu\'s restaurant', -959, 101, 45, 'A restaurant in the King Khufu Centre on the western approach, part of the 2025 redevelopment of the visitor route.'],
+  ['Visitor bus stop — Panorama', -1407, 684, 30, 'A stop on the free electric hop-on hop-off bus line that has carried visitors round the plateau since April 2025, when private cars, taxis and tour coaches were barred from the site.'],
+  ['Visitor bus stop — Menkaure', -856, 329, 25, 'The visitor bus stop for the Third Pyramid.'],
+  ['Visitor bus stop — Khafre', -129, 259, 25, 'The visitor bus stop for the Second Pyramid.'],
+  ['Visitor bus stop — Khufu', 67, -214, 25, 'The visitor bus stop for the Great Pyramid.'],
+  ['Visitor bus stop — Sphinx', 579, 409, 25, 'The visitor bus stop at the Sphinx, by the exit to the village.']
+];

@@ -326,9 +326,9 @@
    "outdoor": true,
    "river": true,
    "position": [
-    30000,
+    3600,
     0,
-    0
+    600
    ],
    "pois": [
     {
@@ -372,6 +372,187 @@
      "name": "West Bank landing",
      "blurb": "The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.",
      "radius": 40
+    }
+   ]
+  },
+  {
+   "id": "valley_kings",
+   "file": "valley_kings.glb",
+   "title": "Valley of the Kings",
+   "outdoor": true,
+   "position": [
+    -23,
+    105,
+    -3981
+   ],
+   "pois": [
+    {
+     "key": "kv62",
+     "name": "KV62 — Tomb of Tutankhamun",
+     "blurb": "The entrance Howard Carter's workmen uncovered on 4 November 1922, under the debris of huts built for the cutting of KV9 just above. The whitewashed walls, the roof over the stair and the gate are modern.",
+     "radius": 14
+    },
+    {
+     "key": "valley",
+     "name": "Valley of the Kings",
+     "blurb": "The wadi where the pharaohs of the New Kingdom (c. 1539–1075 BC) were buried in rock-cut tombs — sixty-five are numbered. The pyramid-shaped peak above is al-Qurn.",
+     "radius": 90
+    },
+    {
+     "key": "n0",
+     "name": "KV9 — Ramesses V and VI",
+     "blurb": "Entrance of KV9, the tomb of Ramesses V and VI, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n1",
+     "name": "KV17 — Seti I",
+     "blurb": "Entrance of KV17, the tomb of Seti I, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n2",
+     "name": "KV11 — Ramesses III",
+     "blurb": "Entrance of KV11, the tomb of Ramesses III, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n3",
+     "name": "KV2 — Ramesses IV",
+     "blurb": "Entrance of KV2, the tomb of Ramesses IV, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n4",
+     "name": "KV6 — Ramesses IX",
+     "blurb": "Entrance of KV6, the tomb of Ramesses IX, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n5",
+     "name": "KV8 — Merenptah",
+     "blurb": "Entrance of KV8, the tomb of Merenptah, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n6",
+     "name": "KV14 — Tausret and Setnakht",
+     "blurb": "Entrance of KV14, the tomb of Tausret and Setnakht, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n7",
+     "name": "KV35 — Amenhotep II",
+     "blurb": "Entrance of KV35, the tomb of Amenhotep II, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n8",
+     "name": "KV16 — Ramesses I",
+     "blurb": "Entrance of KV16, the tomb of Ramesses I, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n9",
+     "name": "KV47 — Siptah",
+     "blurb": "Entrance of KV47, the tomb of Siptah, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n10",
+     "name": "KV57 — Horemheb",
+     "blurb": "Entrance of KV57, the tomb of Horemheb, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n11",
+     "name": "KV5 — the sons of Ramesses II",
+     "blurb": "Entrance of KV5, the tomb of the sons of Ramesses II, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    },
+    {
+     "key": "n12",
+     "name": "KV1 — Ramesses VII",
+     "blurb": "Entrance of KV1, the tomb of Ramesses VII, placed from the Theban Mapping Project survey. Its interior is not built yet.",
+     "radius": 7
+    }
+   ]
+  },
+  {
+   "id": "kv62",
+   "file": "kv62.glb",
+   "title": "Tomb of Tutankhamun (KV62)",
+   "position": [
+    -23,
+    105,
+    -3981
+   ],
+   "pois": [
+    {
+     "key": "stair",
+     "name": "Entrance stair",
+     "blurb": "Sixteen steps cut down into the valley floor. The lowest six were hacked away in antiquity to bring in the sarcophagus and shrines, and again by Carter to bring them out.",
+     "radius": 3
+    },
+    {
+     "key": "corridor",
+     "name": "Corridor",
+     "blurb": "A plain descending corridor, 8 m long. It was filled with limestone chips after the tomb was first robbed, and the robbers who came back tunnelled through the fill.",
+     "radius": 4
+    },
+    {
+     "key": "antechamber",
+     "name": "Antechamber",
+     "blurb": "Antechamber — 7.85 × 3.55 m. Here Carter saw \"wonderful things\": dismantled chariots, three gilded couches, chests and the two guardian statues that flanked the sealed door to the burial chamber.",
+     "radius": 3.5
+    },
+    {
+     "key": "mummy",
+     "name": "Tutankhamun",
+     "blurb": "The king himself. Since 2007 his mummy has lain here in a climate-controlled case, rather than in the sarcophagus.",
+     "radius": 2
+    },
+    {
+     "key": "annexe",
+     "name": "Annexe",
+     "blurb": "A low doorway leads to the annexe, its floor nearly a metre lower — a store room found heaped with furniture, jars of wine and oils, and baskets of food.",
+     "radius": 2.2
+    },
+    {
+     "key": "burial",
+     "name": "Burial chamber",
+     "blurb": "Burial chamber — 6.37 × 4.02 m, the only decorated room. Four gilded shrines, one inside another, almost filled it. The floor is nearly a metre below the antechamber; visitors look down from the platform.",
+     "radius": 4
+    },
+    {
+     "key": "sarcophagus",
+     "name": "Sarcophagus",
+     "blurb": "Carved from a single block of quartzite, with a goddess at each corner spreading her wings. The lid is red granite, painted to match and cracked across — a hurried substitute.",
+     "radius": 2.5
+    },
+    {
+     "key": "north",
+     "name": "North wall",
+     "blurb": "Right: Ay, the next king, in a priest's leopard skin, opens the mouth of Tutankhamun's mummy. Centre: Nut greets the king. Left: the king and his ka are embraced by Osiris.",
+     "radius": 2.4
+    },
+    {
+     "key": "west",
+     "name": "West wall",
+     "blurb": "The first hour of the Amduat: twelve baboons, one for each hour of the night, below the sun-god as a scarab in his barque.",
+     "radius": 2.2
+    },
+    {
+     "key": "east",
+     "name": "East wall",
+     "blurb": "The funeral: twelve courtiers in white draw the sledge that carries the king's mummy under a canopy of garlands.",
+     "radius": 2.2
+    },
+    {
+     "key": "treasury",
+     "name": "Treasury",
+     "blurb": "The treasury, guarded by the Anubis shrine: it held the gilded canopic shrine, model boats and chests of jewellery.",
+     "radius": 2.5
     }
    ]
   }

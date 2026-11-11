@@ -3,7 +3,8 @@ extends Node3D
 ## tools/geo/build_roadnet.py from OpenStreetMap):
 ##   public streets outside the antiquities fence — cars, taxis, microbuses,
 ##     tuk-tuks, pickups and city buses, keeping to the right as Egypt does;
-##   paved roads inside the fence — only the visitor shuttles and tour coaches.
+##   paved roads inside the fence — only the electric hop-on hop-off visitor buses (cars, taxis and
+##     tour coaches have been kept out since April 2025; coaches wait in the parks outside).
 ## Footpaths, tracks and open desert carry no vehicles at all. Also: cars
 ## parked along the side streets, and street lamps on the larger ones.
 ## Vehicles are drawn as MultiMeshes (models: tools/blender/vehicles.py).
@@ -64,7 +65,7 @@ func setup(main_node: Node, world: Dictionary) -> void:
 	for t in TYPES:
 		for i in roundi(pub / 230.0 * TYPES[t][1]): plan.append([t, 0])
 	for i in roundi(site / 1100.0):
-		plan.append(["shuttle" if i % 2 == 0 else "coach", 1])
+		plan.append(["shuttle", 1])        # since April 2025 only the electric visitor buses run inside the site: no cars, taxis or coaches
 	for p in plan:
 		var e := _random_edge(p[1], TYPES[p[0]][2], TYPES[p[0]][3])
 		if e < 0: continue
