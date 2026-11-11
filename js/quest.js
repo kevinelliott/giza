@@ -23,6 +23,17 @@ const ACHIEVEMENTS = [
   { id: 'show', name: 'Sound & Light', text: 'You watched the evening light show from the Sphinx terrace.' }
 ];
 
+// soft round glow (a sprite without a map would draw as a square)
+let _halo = null;
+function haloTexture() {
+  if (_halo || typeof document === 'undefined') return _halo;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,0.35)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+  return (_halo = new THREE.CanvasTexture(c));
+}
+
 function artifactMesh(type, setupMaterial) {
   const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.45, metalness: 0.1, emissive: color, emissiveIntensity: 0.35 }, extra)); setupMaterial && setupMaterial(m); return m; };
   let mesh;
@@ -40,7 +51,7 @@ function artifactMesh(type, setupMaterial) {
   const g = new THREE.Group(); g.add(mesh);
   const light = new THREE.PointLight(mesh.material.color, 1.6, 7, 2); light.position.y = 0.4; g.add(light);
   // soft glowing halo sprite so it can be spotted from a distance
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.35, depthWrite: false }));
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture(), color: 0xffe9a8, transparent: true, opacity: 0.5, depthWrite: false }));
   halo.scale.set(1.6, 1.6, 1); halo.position.y = 0.3; g.add(halo);
   g.userData.spin = mesh; g.userData.halo = halo;
   return g;

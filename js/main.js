@@ -6,7 +6,7 @@ import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { DayCycle, Sandstorm, Stars, Clouds } from './atmosphere.js';
 import { animateCamelLegs } from './life.js';
-import { loadModels } from './models.js';
+import { loadModels, BAKED_ZONES } from './models.js';
 import { Quest } from './quest.js';
 import { SERAPEUM, TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
 import { GEO, EXTENT } from './geodata.js';
@@ -580,7 +580,8 @@ function updateHUD() {
   // Auto headlamp when inside / underground or out at night, with manual override (L).
   const inside = isUnderground(p);
   const auto = inside || (day.isNight && !player.fly);
-  lamp.intensity = (forceLamp || auto) ? (inside ? 42 : 28) : 0;
+  const litRoom = inside && BAKED_ZONES.some(b => b.containsPoint(player.position));
+  lamp.intensity = (forceLamp || auto) ? (litRoom ? 14 : (inside ? 42 : 28)) : 0;
   if (lampStateEl) lampStateEl.textContent = forceLamp ? 'ON' : (auto ? 'auto' : 'off');
   if (clockEl) clockEl.textContent = `${day.label()} · ${storm.k > 0.3 ? 'sandstorm' : (day.isNight ? 'clear night' : 'clear')}`;
 

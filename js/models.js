@@ -81,6 +81,10 @@ function bakedStone(base, { color, roughness, scale = 6, courses = 0, gain = 1.0
   return m;
 }
 
+// World-space boxes around the baked-light models: inside them the rooms are
+// already lit, so the game dims the player's headlamp.
+export const BAKED_ZONES = [];
+
 // One shared library of materials, keyed by the Blender material names.
 let LIB = null;
 function library(mats) {
@@ -89,8 +93,8 @@ function library(mats) {
     rock: bakedStone(null, { color: 0xb9aa8c, roughness: 0.97, gain: 0.42, key: 'rock', plain: true }),
     masonry: bakedStone(null, { color: 0xa39a86, roughness: 0.95, gain: 0.42, key: 'masonry', plain: true, jointH: 0.52, jointW: 1.05, strata: 0.6 }),
     limestone: bakedStone(null, { color: 0x8f8470, roughness: 0.9, gain: 0.5, key: 'limestone', plain: true, jointH: 0.86, jointW: 1.6, strata: 0.4 }),
-    granite: bakedStone(null, { color: 0x8a6458, roughness: 0.55, gain: 0.5, key: 'granite', plain: true, jointH: 1.17, jointW: 2.2, strata: 0.3 }),
-    granite_dark: bakedStone(null, { color: 0x4a3830, roughness: 0.5, gain: 0.55, key: 'gdark', plain: true, strata: 0.2 }),
+    granite: bakedStone(null, { color: 0x8a6458, roughness: 0.55, gain: 0.85, key: 'granite', plain: true, jointH: 1.17, jointW: 2.2, strata: 0.3 }),
+    granite_dark: bakedStone(null, { color: 0x4a3830, roughness: 0.5, gain: 0.9, key: 'gdark', plain: true, strata: 0.2 }),
     granite_black: bakedStone(null, { color: 0x2c2c30, roughness: 0.22, gain: 0.6, key: 'gblack', plain: true }),
     granite_red: bakedStone(null, { color: 0xb58d82, roughness: 0.42, gain: 0.5, key: 'gred', plain: true }),
     granite_grey: bakedStone(null, { color: 0x6d6d70, roughness: 0.34, gain: 0.55, key: 'ggrey', plain: true }),
@@ -137,6 +141,7 @@ export function placeModel(model, { position, rotationY = 0, mats, group, collid
   }
   group.add(root); root.updateMatrixWorld(true);
   root.traverse(n => { if (n.isMesh && n.userData.collidable) collidables.push(n); });
+  BAKED_ZONES.push(new THREE.Box3().setFromObject(root).expandByScalar(0.5));
   const anchors = {};
   for (const n of anchorNodes) anchors[n.name] = n.getWorldPosition(new THREE.Vector3());
   for (const [k, name, blurb, radius] of pois) {

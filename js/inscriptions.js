@@ -116,13 +116,19 @@ export function inscriptionTexture(key, wM, hM) {
     for (let x = W * 0.03; x < W * 0.97; x += ppm * 0.09) line(x, H * 0.04, x, H * 0.07);
   }
   spec.rows.forEach((row, r) => {
-    const y0 = bandY + r * bandH, size = bandH * 0.7, mid = y0 + bandH / 2;
+    let y0 = bandY + r * bandH, size = bandH * 0.7, mid = y0 + bandH / 2;
     if (spec.band || spec.rows.length > 1) { line(W * 0.02, y0, W * 0.98, y0); line(W * 0.02, y0 + bandH, W * 0.98, y0 + bandH); }
-    c.font = `${size}px "GizaGlyphs", "Noto Sans Egyptian Hieroglyphs", serif`;
-    c.textBaseline = 'middle';
-    // measure, then centre the row
-    const gap = size * 0.35;
-    const widths = row.map(it => typeof it === 'string' ? c.measureText(it).width : Math.max(size * 1.6, c.measureText(it.cartouche).width + size * 0.7));
+    // measure; shrink the signs if the row would not fit its panel; then centre
+    let gap, widths, total;
+    for (let pass = 0; pass < 2; pass++) {
+      c.font = `${size}px "GizaGlyphs", "Noto Sans Egyptian Hieroglyphs", serif`;
+      c.textBaseline = 'middle';
+      gap = size * 0.35;
+      widths = row.map(it => typeof it === 'string' ? c.measureText(it).width : Math.max(size * 1.6, c.measureText(it.cartouche).width + size * 0.7));
+      total = widths.reduce((a, b) => a + b + gap, -gap);
+      if (total <= W * 0.92) break;
+      size *= W * 0.92 / total;
+    }
     let x = Math.max(W * 0.03, (W - widths.reduce((a, b) => a + b + gap, -gap)) / 2);
     row.forEach((it, i) => {
       const w = widths[i];
