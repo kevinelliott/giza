@@ -899,8 +899,8 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   // and piers, the valley temple's antechamber, T-shaped hall of sixteen
   // granite pillars, magazines and the passage out to the causeway.
   buildTemplePlan(mats, collidables, group, SPHINX.floorY);
-  { const fl = new THREE.Mesh(new THREE.BoxGeometry(46, 0.1, 44), new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.35 }));
-    fl.position.set(kv.x, SPHINX.floorY + 0.06, kv.z); fl.receiveShadow = true; group.add(fl); }      // alabaster paving
+  { const fl = new THREE.Mesh(new THREE.BoxGeometry(38, 0.1, 40), new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.35 }));
+    fl.position.set(kv.x - 4, SPHINX.floorY + 0.06, kv.z + 2.5); fl.receiveShadow = true; group.add(fl); }      // alabaster paving
   landmarks.push({ name: SPHINX_TEMPLE.name, blurb: SPHINX_TEMPLE.blurb, radius: 30,
     pos: { x: st.x, y: SPHINX_TEMPLE.baseY + 4, z: st.z } });
   landmarks.push({ name: KHAFRE_VALLEY.name, blurb: KHAFRE_VALLEY.blurb, radius: 34,

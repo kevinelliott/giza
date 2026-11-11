@@ -106,8 +106,17 @@ for p in camp.data.polygons:
 solids, deco = [], []
 # ---- Great Step + modern wooden steps up it --------------------------------
 solids.append(G.box_obj('step', 'limestone', -1.03, 1.03, Y(R + 0.02), Y(R - STEP), (R - STEP) * TAN - 0.6, TOP))
-for i, (ds, dz) in enumerate([(0.75, 0.52), (0.38, 0.26)]):
-    solids.append(G.box_obj('wstep', 'wood', -0.5, 0.5, Y(R - STEP), Y(R - STEP - ds), (R - STEP - ds) * TAN - 0.3, TOP - dz))
+# a wooden ramp with cleats up the Great Step (the gallery floor is already
+# at 26.5 deg, so steps short enough to climb would never reach the top)
+RAMP = 2.4
+bm = bmesh.new()
+G.prism(bm, [(-0.5, -0.4), (0.5, -0.4), (0.5, 0.0), (-0.5, 0.0)], Y(R - STEP + 0.02), Y(R - STEP - RAMP), TOP, (R - STEP - RAMP) * TAN + 0.02)
+solids.append(G.obj(bm, 'wramp', 'wood'))
+bm = bmesh.new()
+for k in range(1, 8):
+    s_ = R - STEP - RAMP + k * RAMP / 8; z_ = (R - STEP - RAMP) * TAN + 0.02 + (TOP - (R - STEP - RAMP) * TAN) * k / 8
+    G.box(bm, -0.5, 0.5, Y(s_ + 0.03), Y(s_ - 0.03), z_ - 0.02, z_ + 0.035)
+deco.append(G.obj(bm, 'deco_rampcleats', 'wood'))
 
 # ---- ramp slots (27 each side) and the modern handrails -------------------
 bm = bmesh.new()

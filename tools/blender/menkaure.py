@@ -87,7 +87,7 @@ for p in room.data.polygons:
     if c.x < BX1 + 0.02 and c.z < LF + 3.6 and BY0 - 0.1 < c.y < BY1 + 0.1: p.material_index = 2      # granite burial chamber
     elif c.y > YA + 14 and abs(c.x) < 0.7: p.material_index = 2                                       # granite-lined part of the descent
     elif PY0 - 0.02 < c.y < PY1 + 0.02 and abs(c.x) < 1.6 and c.z < F + 2.7 and c.y < YA + 0.1: p.material_index = 1
-    elif c.y > UY1 + 5.6 and c.z > F + 2.9: p.material_index = 3                                      # the blind passage runs off into the dark
+    elif UY1 + 5.6 < c.y < UY1 + 6.2 and abs(c.x) < 0.6 and c.z > F + 2.9: p.material_index = 3                                      # the blind passage runs off into the dark
     else: p.material_index = 0
     p.use_smooth = False
 

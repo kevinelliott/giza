@@ -1070,7 +1070,7 @@ function setStatus(t) {
 
 // Expose a small hook for debugging / automated screenshots.
 window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
-  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, SPHINX, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
+  inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, SPHINX, PYRAMIDS, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
 // Apply saved settings, hide the loader, and start.

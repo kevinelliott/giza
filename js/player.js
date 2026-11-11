@@ -177,12 +177,7 @@ export class Player {
     const startX = this.position.x, startY = this.position.y, startZ = this.position.z;
     this.position.addScaledVector(move, delta);
     corr = this._depen();
-    const n = this._v1.set(corr.x, 0, corr.z);
-    if (n.lengthSq() > 1e-9) {
-      n.normalize();
-      const into = this.vXZ.dot(n);
-      if (into < 0) this.vXZ.addScaledVector(n, -into);
-    }
+    const wallX = corr.x, wallY = corr.y, wallZ = corr.z;
 
     // Auto step-up for small vertical ledges/curbs the slope projection can't
     // climb: retry the move lifted by STEP_HEIGHT, then settle back down.
@@ -202,14 +197,42 @@ export class Player {
       else this.position.set(sx, sy, sz);
     }
 
+    // (done after the step-up attempt, so a kerb that can be stepped over
+    // does not first rob the walk of the speed it needs to get onto it)
+    const n = this._v1.set(wallX, 0, wallZ);
+    // Only a wall-like contact (push-out mostly sideways) stops the walk. A
+    // sloping floor also pushes back a little as it lifts the capsule, and
+    // must not kill the speed — or finely tessellated ramps cannot be climbed.
+    if (n.lengthSq() > 1e-9 && n.lengthSq() > wallY * wallY && !stepped) {
+      n.normalize();
+      const into = this.vXZ.dot(n);
+      if (into < 0) this.vXZ.addScaledVector(n, -into);
+    }
+
+
     // Ground snap via a downward ray: keeps us glued to down-slopes, stairs and
     // convex crests instead of launching — without disturbing X/Z. Skipped on a
     // frame we just stepped UP, so the snap can't drag us back off the step.
-    if (this.onGround && this.velocity.y <= 0 && !stepped) {
+    // ...and on a sub-step where the geometry ahead has just lifted us (the
+    // floor steepening, a ramp starting): snapping back to the floor under
+    // the feet would undo that lift every frame and we would never climb.
+    if (this.onGround && this.velocity.y <= 0 && !stepped && wallY <= 1e-4) {
       this._ray.origin.set(this.position.x, this.position.y + this.radius + 0.15, this.position.z);
       this._ray.direction.set(0, -1, 0);
       const hit = this.collider.geometry.boundsTree.raycastFirst(this._ray, THREE.DoubleSide);
-      if (hit && hit.distance <= this.radius + 0.15 + STEP_HEIGHT) this.position.y = hit.point.y;
+      if (hit && hit.distance <= this.radius + 0.15 + STEP_HEIGHT) {
+        // Put the feet on the surface, then lift straight up until the capsule's
+        // round bottom clears the slope. (Letting the push-out move us along
+        // the surface normal instead would slide us back down every frame —
+        // on a steep ramp, faster than we can walk up it.)
+        const ox = this.position.x, oz = this.position.z;
+        this.position.y = hit.point.y;
+        const c = this._depen();
+        if (c.y > 1e-6) {
+          this.position.x = ox; this.position.z = oz;
+          this.position.y = hit.point.y + Math.min(0.3, c.lengthSq() / c.y);
+        }
+      }
     }
 
     this.speedXZ = Math.hypot(this.vXZ.x, this.vXZ.z);
