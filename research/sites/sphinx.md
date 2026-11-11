@@ -19,7 +19,8 @@ Model: `js/sphinx.js` (signed-distance sculpt). Enclosure walls: displaced rock.
 ## Temples — done from a published plan
 - `tools/geo/temple_plans.py` rasterises "Kahfre valley sphinx.svg" (HoremWeb, Wikimedia Commons, **public domain**, after Lehner and Verner; copy in `research/plans/`) into a 0.4 m grid of solid cells (`js/templedata.js`), from which the game builds every wall, pier and pillar of **Khafre's valley temple** (two east doorways, antechamber, T-shaped hall with 16 pillars, magazines, the passage to the causeway, the long south room) and the **Sphinx Temple** (court with piers, east and west sanctuaries, north and south colonnades, two east doorways).
 - Scale and position come from the Sphinx drawn in the same plan (73.5 m = 850 px). Cross-check: the plan puts the valley temple's centre at 395.3 E / 490.6 S and the Sphinx Temple's at 390.8 E / 438.1 S; the OSM footprints say 395.1 / 492.0 and 392.9 / 437.1 — agreement within ~2 m.
-- Free-standing pieces under 12 m² are treated as pillars/piers (lower, granite). Heights are estimates: valley temple walls 7.5 m, Sphinx Temple walls 4.6 m, pillars 4.1 m.
+- **Valley temple heights and pillars are Petrie's** (*Pyramids and Temples of Gizeh* ch. 14, "The Granite Temple"): pillars are granite monoliths 41 in (1.04 m) square and 174.2 in (4.425 m) high; the two at the junction of the hall's arms are 58 in (1.47 m) wide; beams 41 in square over the double colonnade and 47.8–48.4 in deep over the single one, making the colonnades 222.4 in (5.65 m) high; spans 128 in (3.251 m) and 145 in (3.683 m). The sixteen pillars are placed at those spacings (the plan draws them evenly, ~8 % closer) and carry beams. Walls stand 6.2 m — the level of the hall roof, roughly as preserved. Petrie reconstructs the whole as ~140 ft square and 40 ft high with an open court on the roof (not built: the game shows the ruin).
+- Grid is now 0.25 m. Sphinx Temple wall (4.6 m) and pier (4.4 m) heights are still estimates — no measured source found (Lehner's 1992 Sphinx paper is on Harvard's media server, which did not respond).
 - Khafre's causeway now ends at the valley temple's north-west corner, where the plan shows it entering.
 - Amenhotep II temple: ~22 m square, rotated 33° (satellite). Interior walls not traced.
 
@@ -27,6 +28,7 @@ Model: `js/sphinx.js` (signed-distance sculpt). Enclosure walls: displaced rock.
 
 - Amenhotep II temple interior walls (visible in the imagery) — trace.
 - Valley temple: the 23 statue emplacements, the roof terrace and stair, wall casing detail (granite inside and out, alabaster floor now covers the whole interior).
-- Temple wall heights per room; 0.4 m grid makes the diagonal causeway passage stepped.
+- Valley temple: the higher eastern hall with its statue recesses (80.9 and 85.5 in wide), the six loculi (three recesses with granite shelves), the alabaster ramp to the roof — rooms exist in plan but all at one height.
+- Sphinx Temple heights.
 - Sphinx face: match photographs (eyes, lips, nemes stripes, remaining paint on the cheek). Not yet compared against photos.
 - The enclosure's real shape: the cleared area extends ~75 m north of the body inside modern retaining walls (satellite); the game pit is a ±27 m rectangle.

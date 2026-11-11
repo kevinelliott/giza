@@ -28,11 +28,11 @@ text not).
 | Serapeum of Saqqara (Greater Vaults) | schematic plan; sizes done | **Blender**, done (first pass) | 4 inscribed boxes: 2 composed, 2 placeholder | [serapeum](sites/serapeum.md) |
 | Great Pyramid of Khufu | done (survey) | **Blender**: Grand Gallery, antechamber, King's Chamber, Campbell's Chamber; lower passages procedural | Campbell's graffiti: 2 attested, 1 composed | [khufu](sites/khufu.md) |
 | Pyramid of Khafre | done (survey) | procedural; interior schematic | todo | [khafre](sites/khafre.md) |
-| Pyramid of Menkaure | done (survey) | **Blender**: whole substructure incl. floor ramp, vaulted burial chamber, six-niche room | panelled chamber: attested niche count | [menkaure](sites/menkaure.md) |
+| Pyramid of Menkaure | done (survey) | **Blender**, to Petrie's measurements (true-size passages; lower-apartment depth still assumed) | panelled chamber: attested niche count | [menkaure](sites/menkaure.md) |
 | Great Sphinx + enclosure | done (map + satellite check) | sculpted SDF; partial | **Dream Stele done** (Lepsius' record of the real text) | [sphinx](sites/sphinx.md) |
-| Sphinx Temple, Khafre Valley Temple | done (plan agrees with OSM within 2 m) | **built from the published plan** (0.4 m grid) | todo (statue emplacements) | [sphinx](sites/sphinx.md) |
+| Sphinx Temple, Khafre Valley Temple | done (plan agrees with OSM within 2 m) | **built from the published plan** (0.25 m grid); valley-temple pillars, beams and heights from Petrie | todo (statue emplacements) | [sphinx](sites/sphinx.md) |
 | Amenhotep II temple | done (satellite) | outline only | todo | [sphinx](sites/sphinx.md) |
-| Tomb of Meresankh III | plan done (Reisner) | **Blender**; lofted statues | 5 photographs on walls, **positions verified** against the excavation report; architrave composed | [meresankh](sites/meresankh.md) |
+| Tomb of Meresankh III | measured (excavation report) | **Blender**; chapel, burial pit and chamber, sarcophagus | 8 photographs on walls, **positions verified** against the excavation report; architrave composed | [meresankh](sites/meresankh.md) |
 | Eastern & Western cemeteries, Central Field | footprints done (OSM) | generic mastabas | todo (Meresankh III, Hemiunu, Qar, Idu…) | [cemeteries](sites/cemeteries.md) |
 | Queens' pyramids, Khentkaus I, satellite pyramids | done (map) | procedural | todo | [minor-monuments](sites/minor-monuments.md) |
 | Workers' town, Wall of the Crow, workers' cemetery | partial | schematic | n/a | [minor-monuments](sites/minor-monuments.md) |
@@ -58,6 +58,7 @@ text not).
 - Richard Mortel, photographs of the tomb of Meresankh III (CC BY 2.0, Wikimedia Commons) — four used as textures; all 30 reviewed.
 - Wikipedia: *Pyramid of Menkaure*, *Dream Stele*, *Tomb of Meresankh III* (wikitext, 2026-11-11).
 
+- Petrie, *The Pyramids and Temples of Gizeh* (1883), full text at ronaldbirdsall.com/gizeh/petrie/ — ch. 11 (inside of the Third Pyramid) and ch. 14 (the Granite Temple) used; chs. 6–9 cover the Great and Second Pyramids' interiors in the same detail and are the next thing to mine.
 - Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974), PDF from gizapyramids.org — wall-by-wall description.
 - "Kahfre valley sphinx.svg" (HoremWeb, public domain, after Lehner & Verner) — temple plans.
 - Lepsius, *Denkmäler* III Bl. 68, NYPL scan (public domain) — Dream Stele.

@@ -2,17 +2,26 @@
 
 **Model:** `tools/blender/meresankh.py` → `assets/models/meresankh.glb`. Placed under its mastaba at 341 m E, 156 m S of Khufu (OSM place point); reached by fast travel (its stair ends at a lit doorway — not yet joined to the street above).
 
-## Done
+## Done — measured from the excavation report
 
-| Item | Value | Source |
+All from Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974), text and Plans C–F:
+
+| Item | Report | Built |
 | --- | --- | --- |
-| Plan: three rooms (a main, b west/offering, c north) + shaft | a 7.1 × 3.4 m; c 2.7 × 4.7 m; b 5.3 × 2.7 m; two pillars between a and c; pillared wall between a and b; entrance in the east wall near the south end | Reisner, *History of the Giza Necropolis* I (1942), plan + section, scaled off its 5 m bar (Commons `MeresankhIII G7530.jpg`) |
-| Heights | a, b 2.6 m; c 2.1 m | same section |
-| Rock-cut chapel ~2 m below street level | — | Wikipedia *Tomb of Meresankh III* (Flentye 2006) |
-| North wall of c: ten standing women under an inscribed architrave, graded in height, smaller and worn at the west end | modelled as 10 engaged figures | photo 64/65 |
-| West room: niches with pairs of standing women, false door between | 2 niches × 2 figures | photos 67, 69, 70 |
-| Ceilings painted red to imitate granite; modern plank floor, timber rails, floor tubes | materials/fittings | photos 55, 64, 70 |
-| Burial shaft in room b (modern stair inside) | pit with grating | plan; photo 68 |
+| Main room | "7.10 x 3.35 m. and 2.60 m. high" | same |
+| Entrance | in the southern part of the east wall; wall south of it 1.60 m, north of it 4.24 m | door 1.26 m wide, 1.60 m from the SE corner |
+| North wall | 3.35 m; two pillars, three openings (the side ones were once blocked) | pillars at 1.05 and 2.4 m from the west wall (Reisner's plan); all three open, as today |
+| West wall | 7.57 m; two doorways near the centre with a pillar between | doorways 2.30–3.50 and 4.23–5.20 m from the south (plan) |
+| South wall | 3.33 m; decoration extends 1.33 m down from the ceiling; three niches at the base: A 50 × 77 cm (34 deep), B 40 × 63.5 (32), C 75 × 37.2 (32) | niches at those sizes; A and B each hold one figure "in scribal position", C four |
+| Offering (west) room | 5.45 × 2.62 m, 2.35–2.22 m high | 5.45 × 2.62 × 2.3 |
+| Its west wall, south→north | palace-facade panel 1.13 m; niche 1.13 m wide, 20 cm deep, two standing statues; false door; niche with two statues; palace-facade panel | as described (panels drawn) |
+| Burial pit | ~2.08 m square, 5.13 m deep; canopic pit 70 cm square, 48 cm deep in its SE corner | same |
+| Burial chamber | north of the pit; 5.70 m long, 2.97–3.30 m wide, 1.97 m high, floor 32 cm below the pit floor | 5.70 × 3.1 × 1.97 |
+| Sarcophagus | black granite, 2.16 × 0.87 m, 0.795 m high; lid 0.175 m, 2.35 m with lugs; palace-facade panelling, 6 panels on the sides; near the west wall, lid propped up | same; panelling drawn, rim text composed |
+| North room | (no dimensions in the text) | 2.7 × 4.7 m, 2.1 m high, scaled from Reisner's plan |
+| Ten statues | "ten female statues engaged in the north wall with a single line of text above them" | ten lofted figures graded as in photo 64 |
+
+The modern timber stair that winds down the burial pit (photo 68) is shown but is not walkable — the burial chamber has its own fast-travel entry.
 
 **Wall positions are now verified** against the excavation report — Dunham & Simpson, *The Mastaba of Queen Mersyankh III* (Giza Mastabas 1, 1974; PDF at gizapyramids.org, text extracted 2026-11-11), "Main Chamber" pp. 4–5:
 
@@ -27,26 +36,30 @@
 
 | Texture | Photo | Shows | Placed | Verified |
 | --- | --- | --- | --- | --- |
-| `mer_pillar.jpg` | (55) | the queen, hand to chest, bright painted signs above | south face of the west pillar on the north wall | ✔ report (which of the two pillars is not established) |
+| `mer_pillar.jpg` | (55) | the queen facing left, short wig, hand on breast, four columns of text | south face of the **east** pillar of the north wall | ✔ report: "East Pillar: standing figure of Mersyankh, facing left… short wig… right hand on her breast… inscription in four columns" |
+| `mer_wpillar.jpg` | (72) | the queen's head facing right, four columns of painted signs | top of the **west** pillar of the north wall | ✔ report: "West Pillar: … facing right… four short columns" (only the head and text are in the photo) |
 | `mer_west.jpg` | (57) | painted hieroglyph band on yellow | lintel over the north-wall pillars | ✔ visible there in photo 55 |
 | `mer_north.jpg` | (54) | Hetepheres II (yellow wig, pointed robe) and Meresankh | west wall of the main room, north end | ✔ report (Wikipedia's caption "north wall" is loose) |
 | `mer_east.jpg` | (62) | registers of craftsmen | east wall, north of the entrance, lower part | ✔ report (exact extent along the wall estimated) |
 | `mer_kawab.jpg` | (56) | Kawab, striding | east wall, north end, full height | ✔ report + caption |
+| `mer_jamb.jpg` | (47) | the queen with a lotus; a man presenting an open scroll; door drum above | south jamb of the entrance | ✔ report: Khemetnu presenting the document is on the south jamb (which jamb the photo shows is inferred from that) |
+| `mer_list.jpg` | (71) | registers of incised text | south wall of the offering room | ◐ report puts "a large offering list" there; that photo 71 is that list is an identification by content |
 
-All 30 photos of the series (45–74) were looked over as a contact sheet on 2026-11-11. Not yet used: 47–51 (entrance jamb reliefs: Khemetnu presenting the document, animals), 52–53 (red figures in registers), 58–61 (more painted bands), 63 (as 62), 66 (painted corner), 71 (incised text wall), 72 (painted head + signs), 73–74 (burial chamber).
+All 30 photos of the series (45–74) were looked over as a contact sheet on 2026-11-11. Not yet used: 48–51 (details of the entrance jambs), 52–53 (red figures in registers), 58–61 (more painted bands), 63 (as 62), 66 (painted corner), 73–74 (burial chamber; viewed for its rough rock finish), 68 (the pit stair; viewed).
 
-**Statues:** now lofted figures (sheath dress, arms at the sides, tripartite wig framing the face), ten in the north room graded in height as in photo 64, two pairs in the west room's niches, and three niches in the south wall (report: "three statue niches"; group sizes 1 + 1 + 2 are a guess — plate IX would settle it). They are generic women, not portraits.
+**Statues:** lofted figures. North room: ten women. West room: two pairs in the west wall's niches (the report notes the south pair embrace and the north pair hold hands — not modelled). South wall: squatting scribes at the niche sizes above. Generic figures, not portraits.
 
 ## Inscriptions
 
 | Panel | Status | Notes |
 | --- | --- | --- |
+| Sarcophagus rim | composed | "king's daughter, king's wife… given by her mother" in stock writings; the real texts are transcribed in the report (fig. 14) but not copied sign for sign. |
+| Palace-facade panels (west room, sarcophagus) | attested | pattern only. |
 | Architrave over the ten statues | composed | Her titles ("king's daughter of his body, king's wife, Meresankh") in standard writings; the real line is longer — visible in photo 64 but not transcribed. |
 
 ## Todo
 
 - Texture the remaining walls from the report's figures 4–12 (line drawings of every wall, in the same PDF, pp. after the plates) — these are the authoritative layout; the PDF's plates could be rendered with `pdftoppm` and used directly. South wall registers, west wall false door and palace-facade doors, the west room's four walls.
 - Harvard's Digital Giza has the same drawings as images (drawings 50829, 50836, 50837…), but its image server refuses automated downloads — use the PDF.
-- Burial chamber (photos 73–74) and the black granite sarcophagus (now in Cairo, JE 54935).
 - The surface chapel of mastaba G 7530-7540 and the real entrance stair.
 - Statue detail: individual faces, wigs and the smaller girls' proportions (the report identifies the ten as Hetepheres II, Meresankh and daughters).
