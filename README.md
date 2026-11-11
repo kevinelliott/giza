@@ -113,6 +113,14 @@ modified Copernicus Sentinel data 2025. Copernicus GLO-30 DEM © DLR e.V.
 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under
 COPERNICUS by the European Union and ESA.
 
+## Native build (Godot)
+
+A compiled desktop version is under way in [`godot/`](godot/README.md): the
+same Blender models and data in the Godot 4.5 engine, exporting to macOS,
+Windows and Linux. Its first slice covers the four Blender-built interiors;
+the open plateau is still web-only. The "Native builds" GitHub Action
+produces the downloads.
+
 ## Blender models, inscriptions and the research tracker
 
 - **Blender pipeline.** Sites that deserve real modelling are built by Blender

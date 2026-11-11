@@ -8,3 +8,5 @@ tools/geo/cache/
 _*.mjs
 _*.html
 __pycache__/
+godot/.godot/
+build/
