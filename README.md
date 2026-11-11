@@ -115,10 +115,10 @@ COPERNICUS by the European Union and ESA.
 
 ## Native build (Godot)
 
-A compiled desktop version is under way in [`godot/`](godot/README.md): the
-same Blender models and data in the Godot 4.5 engine, exporting to macOS,
-Windows and Linux. Its first slice covers the four Blender-built interiors;
-the open plateau is still web-only. The "Native builds" GitHub Action
+A compiled desktop version is in [`godot/`](godot/README.md): the same
+plateau, Blender models and data in the Godot 4.5 engine, exporting to macOS,
+Windows and Linux. It has the whole plateau and the interiors; the moving
+life, quest and minimap are still web-only. The "Native builds" GitHub Action
 produces the downloads.
 
 ## Blender models, inscriptions and the research tracker

@@ -70,7 +70,6 @@ func _unhandled_input(ev: InputEvent) -> void:
 		pitch = clampf(pitch - ev.relative.y * 0.0022, -1.5, 1.5)
 		_apply_look()
 	elif ev.is_action_pressed("toggle_fly"): fly = not fly
-	elif ev.is_action_pressed("toggle_lamp"): lamp.visible = not lamp.visible
 
 
 func _can_stand() -> bool:

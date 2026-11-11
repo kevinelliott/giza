@@ -122,14 +122,14 @@ export function buildTraffic(group, camelMat) {
   routes.forEach((r, i) => {
     const nCar = Math.max(1, Math.round(r.len / 700)), nCam = Math.max(1, Math.round(r.len / 900));
     for (let k = 0; k < nCar; k++) {
-      const g = buildCarriage(carriageColors[(i + k) % carriageColors.length]); group.add(g);
+      const g = buildCarriage(carriageColors[(i + k) % carriageColors.length]); g.userData.dynamic = true; group.add(g);
       movers.push({ g, r, s: rnd() * r.len * 2, speed: 3.2 + rnd() * 1.4, type: 'carriage', ph: rnd() * 6 });
     }
     for (let k = 0; k < nCam; k++) {
       const c = buildCamel(camelMat, 0, 0, 0, { saddle: [0xb03030, 0x2d5aa0, 0xd8a030, 0x3f7f3f][k % 4] });
       const rider = figure([0xf2f2f2, 0x2b4f8c, 0xc23b2f, 0xe8c547][(i + k) % 4], 0xe6c2a0, true); rider.position.set(-0.2, 3.62, 0); c.add(rider);
       const guide = figure(0x3d5a7a, 0x8d5f3f, false); guide.position.set(3.6, 0, 0.9); c.add(guide);   // a cameleer leads it
-      group.add(c);
+      c.userData.dynamic = true; group.add(c);
       movers.push({ g: c, r, s: rnd() * r.len * 2, speed: 1.1 + rnd() * 0.3, type: 'camel', ph: rnd() * 6 });
     }
   });

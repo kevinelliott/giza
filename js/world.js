@@ -87,7 +87,7 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
   if (p.casing === 'cap') {
     const cap = new THREE.Mesh(
       buildPyramidGeometry(p.base, p.height, { yRange: [p.height * 0.78, p.height], scale: 1.004 }),
-      Object.assign(mats.casing.clone(), { side: THREE.BackSide }));     // faces wind inward (see below)
+      Object.assign(mats.casing.clone(), { side: THREE.BackSide, name: 'casing' }));     // faces wind inward (see below)
     cap.position.copy(mesh.position);
     cap.userData.collidable = true; cap.castShadow = true;
     group.add(cap); collidables.push(cap);
@@ -98,7 +98,7 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
       // weathered red Aswan granite: matte, and without the normal map (the
       // smooth band geometry has no usable tangent frame for it)
       // (its faces wind inward, so render the back side, whose flipped normals face out)
-      new THREE.MeshStandardMaterial({ map: mats.granite.map, color: 0xffffff, roughness: 0.85, envMapIntensity: 0.15, side: THREE.BackSide }));
+      new THREE.MeshStandardMaterial({ name: 'granite_band', map: mats.granite.map, color: 0xffffff, roughness: 0.85, envMapIntensity: 0.15, side: THREE.BackSide }));
     band.position.copy(mesh.position);
     band.userData.collidable = true; band.castShadow = true;
     group.add(band); collidables.push(band);
@@ -731,7 +731,7 @@ function buildBuses(collidables, group) {
   }
   if (!geoms.length) return;
   const mesh = new THREE.Mesh(mergeGeometries(geoms, false),
-    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.2, envMapIntensity: 0.8 }));
+    new THREE.MeshStandardMaterial({ name: 'vcol', vertexColors: true, roughness: 0.35, metalness: 0.2, envMapIntensity: 0.8 }));
   mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData.collidable = true;
   group.add(mesh); collidables.push(mesh);
 }
@@ -755,6 +755,7 @@ function buildBirds(group) {
       sp: 0.05 + Math.random() * 0.08, ph: Math.random() * 7
     });
   }
+  flock.userData.dynamic = true;
   group.add(flock);
   return t => {
     for (const b of birds) {
@@ -825,7 +826,10 @@ function buildSky(scene, renderer) {
   return { sun, sky };
 }
 
-export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) {
+// `assumeModels`: build as if the Blender models were present (the procedural
+// interiors stop where they take over) without placing them — used when
+// exporting the plateau for the native build, which loads them itself.
+export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeModels = false } = {}) {
   const group = new THREE.Group();
   scene.add(group);
   const collidables = [];
@@ -885,7 +889,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   const defs = {};
   for (const key of ['khufu', 'khafre', 'menkaure']) {
     const p = PYRAMIDS[key];
-    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && !!models.khufuUpper, sub: key === 'menkaure' && !!models.menkaure });
+    const def = buildPyramid(p, mats, collidables, group, { upper: key === 'khufu' && (assumeModels || !!models.khufuUpper), sub: key === 'menkaure' && (assumeModels || !!models.menkaure) });
     defs[key] = def;
     landmarks.push({ name: p.name, blurb: p.blurb, pos: pyrApex(p), radius: 130 });
     // chamber landmarks
@@ -1073,7 +1077,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {} } = {}) 
   // A small camel caravan plodding a loop on the open desert south of
   // Khafre (not collidable — it moves).
   const caravan = [];
-  for (let i = 0; i < 4; i++) { const c = buildCamel(deco.camel, 0, 0, 0); group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
+  for (let i = 0; i < 4; i++) { const c = buildCamel(deco.camel, 0, 0, 0); c.userData.dynamic = true; group.add(c); caravan.push({ g: c, off: i * 8.5, ph: i * 1.3 }); }
   const cc = { x: -180, z: 640 }, cr = 55;
 
   // Blender-built sites (tools/blender/ -> assets/models/)

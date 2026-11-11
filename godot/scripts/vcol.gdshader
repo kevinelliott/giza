@@ -1,0 +1,17 @@
+// Surfaces whose colour is painted per vertex (the Sphinx, quarried rock, buses).
+shader_type spatial;
+render_mode cull_disabled;
+uniform float roughness_value = 0.93;
+uniform float grain = 0.2;
+varying vec3 wp;
+float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+float noise3(vec3 p) {
+	vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+		mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	ALBEDO = COLOR.rgb * (1.0 - grain * 0.5 + grain * noise3(wp * 3.1));
+	ROUGHNESS = roughness_value;
+}
