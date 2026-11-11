@@ -106,7 +106,7 @@ export class Quest {
     // milestones
     if (!this.player.fly) {
       if (p.y > 137 && Math.hypot(p.x, p.z) < 14) this.award('summit');
-      if (Math.abs(p.x - 7) < 6 && Math.abs(p.y - 42.5) < 3 && Math.abs(p.z - (-19)) < 8) this.award('kings');
+      if (p.x > -4 && p.x < 9 && Math.abs(p.y - 42.5) < 3 && p.z > 17 && p.z < 25) this.award('kings');
       if (env.sphinx) this.award('sphinx');
       if (env.night && env.outdoors) this.award('night');
       if (env.storm && env.outdoors) this.award('storm');

@@ -154,6 +154,7 @@ for v in bm.verts:
     d = noise.noise(v.co * 0.9) * 0.22 + noise.noise(v.co * 2.7) * 0.08 + noise.noise(v.co * 0.25) * 0.25
     v.co += n * d * (0.25 + 0.75 * k)
 bm.normal_update()
+rock.data.materials.clear()
 rock.data.materials.append(M['rock']); rock.data.materials.append(M['masonry'])
 for f in bm.faces:
     c = f.calc_center_median()

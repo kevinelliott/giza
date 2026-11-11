@@ -105,6 +105,9 @@ and bakes it into `js/geodata.js` plus three images in `assets/geo/`.
   its base layer.
 
 Sources and licences are listed in [`tools/geo/README.md`](tools/geo/README.md).
+Wall photographs in the tomb of Meresankh III: Richard Mortel, CC BY 2.0
+(Wikimedia Commons). Dream Stele drawing: C. R. Lepsius, *Denkmäler* (1849),
+public domain. Hieroglyph font: Noto Sans Egyptian Hieroglyphs (SIL OFL).
 Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains
 modified Copernicus Sentinel data 2025. Copernicus GLO-30 DEM © DLR e.V.
 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under
@@ -121,6 +124,18 @@ COPERNICUS by the European Union and ESA.
   sunken vaulted chambers, lit by floor tubes as it is today, including the
   boxes of Amasis II, Cambyses II and Khabash and the scratched Ptolemaic
   box with its empty cartouches.
+- **Great Pyramid, upper chambers** (`khufu_upper.py`): the Grand Gallery
+  at true size (46.7 m, 8.6 m high, seven corbels, ramps with their 27 slot
+  pairs, the Great Step), the antechamber with its granite leaf, the King's
+  Chamber with the broken-cornered sarcophagus and shaft mouths, and
+  Campbell's Chamber with the builders' red graffiti of Khufu's name.
+- **Tomb of Meresankh III** (`meresankh.py`): the rock-cut chapel from
+  Reisner's plan, with the ten women carved along the north wall and real
+  photographs of its painted reliefs on the walls.
+- **Dream Stele**: carries Lepsius' 1849 record of the actual lunette and
+  text. **Menkaure** has his real substructure layout with the panelled
+  chamber. **Khafre's valley temple** has its T-shaped pillared hall, and the
+  **Sphinx Temple** its court.
 - **Hieroglyphs.** Inscriptions are drawn from real Unicode hieroglyphs
   (`js/inscriptions.js`, Noto Sans Egyptian Hieroglyphs, SIL OFL), written in
   Gardiner sign codes, each marked `attested`, `composed` (from a published

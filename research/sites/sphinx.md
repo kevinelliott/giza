@@ -12,11 +12,19 @@
 
 Model: `js/sphinx.js` (signed-distance sculpt). Enclosure walls: displaced rock.
 
+## Dream Stele — done
+- Granite, 3.6 m tall; the face shows **Lepsius' own record of the stele** (*Denkmäler aus Aegypten und Aethiopien*, 1849, public domain; Commons `Giseh Traumstele (Lepsius) 01.jpg`), converted to incised lines (`assets/textures/dream_stele.png`): the lunette with Thutmose IV offering to the Sphinx on its pedestal on both sides under the winged disc, and the 13+ preserved lines of text, broken away below exactly as on the stone. This is the real inscription, not a composition.
+- Only improvement left: a higher-resolution scan (the 1,400 px copy was used; Wikimedia throttled the larger one).
+
+## Temples — partial
+- Khafre Valley Temple: 44.6 m square, plan after Hölscher (from memory of the published plan, not traced): two east doorways, N–S antechamber, T-shaped hall with 6 + 10 granite pillars and architraves, NW passage to the causeway, alabaster floor. **Room sizes are estimates** — trace Hölscher 1912 pl. to fix. Statue pits and the 23 statue emplacements not modelled.
+- Sphinx Temple: court with piers, east vestibule with two doorways, west niche. Court size from the satellite view; pier count/positions schematic — trace Ricke 1970.
+- Amenhotep II temple: now ~22 m square, rotated 33° (satellite). Interior walls not traced.
+
 ## Todo
 
-- Amenhotep II temple: make it ~22 m square and rotate ~33° (satellite). Its interior walls are visible in the imagery and could be traced.
+- Amenhotep II temple interior walls (visible in the imagery) — trace.
 - Sphinx Temple interior: the satellite shows the open court with its pillar sockets and the two entrance corridors — trace the plan (Ricke 1970) instead of the current 6 × 2 pillar rows.
 - Khafre Valley Temple interior: T-shaped pillared hall, two entrances, statue pits (Hölscher 1912 plan). Currently a walled square with pillar rows.
-- Dream Stele of Thutmose IV: 3.6 m granite; lunette with the king offering to two sphinxes, 14+ lines of text. Text is published — transcribe the lunette at least. Currently a blank slab.
 - Sphinx face: match photographs (eyes, lips, nemes stripes, remaining paint on the cheek). Not yet compared against photos.
 - The enclosure's real shape: the cleared area extends ~75 m north of the body inside modern retaining walls (satellite); the game pit is a ±27 m rectangle.

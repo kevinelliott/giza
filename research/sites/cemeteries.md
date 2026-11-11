@@ -7,7 +7,7 @@
 ## Todo (nothing researched per tomb yet)
 - Heights are estimated from footprint size — no per-tomb source.
 - **Decorated tombs worth building properly** (all have published plans, photos and drawings in Harvard's Digital Giza, giza.fas.harvard.edu — reachable, not yet mined):
-  - Meresankh III (G 7530-7540): rock-cut chapel with ten engaged statues, painted reliefs — the best-preserved colour at Giza.
+  - Meresankh III — **started**, see [meresankh](meresankh.md).
   - Qar (G 7101) and Idu (G 7102): sunken courts, engaged statues, Idu's false door with the bust emerging.
   - Hemiunu (G 4000): the serdab; his statue is in Hildesheim.
   - Khufukhaf I (G 7130-7140), Kawab (G 7110-7120): chapel reliefs.

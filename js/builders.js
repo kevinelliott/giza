@@ -377,7 +377,7 @@ export function buildInterior(def, mats) {
     const doors = (def.doors || []).filter(d => d.chamberId === c.id).map(d => d.face);
     const room = buildRoom(c.center, c.sx, c.sy, c.sz, doors,
       { gabled: !!c.gabled, doorW: 2.2, doorH: 2.6 });
-    (c.id === 'king' ? graniteGeoms : stoneGeoms).push(room);
+    (c.id === 'king' || c.granite ? graniteGeoms : stoneGeoms).push(room);
     if (c.sarcophagus) {
       const sarc = buildSarcophagus({
         x: c.center.x + (c.sarcOffsetX || 0), y: c.center.y - c.sy / 2, z: c.center.z

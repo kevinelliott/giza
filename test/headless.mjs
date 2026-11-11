@@ -47,6 +47,13 @@ const { TELEPORTS, PYRAMIDS, SPHINX } = await import('../js/data.js');
   if (buf.readUInt32LE(0) !== 0x46546c67) throw new Error('serapeum.glb is not a GLB');
   const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
   const names = json.nodes.map(n => n.name);
+  for (const [file, needs] of [['khufu_upper.glb', ['tp_king', 'tp_campbell', 'poi_gallery', 'insc_campbell_khufu']], ['meresankh.glb', ['tp_meresankh', 'poi_statues', 'tex_mer_pillar']]]) {
+    const b = readFileSync(new URL('../assets/models/' + file, import.meta.url));
+    const j = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString('utf8'));
+    const nn = j.nodes.map(n => n.name);
+    for (const need of needs) if (!nn.includes(need)) throw new Error(file + ' is missing node ' + need);
+    console.log(file, 'OK —', j.meshes.length, 'meshes');
+  }
   for (const need of ['rock', 'spawn', 'insc_amasis_lid', 'insc_cambyses_lid', 'insc_khabash_lid', 'insc_ptolemaic_end', 'poi_entrance'])
     if (!names.includes(need)) throw new Error('serapeum.glb is missing node ' + need);
   const { INSCRIPTIONS } = await import('../js/inscriptions.js');

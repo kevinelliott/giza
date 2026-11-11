@@ -13,7 +13,7 @@
 // =====================================================================
 import * as THREE from 'three';
 
-const G = {"N5":"𓇳","W9":"𓎸","F34":"𓄣","N12":"𓇺","N11":"𓇹","F31":"𓄟","S29":"𓋴","G39":"𓅭","M23":"𓇓","X1":"𓏏","L2":"𓆤","D4":"𓁹","N35":"𓈖","I9":"𓆑","G17":"𓅓","Y5":"𓏠","W24":"𓏌","Z2":"𓏥","V28":"𓎛","Q3":"𓊪","E1":"𓃒","S34":"𓋹","X8":"𓏙","I10":"𓆓","N17":"𓇿","G43":"𓅱","V31":"𓎡","D58":"𓃀","Z4":"𓏭","V13":"𓍿","M17":"𓇋","Q1":"𓊨","Aa1":"𓐍","N37":"𓈙","M4":"𓆳","O50":"𓊗","Z1":"𓏤","M8":"𓆷","D21":"𓂋","U36":"𓍛","O4":"𓉔","G1":"𓄿","S43":"𓌃","R8":"𓊹","F35":"𓄤","N16":"𓇾","V30":"𓎟","N28":"𓈍","D28":"𓂓","R4":"𓊵","N14":"𓇼","O1":"𓉐","M12":"𓆼","D2":"𓁷","U33":"𓍘","G5":"𓅃","S38":"𓋾","N29":"𓈎"};
+const G = {"N5":"𓇳","W9":"𓎸","F34":"𓄣","N12":"𓇺","N11":"𓇹","F31":"𓄟","S29":"𓋴","G39":"𓅭","M23":"𓇓","X1":"𓏏","L2":"𓆤","D4":"𓁹","N35":"𓈖","I9":"𓆑","G17":"𓅓","Y5":"𓏠","W24":"𓏌","Z2":"𓏥","V28":"𓎛","Q3":"𓊪","E1":"𓃒","S34":"𓋹","X8":"𓏙","I10":"𓆓","N17":"𓇿","G43":"𓅱","V31":"𓎡","D58":"𓃀","Z4":"𓏭","V13":"𓍿","M17":"𓇋","Q1":"𓊨","Aa1":"𓐍","N37":"𓈙","M4":"𓆳","O50":"𓊗","Z1":"𓏤","M8":"𓆷","D21":"𓂋","U36":"𓍛","O4":"𓉔","G1":"𓄿","S43":"𓌃","R8":"𓊹","F35":"𓄤","N16":"𓇾","V30":"𓎟","N28":"𓈍","D28":"𓂓","R4":"𓊵","N14":"𓇼","O1":"𓉐","M12":"𓆼","D2":"𓁷","U33":"𓍘","G5":"𓅃","S38":"𓋾","N29":"𓈎","L1":"𓆣","G26":"𓅝","N27":"𓈌","E23":"𓃭","V20":"𓎆","D40":"𓂡","Aa20":"𓐢","U23":"𓍋","E10":"𓃝","A1":"𓀀","B1":"𓁐","G14":"𓅐","S42":"𓌂","M13":"𓇅","D46":"𓂧","A40":"𓀭","X2":"𓏐","W14":"𓎿","O29":"𓉻","G36":"𓅨","S3":"𓋔","N41":"𓈞","U6":"𓌸","F32":"𓄡"};
 const g = codes => codes.trim().split(/\s+/).map(c => { if (!G[c]) throw new Error('unknown sign ' + c); return G[c]; }).join('');
 const C = codes => ({ cartouche: g(codes) });          // a royal name in its ring
 
@@ -63,6 +63,24 @@ export const INSCRIPTIONS = {
   ptolemaic_side_b: { status: 'placeholder', style: 'scratched', ink: '#e6e2d6', panelling: 11, cornice: true, rows: [[g('O4 G1'), g(OSIRIS_APIS), { cartouche: '' }, { cartouche: '' }, g('O4 G1'), g(OSIRIS_APIS)]], band: true }
 };
 
+Object.assign(INSCRIPTIONS, {
+  // Great Pyramid — builders' graffiti in Campbell's Chamber (the topmost
+  // relieving chamber), daubed in red ochre at the quarry, so often sideways
+  // or upside-down. The cartouches are Khufu's two names.
+  campbell_khufu: { status: 'attested', style: 'painted', ink: '#9c3a22', rows: [[C('Aa1 G43 I9 G43')]] },
+  campbell_khnumkhuf: { status: 'attested', style: 'painted', ink: '#9c3a22', rows: [[C('W9 E10 Aa1 G43 I9 G43')]] },
+  // a work-gang name: "The gang, Friends of Khufu" (aprw smrw Khufu)
+  campbell_gang: { status: 'composed', style: 'painted', ink: '#9c3a22', rows: [[g('Aa20 D21 G43 A1 Z2'), g('S29 U23 D21 G43'), C('Aa1 G43 I9 G43')]] },
+  // Menkaure — the panelled antechamber: palace-facade niches cut in the
+  // rock and plastered, eleven on each long wall (Maragioglio & Rinaldi).
+  menkaure_panel_long: { status: 'attested', style: 'incised', ink: '#3d2f22', panelling: 11, rows: [] },
+  menkaure_panel_short: { status: 'placeholder', style: 'incised', ink: '#3d2f22', panelling: 5, rows: [] },
+  // Meresankh III — architrave over the ten statues (north wall): her
+  // titles. "King's daughter of his body, king's wife, Meresankh".
+  meresankh_architrave: { status: 'composed', style: 'incised', ink: '#5a4030',
+    rows: [[g('M23 X1 G39 X1 N35 F32 X1 I9'), g('M23 X1 N41 X1'), g('U6 D21 S29 S34 N35 Aa1')]] }
+});
+
 let fontReady = null;
 export function loadGlyphFont() {
   if (fontReady) return fontReady;
@@ -90,7 +108,8 @@ export function inscriptionTexture(key, wM, hM) {
   const line = (x0, y0, x1, y1) => { c.beginPath(); c.moveTo(x0 + jitter(), y0 + jitter()); c.lineTo(x1 + jitter(), y1 + jitter()); c.stroke(); };
 
   // text band near the top edge (single- or multi-row panels use the whole height)
-  const bandH = spec.band ? Math.min(H * 0.2, ppm * 0.42) : H / spec.rows.length;
+  const painted = spec.style === 'painted';
+  const bandH = spec.band ? Math.min(H * 0.2, ppm * 0.42) : H / Math.max(1, spec.rows.length);
   const bandY = spec.band ? H * 0.1 : 0;
   if (spec.cornice) {                                    // drawn cavetto cornice + torus above the band
     line(W * 0.02, H * 0.035, W * 0.98, H * 0.035); line(W * 0.02, H * 0.075, W * 0.98, H * 0.075);
@@ -120,6 +139,7 @@ export function inscriptionTexture(key, wM, hM) {
   });
   function drawText(t, x, y) {
     if (scratched) { c.lineWidth = lw * 0.9; c.strokeText(t, x, y); c.lineWidth = lw; }
+    else if (painted) { c.save(); c.globalAlpha = 0.82; c.fillText(t, x, y); c.restore(); }
     else {
       c.save(); c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillText(t, x + lw * 0.9, y + lw * 0.9); c.restore();   // cut shadow
       c.fillText(t, x, y);
@@ -127,11 +147,12 @@ export function inscriptionTexture(key, wM, hM) {
   }
   // palace-facade panelling below the band: nested vertical recesses
   if (spec.panelling) {
-    const top = bandY + bandH * spec.rows.length + H * 0.05, bot = H * 0.96, n = spec.panelling, pw = W * 0.94 / n;
+    const top = (spec.rows.length ? bandY + bandH * spec.rows.length : 0) + H * 0.05, bot = H * 0.96, n = spec.panelling, pw = W * 0.94 / n;
     for (let i = 0; i < n; i++) {
       const x0 = W * 0.03 + i * pw;
       for (let k = 0; k < 3; k++) {
         const ins = pw * (0.1 + k * 0.13), t = top + k * H * 0.035;
+        if (!scratched) { c.save(); c.fillStyle = 'rgba(15,9,4,0.16)'; c.fillRect(x0 + ins, t, pw - 2 * ins, bot - t); c.restore(); c.lineWidth = lw * 1.6; }
         c.strokeRect(x0 + ins, t, pw - 2 * ins, bot - t);
       }
     }

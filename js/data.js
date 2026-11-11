@@ -188,6 +188,102 @@ export const KHUFU_INTERIOR = {
   ]
 };
 
+// With the Blender-built upper chambers loaded (assets/models/khufu_upper.glb:
+// Grand Gallery, antechamber, King's Chamber, Campbell's Chamber) the
+// procedural interior stops at the foot of the gallery (J2) and the model
+// takes over from there.
+const TP_KING = { x: KINGC.x, y: KINGC.y + 0.3, z: KINGC.z };
+export const KHUFU_UPPER = {
+  origin: J2, tpKing: TP_KING, tpCampbell: { ...TP_KING },
+  pois: [
+    ['gallery', 'Grand Gallery',
+      'Grand Gallery — 46.7 m long and 8.6 m high, its walls stepping inward in seven corbels to a roof only ~1 m wide. ' +
+      'A 1 m channel runs between two ramps cut with 27 pairs of slots, whose purpose is still argued over.', 12],
+    ['antechamber', 'Antechamber',
+      'Antechamber — granite, with the "granite leaf" hanging across it and three slots that held portcullis slabs, ' +
+      'lowered to seal the King\'s Chamber. (The low passages either side are enlarged here; really 1.05 × 1.11 m.)', 3],
+    ['king', "King's Chamber",
+      "King's Chamber — 10.47 × 5.23 m and 5.85 m high, walled in 100 blocks of red Aswan granite, roofed by nine " +
+      'granite beams of up to ~80 tonnes. Two narrow shafts rise from the north and south walls.', 6],
+    ['sarcophagus', "Khufu's sarcophagus",
+      'A lidless granite coffer, 2.28 × 0.98 × 1.05 m — slightly wider than the passage, so it was set in place as the ' +
+      'chamber was built. One corner was broken away by early visitors.', 3],
+    ['campbell', "Campbell's Chamber",
+      'The topmost of five relieving chambers stacked above the King\'s Chamber, forced open with gunpowder by Howard ' +
+      'Vyse in 1837. Its gabled blocks carry builders\' red-ochre graffiti — including the cartouche of Khufu.', 6]
+  ]
+};
+export function khufuLowerInterior() {
+  const c0 = KHUFU_INTERIOR.corridors[0];
+  return {
+    ...KHUFU_INTERIOR,
+    corridors: [{ path: c0.path.slice(0, 6), w: [5, 5, 2.8, 2.6, 2.6, 1.6], h: [3.4, 3.4, 3.2, 3.2, 3.2, 2.4], wallFrom: 1 },
+      ...KHUFU_INTERIOR.corridors.slice(1)],
+    chambers: KHUFU_INTERIOR.chambers.filter(c => c.id !== 'king'),
+    doors: KHUFU_INTERIOR.doors.filter(d => d.chamberId !== 'king')
+  };
+}
+
+// ---- Menkaure's substructure -------------------------------------------
+// After Vyse & Perring and Maragioglio & Rinaldi (research/sites/menkaure.md):
+// entrance 4 m up the north face; a 31.7 m passage descending at 26 deg to
+// the PANELLED CHAMBER (3.63 x 3.16 m, palace-facade niches — the first
+// decoration inside any pyramid); a 12.6 m horizontal passage with three
+// portcullis slots; the large upper chamber (14.2 x 3.84 x 4.87 m, E-W);
+// and a ramp down west to the granite burial chamber (6.59 x 2.62 x 3.43 m).
+// Schematic: the ramp really starts in the middle of the upper chamber's
+// floor; the six-niche "cellar" is not built; passages are enlarged.
+const MK_HALF = 102.2 / 2, MK_H = 65;
+const mkDoor = { x: 0, y: 4, z: -(MK_HALF * (1 - 4 / MK_H)) };
+const mkA = { x: 0, y: 4 - 31.7 * Math.sin(26 * DEG), z: mkDoor.z + 31.7 * Math.cos(26 * DEG) };
+const mkU0 = mkA.z + 3.63 + 12.6, mkUc = mkU0 + 1.92;
+export const MENKAURE_INTERIOR = {
+  entrance: mkDoor,
+  rampBase: { x: 0, y: 0, z: -MK_HALF - 9 },
+  corridors: [
+    { path: [{ x: 0, y: 0, z: -MK_HALF - 9 }, mkDoor, mkA], w: [3, 2.2, 2.2], h: [3, 2.6, 2.6], wallFrom: 1 },
+    { path: [{ x: 0, y: mkA.y, z: mkA.z + 3.63 }, { x: 0, y: mkA.y, z: mkU0 }], w: 2.2, h: 2.6 },
+    { path: [{ x: -7.1, y: mkA.y, z: mkUc }, { x: -13.6, y: mkA.y - 3.4, z: mkUc }], w: 2.2, h: 2.6 }
+  ],
+  chambers: [
+    { id: 'menkaure-panelled', name: 'Menkaure — Panelled Chamber',
+      center: { x: 0, y: mkA.y + 1.3, z: mkA.z + 1.815 }, sx: 3.16, sy: 2.6, sz: 3.63, panelled: true,
+      blurb: 'Panelled Chamber — its rock walls are carved and plastered as a palace façade, eleven niches on each long ' +
+             'wall: the first decoration inside any pyramid since Djoser.' },
+    { id: 'menkaure-upper', name: 'Menkaure — Upper Chamber',
+      center: { x: 0, y: mkA.y + 2.435, z: mkUc }, sx: 14.2, sy: 4.87, sz: 3.84,
+      blurb: 'Upper Chamber — 14.2 × 3.84 m, the burial room of the first design. A ramp cut in its floor leads down ' +
+             'to the final burial chamber.' },
+    { id: 'menkaure-burial', name: 'Menkaure — Burial Chamber', granite: true,
+      center: { x: -14.91, y: mkA.y - 3.4 + 1.715, z: mkUc }, sx: 2.62, sy: 3.43, sz: 6.59,
+      blurb: 'Burial Chamber — lined with red granite under a roof of granite beams recut into a vault. The basalt ' +
+             'sarcophagus Vyse found here in 1837 was lost at sea in 1838 when the Beatrice sank off Spain.' }
+  ],
+  doors: [
+    { chamberId: 'menkaure-panelled', face: 'north' }, { chamberId: 'menkaure-panelled', face: 'south' },
+    { chamberId: 'menkaure-upper', face: 'north' }, { chamberId: 'menkaure-upper', face: 'west' },
+    { chamberId: 'menkaure-burial', face: 'east' }
+  ]
+};
+
+// ---- Tomb of Meresankh III (G 7530-sub), Eastern Cemetery ------------------
+// Blender model (tools/blender/meresankh.py) placed below its mastaba.
+export const MERESANKH = {
+  name: 'Tomb of Meresankh III', center: { x: 341.4, z: 156.1 },
+  tp: { x: 341.4, y: 1, z: 156.1, ground: true },
+  pois: [
+    ['chapel', 'Tomb of Meresankh III',
+      'The rock-cut chapel of Queen Meresankh III, granddaughter of Khufu and wife of Khafre, found by Reisner in 1927 ' +
+      'with its paint still bright. Her mother Hetepheres II gave her this tomb.', 5],
+    ['statues', 'The ten women',
+      'Ten women carved from the living rock along the north wall — Meresankh, her mother Hetepheres II and her ' +
+      'daughters — under an architrave naming the queen. Nothing quite like it survives in any other tomb.', 4],
+    ['offering', 'Offering room',
+      'The west room: statue niches, a false door, and the shaft down to the burial chamber where her black granite ' +
+      'sarcophagus (now in Cairo) was found.', 4]
+  ]
+};
+
 // ---- Simple interiors for Khafre & Menkaure -------------------------
 // A descending passage from the north base down to a burial chamber that
 // stays at/above the base level (so it never clips the terrain surface).
@@ -388,7 +484,8 @@ export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: G(-120, -215) },
   { label: 'Great Pyramid — base, north face', pos: G(OFF, ENT_Z - 25) },
   { label: 'Great Pyramid — original entrance', pos: { x: OFF, y: DOOR.y + 0.3, z: ENT_Z - 4 } },
-  { label: "Great Pyramid — King's Chamber", pos: { x: KINGC.x, y: KINGC.y + 0.3, z: KINGC.z } },
+  { label: "Great Pyramid — King's Chamber", pos: TP_KING },
+  { label: "Great Pyramid — Campbell's Chamber (relieving)", pos: KHUFU_UPPER.tpCampbell },
   { label: "Great Pyramid — Queen's Chamber", pos: { x: QUEEN.x, y: QUEEN.y + 0.3, z: QUEEN.z } },
   { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
   { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
@@ -406,6 +503,8 @@ export const TELEPORTS = [
   { label: 'Temple of Amenhotep II', pos: G(AMENHOTEP_TEMPLE.center.x - 6, AMENHOTEP_TEMPLE.center.z - 22) },
   { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
   { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) },
+  { label: 'Tomb of Meresankh III', pos: MERESANKH.tp },
+  { label: 'Pyramid of Menkaure — Panelled Chamber', pos: { x: P.menkaure.center.x, y: P.menkaure.baseY + MENKAURE_INTERIOR.chambers[0].center.y - 1.0, z: P.menkaure.center.z + MENKAURE_INTERIOR.chambers[0].center.z } },
   { label: 'Serapeum of Saqqara (13.6 km south)', pos: SERAPEUM.spawn }
 ];
 
@@ -418,7 +517,7 @@ const at = (p, dx, dy, dz) => ({ ...p, x: p.x + dx, y: p.y + dy, z: p.z + dz });
 export const ARTIFACTS = [
   { id: 'lid', type: 'fragment', name: 'Sarcophagus lid fragment',
     blurb: "A corner of the red-granite lid that was already gone when Caliph al-Ma'mun's men forced their way in (AD 820).",
-    pos: at(tpPos("King's Chamber"), 2.6, 0.35, 0.9) },
+    pos: at(tpPos("King's Chamber"), -3.0, 0.35, 2.0) },
   { id: 'copper', type: 'tool', name: 'Copper fitting from the shaft',
     blurb: "Like the copper 'handles' found on the door-slab at the top of the Queen's Chamber shaft by the Upuaut robot in 1993.",
     pos: at(tpPos("Queen's Chamber"), 1.6, 0.35, -0.8) },
