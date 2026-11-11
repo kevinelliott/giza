@@ -105,86 +105,64 @@ export const SPHINX = {
          'human head, generally attributed to the reign of Khafre.'
 };
 
-// ---- Great Pyramid interior passage network -------------------------
+// ---- Great Pyramid interior ------------------------------------------
 // Coordinates are LOCAL to the Khufu base centre (x East, y Up, z South).
-// The whole system is offset ~7.0 m east of the pyramid's vertical axis,
-// matching the real structure's eastward displacement.
-const OFF = 7.0;                         // eastward offset of the passages
-const DESC = 26.5 * DEG;                 // descending/ascending angle
-// Unit direction of the descending passage (south + down):
-const dDown = { y: -Math.sin(DESC), z: Math.cos(DESC) };
-// Unit direction of the ascending passage (south + up):
-const dUp = { y: Math.sin(DESC), z: Math.cos(DESC) };
-
-// Original entrance: north face, ~17 m above the base. The face has
-// receded inward by this height, so it sits at z = -(b/2)(1 - 17/h).
-const ENT_Y = 17;
-const bHalf = PYRAMIDS.khufu.base / 2;          // 115.2
-const ENT_Z = -(bHalf * (1 - ENT_Y / PYRAMIDS.khufu.height)); // ~ -101.9
-
+// The whole interior is Blender-built at true size and position, after Petrie
+// 1883 (tools/blender/khufu_lower.py + khufu_upper.py; research/sites/khufu.md).
+// The passage system lies in a vertical plane 7.29 m east of the centre.
+const OFF = 7.29;
+const A_DESC = (26 + 31 / 60 + 23 / 3600) * DEG, A_ASC = (26 + 2 / 60 + 30 / 3600) * DEG;
+const ENT_Y = 16.97, ENT_Z = -101.87;                // entrance floor, in the north face
+const DOOR = { x: OFF, y: ENT_Y, z: ENT_Z };
+const KJ = { y: ENT_Y - 28.19 * Math.sin(A_DESC), z: ENT_Z + 28.19 * Math.cos(A_DESC) };     // where the ascending passage leaves
+const J2 = { x: OFF, y: KJ.y + 39.29 * Math.sin(A_ASC), z: KJ.z + 39.29 * Math.cos(A_ASC) };   // foot of the Grand Gallery
+const dUp = { y: Math.sin(26.5 * DEG), z: Math.cos(26.5 * DEG) };
 function along(p, dir, len) {
   return { x: p.x, y: p.y + dir.y * len, z: p.z + dir.z * len };
 }
-
-// Interior is defined as continuous corridors whose path points are the
-// FLOOR centre-line the player walks on. Chambers are placed so their floors
-// line up with the corridor arrival height (no lips, no steps).
-const RAMP_BASE = { x: OFF, y: 0, z: ENT_Z - 40 };   // ground, north of the base
-const DOOR = { x: OFF, y: 15.0, z: ENT_Z };          // floor at the doorway
-const LVL = { x: OFF, y: 15.0, z: ENT_Z + 9 };       // level run just inside
-const J1a = along(LVL, dDown, 26);                   // foot of the descent
-const J1b = { x: OFF, y: J1a.y, z: J1a.z + 4 };     // short flat junction buffer
-const J2 = along(J1b, dUp, 39);                      // foot of the Grand Gallery
 const GTOP = along(J2, dUp, 46.7);                   // top of the Grand Gallery
 const KINGC = { x: OFF, y: GTOP.y, z: GTOP.z + 8 };  // King's Chamber arrival (floor)
-const SUBT = along(J1a, dDown, 70);                  // subterranean chamber floor
-const QUEEN = { x: OFF + 18, y: J1b.y, z: J1b.z };   // queen's branch end (off to the east, clear of the gallery)
+const SUB_Z = ENT_Z + 105.23 * Math.cos(A_DESC) + 8.83;                                        // north wall of the Subterranean Chamber
+const SUBT = { x: OFF + 0.4, y: ENT_Y - 105.23 * Math.sin(A_DESC) - 0.45, z: SUB_Z + 1.5 };
+const QUEEN = { x: OFF + 0.525 - 2.88, y: J2.y - 0.5, z: J2.z + 38.7 + 2.615 };
+const MAMUN = { x: 0, y: 6.85, z: -106 };            // inside the mouth of al-Ma'mun's tunnel
 
+// What the world builder still makes itself: the two openings in the north
+// face and the stairs up to them (today's stone steps to the forced tunnel,
+// and a timber stair to the original entrance).
 export const KHUFU_INTERIOR = {
   entrance: DOOR,
+  holes: [{ s0: OFF - 0.9, s1: OFF + 0.9, y0: ENT_Y + 0.05, y1: ENT_Y + 1.3 }, { s0: -1.25, s1: 1.25, y0: 6.9, y1: 9.2 }],
   corridors: [
-    // Entrance ramp (floor-only, segment 0) → level → descent → ascent →
-    // Grand Gallery → King's Chamber, as one continuous surface.
-    {
-      path: [RAMP_BASE, DOOR, LVL, J1a, J1b, J2, GTOP, KINGC],
-      w: [5, 5, 2.8, 2.6, 2.6, 3.0, 3.0, 2.6],
-      h: [3.4, 3.4, 3.2, 3.2, 3.2, 5.0, 5.0, 3.2],
-      wallFrom: 1
-    },
-    // Branches are floor-only (wallFrom huge) so their walls can't seal off the
-    // main route where they meet it at the junctions.
-    { path: [J1a, SUBT], w: 2.6, h: 3.2, wallFrom: 99 },  // branch to subterranean
-    { path: [J1b, QUEEN], w: 2.6, h: 3.2, wallFrom: 99 }  // branch (east) to queen's chamber
+    { path: [{ x: OFF, y: 0, z: ENT_Z - 30 }, DOOR], w: 2.2, h: 3, wallFrom: 99 },
+    { path: [{ x: 0, y: 0, z: -128.5 }, { x: 0, y: 6.85, z: -109.55 }], w: 2.4, h: 3, wallFrom: 99 }
   ],
-  chambers: [
-    {
-      id: 'king', name: "King's Chamber",
-      center: { x: OFF, y: KINGC.y + 2.925, z: KINGC.z + 1.5 },
-      sx: 10.47, sy: 5.85, sz: 5.23, sarcophagus: true, sarcOffsetX: 2.6,
-      blurb: "King's Chamber — red Aswan granite, 10.47 x 5.23 m, " +
-             '5.85 m high. Holds a lidless granite sarcophagus. Five ' +
-             'stress-relieving chambers sit above the flat ceiling.'
-    },
-    {
-      id: 'queen', name: "Queen's Chamber",
-      center: { x: QUEEN.x + 1.4, y: QUEEN.y + 3.13, z: QUEEN.z },
-      sx: 5.74, sy: 6.26, sz: 5.23, sarcophagus: false, gabled: true,
-      blurb: "Queen's Chamber — limestone with a gabled roof, " +
-             '5.23 x 5.74 m. A niche in the east wall and two narrow ' +
-             '"air shafts" lead from it.'
-    },
-    {
-      id: 'subterranean', name: 'Subterranean Chamber',
-      center: { x: OFF, y: SUBT.y + 1.75, z: SUBT.z + 1.5 },
-      sx: 8.0, sy: 3.5, sz: 14.0, sarcophagus: false, rough: true,
-      blurb: 'Subterranean Chamber — cut roughly into the bedrock ~30 m ' +
-             'below the base and left unfinished.'
-    }
-  ],
-  doors: [
-    { chamberId: 'king', face: 'north' },
-    { chamberId: 'queen', face: 'west' },
-    { chamberId: 'subterranean', face: 'north' }
+  chambers: [], doors: []
+};
+export const KHUFU_LOWER = {
+  tpMamun: { x: MAMUN.x, y: MAMUN.y + 0.3, z: MAMUN.z }, tpEntrance: { x: OFF, y: ENT_Y - 2 * Math.tan(A_DESC) + 0.3, z: ENT_Z + 2 },
+  tpQueen: { x: QUEEN.x, y: QUEEN.y + 0.3, z: QUEEN.z }, tpSub: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z },
+  pois: [
+    ['mamun', "Al-Ma'mun's Tunnel",
+      "The Robbers' Tunnel — forced through the core masonry, by tradition for Caliph al-Ma'mun around AD 820. It is how every visitor enters today.", 14],
+    ['plugs', 'The granite plugs',
+      'Three granite blocks slid down to seal the Ascending Passage. The tunnellers cut round them through the softer limestone — and so found the upper chambers.', 5],
+    ['descending', 'Descending Passage',
+      'Descending Passage — 105 m at 26.5°, only 1.05 m wide and 1.2 m high, so straight that its sides stray barely 6 mm over its masonry-built part. Crouch (C).', 12],
+    ['ascending', 'Ascending Passage',
+      'Ascending Passage — 39 m at 26°, the same cramped 1.05 × 1.2 m section; visitors climb it bent double on a cleated wooden ramp.', 10],
+    ['qpassage', "Queen's Chamber passage",
+      "A level passage 38.7 m long and 1.17 m high; the floor drops half a metre for the last 5.5 m before the chamber.", 8],
+    ['queen', "Queen's Chamber",
+      "Queen's Chamber — fine limestone under a gabled roof, 5.76 × 5.23 m and 6.23 m to the ridge, exactly on the pyramid's east–west axis. No queen was buried here; the name is a later guess.", 5],
+    ['niche', 'The corbelled niche',
+      'A niche 4.67 m high in the east wall, stepping inward in five corbels — perhaps for a statue of the king. Treasure hunters hacked the rough tunnel in its back.', 2.5],
+    ['subterranean', 'Subterranean Chamber',
+      'Subterranean Chamber — cut in the bedrock 30 m below the pyramid and abandoned unfinished: the western half is still a mass of rock fins and quarrymen\'s trenches.', 7],
+    ['pit', 'The pit',
+      'A square pit in the chamber floor, deepened to some 11 m in 1837 by Howard Vyse, who hoped to find a hidden room below.', 2.5],
+    ['well', 'Well shaft (lower mouth)',
+      'The lower end of the "well": a rough shaft that climbs through the bedrock, past a natural grotto, to the foot of the Grand Gallery.', 3]
   ]
 };
 
@@ -213,17 +191,6 @@ export const KHUFU_UPPER = {
       'Vyse in 1837. Its gabled blocks carry builders\' red-ochre graffiti — including the cartouche of Khufu.', 6]
   ]
 };
-export function khufuLowerInterior() {
-  const c0 = KHUFU_INTERIOR.corridors[0];
-  return {
-    ...KHUFU_INTERIOR,
-    corridors: [{ path: c0.path.slice(0, 6), w: [5, 5, 2.8, 2.6, 2.6, 1.6], h: [3.4, 3.4, 3.2, 3.2, 3.2, 2.4], wallFrom: 1 },
-      ...KHUFU_INTERIOR.corridors.slice(1)],
-    chambers: KHUFU_INTERIOR.chambers.filter(c => c.id !== 'king'),
-    doors: KHUFU_INTERIOR.doors.filter(d => d.chamberId !== 'king')
-  };
-}
-
 // ---- Menkaure's substructure -------------------------------------------
 // After Vyse & Perring and Maragioglio & Rinaldi (research/sites/menkaure.md):
 // entrance 4 m up the north face; a 31.7 m passage descending at 26 deg to
@@ -516,12 +483,13 @@ const G = (x, z, y = 1) => ({ x, y, z, ground: true });
 const P = PYRAMIDS, crowMid = { x: (WALL_OF_CROW.a.x + WALL_OF_CROW.b.x) / 2, z: (WALL_OF_CROW.a.z + WALL_OF_CROW.b.z) / 2 };
 export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: G(-120, -215) },
-  { label: 'Great Pyramid — base, north face', pos: G(OFF, ENT_Z - 25) },
-  { label: 'Great Pyramid — original entrance', pos: { x: OFF, y: DOOR.y + 0.3, z: ENT_Z - 4 } },
+  { label: 'Great Pyramid — base, north face', pos: G(3.6, ENT_Z - 36) },
+  { label: "Great Pyramid — al-Ma'mun's tunnel (visitor entrance)", pos: KHUFU_LOWER.tpMamun },
+  { label: 'Great Pyramid — original entrance', pos: KHUFU_LOWER.tpEntrance },
   { label: "Great Pyramid — King's Chamber", pos: TP_KING },
   { label: "Great Pyramid — Campbell's Chamber (relieving)", pos: KHUFU_UPPER.tpCampbell },
-  { label: "Great Pyramid — Queen's Chamber", pos: { x: QUEEN.x, y: QUEEN.y + 0.3, z: QUEEN.z } },
-  { label: 'Great Pyramid — Subterranean Chamber', pos: { x: SUBT.x, y: SUBT.y + 0.3, z: SUBT.z } },
+  { label: "Great Pyramid — Queen's Chamber", pos: KHUFU_LOWER.tpQueen },
+  { label: 'Great Pyramid — Subterranean Chamber', pos: KHUFU_LOWER.tpSub },
   { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
   { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60) },
   { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 40.5, SPHINX.center.z, 0.5) },
@@ -555,13 +523,13 @@ export const ARTIFACTS = [
     pos: at(tpPos("King's Chamber"), -3.0, 0.35, 2.0) },
   { id: 'copper', type: 'tool', name: 'Copper fitting from the shaft',
     blurb: "Like the copper 'handles' found on the door-slab at the top of the Queen's Chamber shaft by the Upuaut robot in 1993.",
-    pos: at(tpPos("Queen's Chamber"), 1.6, 0.35, -0.8) },
+    pos: at(tpPos("Queen's Chamber"), 1.6, 0.1, -0.8) },
   { id: 'lamp', type: 'jar', name: "Tomb robber's oil lamp",
     blurb: 'A pottery saucer lamp of the kind carried by the medieval explorers who scrambled down to the unfinished Subterranean Chamber.',
-    pos: at(tpPos('Subterranean'), 1.2, 0.35, 1.2) },
+    pos: at(tpPos('Subterranean'), 0.6, 0.1, 1.2) },
   { id: 'chisel', type: 'tool', name: "Quarryman's copper chisel",
     blurb: 'Copper chisels and dolerite pounders were the only metal tools available; they were resharpened constantly.',
-    pos: at(tpPos('original entrance'), 0.5, 0.3, 3.0) },
+    pos: at(tpPos('original entrance'), 0.0, -1.45, 3.0) },
   { id: 'ushabti', type: 'ushabti', name: 'Ushabti of Thutmose IV',
     blurb: 'Thutmose IV cleared the Sphinx of sand around 1400 BC after a dream, and raised the Dream Stele between its paws.',
     pos: G(SPHINX.center.x + 30, SPHINX.center.z + 1.5, 0.45) },

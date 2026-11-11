@@ -96,6 +96,9 @@ var day_k := 1.0
 var shot_keys := ""
 var walk_from := Vector3.INF
 var walk_t := 0.0
+var walk_secs := 9.0
+var walk_path: Array[Vector2] = []
+var walk_i := 0
 
 
 func _ready() -> void:
@@ -105,6 +108,9 @@ func _ready() -> void:
 		if a.begins_with("--look="): shot_look = a.substr(7)
 		if a.begins_with("--hour="): hour = float(a.substr(7))
 		if a.begins_with("--do="): shot_keys = a.substr(5)
+		if a.begins_with("--secs="): walk_secs = float(a.substr(7))
+		if a.begins_with("--path="):
+			for q in a.substr(7).split(";"): walk_path.append(Vector2(float(q.split(",")[0]), float(q.split(",")[1])))
 	world = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	heights = FileAccess.get_file_as_bytes("res://data/terrain.bin").to_float32_array()
 	insc_index = JSON.parse_string(FileAccess.get_file_as_string("res://data/inscriptions.json"))
@@ -160,6 +166,8 @@ func _environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_sky_contribution = 0.35
+	env.ambient_light_color = Color(0.78, 0.72, 0.62)
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.85
@@ -690,12 +698,21 @@ func _process(dt: float) -> void:
 				storm = true
 				storm_k = 1.0
 			if shot_keys.contains("ride") and _nearest_camel() != null: _mount(_nearest_camel())
+			if shot_keys.contains("crouch"): Input.action_press("crouch")
 			if shot_keys.contains("fwd"):
 				Input.action_press("move_forward")
 				walk_from = player.global_position
 		if walk_from != Vector3.INF:
 			walk_t += dt
-			if walk_t < 9.0: return
+			if walk_i < walk_path.size():
+				var to := walk_path[walk_i] - Vector2(player.global_position.x, player.global_position.z)
+				if to.length() < 0.45: walk_i += 1
+				else:
+					player.yaw = atan2(-to.x, -to.y)
+					player.rotation.y = player.yaw
+			elif walk_path.size() > 0: walk_t = walk_secs
+			if walk_t < walk_secs: return
+			if walk_path.size() > 0: print("PATH reached %d of %d waypoints" % [walk_i, walk_path.size()])
 			var q := player.global_position
 			print("WALK from %s to %s: %.1f m in %.1f s, ground %.2f, on floor %s" % [walk_from, q, Vector2(q.x - walk_from.x, q.z - walk_from.z).length(), walk_t, terrain_height(q.x, q.z), player.is_on_floor()])
 			frames = 70

@@ -3,13 +3,15 @@
 A compiled desktop game using the same data and models as the web version:
 the whole plateau to scale (terrain from the DEM, the three pyramids and their
 passages, the Sphinx, temples, mastaba fields, the modern town) and the four
-Blender interiors — the Great Pyramid's Grand Gallery, King's Chamber and
-Campbell's Chamber; Menkaure's substructure; the tomb of Meresankh III; the
+Blender interiors — the whole Great Pyramid at true size (al-Ma'mun's tunnel,
+Descending and Ascending Passages, Queen's and Subterranean Chambers, Grand
+Gallery, King's Chamber, Campbell's Chamber); Menkaure's substructure; the tomb of Meresankh III; the
 Serapeum of Saqqara — walkable in first person, with sky, sun and shadows,
 time of day, fast travel to 30-odd places and site captions.
 
-Not in the native build yet (web only): camels, carriages, traffic and birds,
-the quest, the minimap, the sandstorm and the Sound and Light show.
+Camels, horse carriages, visitors (Blender-built, rigged and animated:
+`tools/blender/creatures.py`), camel riding, the artifact hunt, minimap and
+full map, sandstorm and the Sound and Light show are all in.
 
 ## Play
 
@@ -18,7 +20,8 @@ notarised, so the first time macOS will refuse: right-click the app, choose
 **Open**, then **Open** again (or run `xattr -dr com.apple.quarantine "Giza Plateau.app"`).
 
 WASD move · mouse look · **C** crouch (the real passages need it) · Shift run ·
-Space jump · **F** fly · **L** lamp · **T** time of day · **Tab** or **M** fast travel · Esc frees the mouse.
+Space jump · **F** fly · **L** lamp · **E** ride a camel · **T** time of day · **K** sandstorm ·
+**M** map (click a blue dot to travel) · **O** / **-** / **=** minimap · **Tab** or **M** fast travel · Esc frees the mouse.
 
 ## Build
 

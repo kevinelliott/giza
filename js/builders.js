@@ -120,15 +120,26 @@ export function buildSteppedPyramidGeometry(b, h, opts = {}) {
     { pos: (s, d, yy) => [d, yy, s], n: [1, 0, 0] },
     { pos: (s, d, yy) => [-d, yy, s], n: [-1, 0, 0] }
   ];
-  const hole = opts.hole;
+  const holes = opts.holes || (opts.hole ? [opts.hole] : []);
+  // cut [a, b] spans around every hole that this course meets
+  const cutSpans = (spans, test, lo, hi) => {
+    for (const hole of holes) {
+      if (!test(hole)) continue;
+      spans = spans.flatMap(([a, b]) => {
+        const out = [];
+        if (lo(hole) > a) out.push([a, Math.min(lo(hole), b)]);
+        if (hi(hole) < b) out.push([Math.max(hi(hole), a), b]);
+        return out;
+      });
+    }
+    return spans;
+  };
   for (let c = 0; c < courses.length; c++) {
     const co = courses[c], Wr = W(co.y1), Wn = c + 1 < courses.length ? W(courses[c + 1].y1) : W(top);
     const ch = co.y1 - co.y0, blockW = Math.max(1.0, 1.15 * ch);
     for (const f of faces) {
       // riser: [-Wr, Wr] at distance Wr, possibly split around the entrance hole
-      const spans = [[-Wr, Wr]];
-      const cut = f.north && hole && co.y1 > hole.y0 && co.y0 < hole.y1;
-      if (cut) { spans.length = 0; if (hole.s0 > -Wr) spans.push([-Wr, Math.min(hole.s0, Wr)]); if (hole.s1 < Wr) spans.push([Math.max(hole.s1, -Wr), Wr]); }
+      const spans = f.north ? cutSpans([[-Wr, Wr]], h => co.y1 > h.y0 && co.y0 < h.y1, h => h.s0, h => h.s1) : [[-Wr, Wr]];
       for (const [s0, s1] of spans) {
         if (s1 - s0 < 0.01) continue;
         const u0 = (s0 + Wr) / blockW + co.uoff, u1 = (s1 + Wr) / blockW + co.uoff;
@@ -139,9 +150,7 @@ export function buildSteppedPyramidGeometry(b, h, opts = {}) {
       }
       // tread: ring segment at y1 from d=Wr (outer) to d=Wn (inner)
       if (Wr - Wn < 0.005) continue;
-      const tspans = [[-1, 1]];
-      const tcut = f.north && hole && co.y1 > hole.y0 && co.y1 < hole.y1;
-      if (tcut) { tspans.length = 0; tspans.push([-1, Math.max(-1, hole.s0 / Wr)]); tspans.push([Math.min(1, hole.s1 / Wr), 1]); }
+      const tspans = f.north ? cutSpans([[-1, 1]], h => co.y1 > h.y0 && co.y1 < h.y1, h => h.s0 / Wr, h => h.s1 / Wr) : [[-1, 1]];
       for (const [k0, k1] of tspans) {
         if (k1 - k0 < 0.001) continue;
         const o0 = f.pos(k0 * Wr, Wr, co.y1), o1 = f.pos(k1 * Wr, Wr, co.y1);

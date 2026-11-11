@@ -58,10 +58,13 @@ def void(name, build):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     voids.append(G.obj(bm, name))
 
-# stub that meets the game's ascending passage (deleted north face = opening)
-void('stub', lambda bm: G.prism(bm, [(-0.78, 0), (0.78, 0), (0.78, 2.38), (-0.78, 2.38)], Y(-0.8), Y(0.3), -0.8 * TAN, 0.3 * TAN))
-void('gal_a', lambda bm: G.prism(bm, gallery_profile(False), Y(0), Y(1.6), 0, 1.6 * TAN))
-void('gal_b', lambda bm: G.prism(bm, gallery_profile(True), Y(1.55), Y(R), 1.55 * TAN, R * TAN))
+# stub that meets the ascending passage of khufu_lower.glb (true size; deleted north face = opening)
+T2 = math.tan(math.radians(26 + 2 / 60 + 30 / 3600)); V2 = 1.20 / math.cos(math.radians(26.0417))
+void('stub', lambda bm: G.prism(bm, [(-PW, 0), (PW, 0), (PW, V2), (-PW, V2)], Y(-0.3), Y(0.05), -0.3 * T2, 0.05 * T2))
+# the head of the Queen's passage: level, under the gallery floor (the rest is in khufu_lower.glb)
+void('qhead', lambda bm: G.box(bm, -PW, PW, Y(4.6), Y(-0.02), 0.0, 1.17))
+void('gal_a', lambda bm: G.prism(bm, gallery_profile(False), Y(0), Y(2.7), 0, 2.7 * TAN))      # the ramps are broken away at the foot
+void('gal_b', lambda bm: G.prism(bm, gallery_profile(True), Y(2.65), Y(R), 2.65 * TAN, R * TAN))
 A0, A1 = R + 1.3, R + 4.27                      # antechamber
 K0 = R + 6.83; K1 = K0 + 5.23                    # King's Chamber (north / south walls)
 KE = PW + 0.02; KW = KE - 10.47                  # its east / west walls
@@ -74,7 +77,7 @@ SHX = KE - 2.6
 void('shaft_n', lambda bm: G.box(bm, SHX - 0.1, SHX + 0.1, Y(K0 + 0.05), Y(K0 - 0.7), TOP + 0.9, TOP + 1.04))
 void('shaft_s', lambda bm: G.box(bm, SHX - 0.1, SHX + 0.1, Y(K1 + 0.7), Y(K1 - 0.05), TOP + 0.9, TOP + 1.04))
 room = G.union(voids, 'limestone')
-G.void_to_room(room, 0.7, drop=lambda c: c.y > 0.75)       # open toward the ascending passage
+G.void_to_room(room, 0.7, drop=lambda c: c.y > 0.29 or (c.y < -4.59 and c.z < 1.2 and abs(c.x) < PW + 0.01 and c.y > -4.7))       # open toward the passages
 
 # granite where it really is: antechamber (south part), second passage, King's Chamber
 room.data.materials.clear()
@@ -104,6 +107,11 @@ for p in camp.data.polygons:
     p.use_smooth = False
 
 solids, deco = [], []
+# ---- the gallery foot today: the floor is cut away over the head of the Queen's passage,
+# leaving a ledge either side; boards widen the west ledge into the way up the gallery
+bm = bmesh.new()
+G.prism(bm, [(-0.53, -0.05), (-0.27, -0.05), (-0.27, 0.0), (-0.53, 0.0)], Y(0.25), Y(2.45), 0.25 * TAN, 2.45 * TAN)
+solids.append(G.obj(bm, 'footboards', 'wood'))
 # ---- Great Step + modern wooden steps up it --------------------------------
 solids.append(G.box_obj('step', 'limestone', -1.03, 1.03, Y(R + 0.02), Y(R - STEP), (R - STEP) * TAN - 0.6, TOP))
 # a wooden ramp with cleats up the Great Step (the gallery floor is already

@@ -9,7 +9,7 @@ import {
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM,
-  KHUFU_UPPER, khufuLowerInterior, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
+  KHUFU_UPPER, KHUFU_LOWER, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -56,25 +56,25 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
   const isKhufu = p.id === 'khufu';
   // Interior is computed first so the north-face entrance hole can be cut
   // exactly where the entrance passage begins.
-  const def = isKhufu ? (opts.upper ? khufuLowerInterior() : KHUFU_INTERIOR)
+  const def = isKhufu ? KHUFU_INTERIOR
     : (p.id === 'menkaure' ? (opts.sub ? MENKAURE_ENTRY : MENKAURE_INTERIOR) : simpleInterior(p));
   const e = def.entrance;
   // The Great Pyramid's doorway runs lower and wider so the entrance ramp can
   // pass cleanly through the face into the descending passage.
-  const hole = isKhufu
-    ? { s0: e.x - 1.5, s1: e.x + 1.5, y0: e.y - 6.5, y1: e.y + 2.8 }
+  const hole = isKhufu ? null
     : { s0: e.x - 1.25, s1: e.x + 1.25, y0: Math.max(0.2, e.y - 2.6), y1: e.y + 2.8 };
+  const holes = isKhufu ? def.holes : [hole];
   // Real current state: Khufu lost its capstone (flat top at ~138.8 m);
   // Menkaure's summit is damaged (~62 m); Khafre keeps a near-intact apex.
   const truncate = p.id === 'khufu' ? 138.8 : (p.id === 'menkaure' ? 62 : null);
   const core = buildPyramidGeometry(p.base, p.height,
-    truncate ? { hole, truncate } : { hole });
+    truncate ? { hole: hole || holes[0], truncate } : { hole });
   // The visible body is the stepped core of real block courses, and it is
   // also the collider — so the pyramids can be climbed course by course.
   const mesh = new THREE.Mesh(core, mats.limestone);   // smooth reference solid (unused visually)
   mesh.position.set(p.center.x, p.baseY, p.center.z);
   const stepped = new THREE.Mesh(buildSteppedPyramidGeometry(p.base, p.height, {
-    truncate, hole,
+    truncate, holes,
     yRange: p.casing === 'cap' ? [0, p.height * 0.78 + 0.6] : null,
     seed: p.id.length * 131 + p.base | 0
   }), [mats.course, mats.courseTop]);
@@ -133,15 +133,16 @@ function buildPyramid(p, mats, collidables, group, opts = {}) {
   }
 
   if (isKhufu) {
-    // The interior's first corridor segment IS the (collidable) entrance ramp
-    // floor; lay decorative stepped treads over it for looks.
-    const path = def.corridors[0].path;       // [RAMP_BASE, DOOR, ...] (local)
-    const a = path[0], b = path[1];
-    const stair = new THREE.Mesh(buildStaircase(
-      { x: p.center.x + a.x, y: p.baseY + a.y, z: p.center.z + a.z },
-      { x: p.center.x + b.x, y: p.baseY + b.y, z: p.center.z + b.z }, 5.2), mats.wood);
-    stair.castShadow = true; stair.receiveShadow = true;
-    group.add(stair);
+    // Each floor-only corridor is a (collidable) stair ramp up the face; lay
+    // decorative stepped treads over it for looks.
+    for (const c of def.corridors) {
+      const a = c.path[0], b = c.path[1];
+      const stair = new THREE.Mesh(buildStaircase(
+        { x: p.center.x + a.x, y: p.baseY + a.y, z: p.center.z + a.z },
+        { x: p.center.x + b.x, y: p.baseY + b.y, z: p.center.z + b.z }, c.w), a.x ? mats.wood : mats.limestone);
+      stair.castShadow = true; stair.receiveShadow = true;
+      group.add(stair);
+    }
   }
   return def;
 }
@@ -676,8 +677,6 @@ function buildPyramidDetails(mats, collidables, group) {
   chev.castShadow = true; chev.receiveShadow = true; chev.userData.collidable = true;
   group.add(chev); collidables.push(chev);
   const hole = new THREE.MeshStandardMaterial({ color: 0x17120d, roughness: 1 });
-  const mamun = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.2, 4), hole);
-  mamun.position.set(kh.center.x - 0.5, 7.4, zf(7.4) + 0.6); group.add(mamun);
   // Menkaure's north-face gash (a dark, rough-edged recess up the centre)
   const mk = PYRAMIDS.menkaure, mh = mk.base / 2, mzf = y => mk.center.z - mh * (1 - y / mk.height);
   const slope = Math.atan2(mk.height, mh);
@@ -1092,6 +1091,13 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
     const { anchors } = place(models.serapeum, o, SERAPEUM.pois);
     if (anchors.spawn) Object.assign(SERAPEUM.spawn, { x: anchors.spawn.x, y: anchors.spawn.y, z: anchors.spawn.z });
     shell(o.x - 120, o.y + 4, o.z - 8, 340, 40, 160);
+  }
+  if (models.khufuLower) {
+    const kc = PYRAMIDS.khufu.center;
+    const { anchors } = place(models.khufuLower, { x: kc.x, y: PYRAMIDS.khufu.baseY, z: kc.z }, KHUFU_LOWER.pois);
+    const set = (dst, a) => a && Object.assign(dst, { x: a.x, y: a.y, z: a.z });
+    set(KHUFU_LOWER.tpMamun, anchors.tp_mamun); set(KHUFU_LOWER.tpEntrance, anchors.tp_entrance);
+    set(KHUFU_LOWER.tpQueen, anchors.tp_queen); set(KHUFU_LOWER.tpSub, anchors.tp_subterranean);
   }
   if (models.khufuUpper) {
     const kc = PYRAMIDS.khufu.center, o = KHUFU_UPPER.origin;

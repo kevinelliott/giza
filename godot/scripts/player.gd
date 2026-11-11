@@ -54,6 +54,10 @@ func _init() -> void:
 func teleport(p: Vector3, face := false, hint := Vector3.ZERO) -> void:
 	global_position = p
 	velocity = Vector3.ZERO
+	if is_inside_tree():                      # arriving somewhere low: start crouched
+		height = STAND_H if _can_stand() else CROUCH_H
+		shape.height = height
+		col.position.y = height / 2
 	if face:
 		face_pending = 3
 		face_hint = hint
@@ -70,10 +74,13 @@ func _face_open() -> void:
 	for k in 32:
 		var a := k * TAU / 32.0
 		var d := Vector3(-sin(a), 0, -cos(a))
-		var q := PhysicsRayQueryParameters3D.create(eye, eye + d * 60.0)
-		q.exclude = [get_rid()]
-		var hit := space.intersect_ray(q)
-		var dist := 60.0 if hit.is_empty() else eye.distance_to(hit["position"])
+		var dist := 0.0
+		for tilt in [0.0, -0.47, 0.47]:           # sloping passages are open along their slope
+			var dd := (d * cos(tilt) + Vector3(0, sin(tilt), 0))
+			var q := PhysicsRayQueryParameters3D.create(eye, eye + dd * 60.0)
+			q.exclude = [get_rid()]
+			var hit := space.intersect_ray(q)
+			dist = maxf(dist, 60.0 if hit.is_empty() else eye.distance_to(hit["position"]))
 		var score := minf(dist, 25.0) + 12.0 * d.dot(hint_dir)
 		if score > best:
 			best = score
