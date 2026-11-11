@@ -18,7 +18,7 @@ const { makeMaterials } = await import('../js/materials.js');
 const { buildWorld } = await import('../js/world.js');
 const { GRID, terrainHeight } = await import('../js/terrain.js');
 const D = await import('../js/data.js');
-const { GEO, EXTENT } = await import('../js/geodata.js');
+const { GEO, EXTENT, ROUTES } = await import('../js/geodata.js');
 
 const scene = new THREE.Scene();
 const mats = makeMaterials();
@@ -131,9 +131,21 @@ const out = {
   pyramids: Object.values(D.PYRAMIDS).map(p => ({ id: p.id, x: p.center.x, z: p.center.z, baseY: p.baseY, base: p.base, height: p.height })),
   sphinx: { x: D.SPHINX.center.x, z: D.SPHINX.center.z, floorY: D.SPHINX.floorY },
   teleports: D.TELEPORTS.filter(t => !fromModels.test(t.label)).map(t => ({ label: t.label, pos: [r(t.pos.x), r(t.pos.y), r(t.pos.z)] })),
-  landmarks: world.landmarks.map(l => ({ name: l.name, blurb: l.blurb, radius: l.radius, pos: [r(l.pos.x), r(l.pos.y), r(l.pos.z)] }))
+  landmarks: world.landmarks.map(l => ({ name: l.name, blurb: l.blurb, radius: l.radius, pos: [r(l.pos.x), r(l.pos.y), r(l.pos.z)] })),
+  // life: site roads plied by carriages and camel rides, saddled camels to ride
+  routes: ROUTES,
+  rideables: world.rideables.map(c => ({ x: r(c.position.x), z: r(c.position.z), rot: r(c.rotation.y), saddle: c.userData.saddle })),
+  // quest
+  artifacts: D.ARTIFACTS.map(a => ({ id: a.id, type: a.type, name: a.name, blurb: a.blurb, pos: [r(a.pos.x), r(a.pos.y), r(a.pos.z)] })),
+  // map
+  map: {
+    mastabas: world.mastabas.map(m => [r(m.x), r(m.z), r(m.w), r(m.d), r(m.rot || 0), m.modern ? 1 : 0]),
+    small: [...D.QUEENS_KHUFU, ...D.QUEENS_MENKAURE, ...D.SATELLITES].map(q => [q.center.x, q.center.z, q.base]),
+    causeways: world.causeways.map(c => c.map(r)),
+    wall: [D.WALL_OF_CROW.a.x, D.WALL_OF_CROW.a.z, D.WALL_OF_CROW.b.x, D.WALL_OF_CROW.b.z]
+  }
 };
 writeFileSync(new URL('../godot/data/world.json', import.meta.url), JSON.stringify(out));
 console.log('plateau.glb', (bin.length / 1e6).toFixed(1), 'MB,', Math.round(tris), 'triangles,', buckets.size, 'meshes; skipped', skipped);
 console.log([...buckets].map(([k, b]) => `${k}:${Math.round(b.idx.length / 3)}`).join('  '));
-console.log('teleports', out.teleports.length, 'landmarks', out.landmarks.length);
+console.log('routes', out.routes.length, 'rideables', out.rideables.length, 'artifacts', out.artifacts.length, 'mastabas', out.map.mastabas.length, 'teleports', out.teleports.length, 'landmarks', out.landmarks.length);

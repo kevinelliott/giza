@@ -3,6 +3,7 @@ shader_type spatial;
 render_mode cull_disabled;
 uniform float roughness_value = 0.93;
 uniform float grain = 0.2;
+uniform float tint = 1.0;
 varying vec3 wp;
 float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float noise3(vec3 p) {
@@ -12,6 +13,6 @@ float noise3(vec3 p) {
 }
 void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
 void fragment() {
-	ALBEDO = COLOR.rgb * (1.0 - grain * 0.5 + grain * noise3(wp * 3.1));
+	ALBEDO = COLOR.rgb * tint * (1.0 - grain * 0.5 + grain * noise3(wp * 3.1));
 	ROUGHNESS = roughness_value;
 }

@@ -17,6 +17,9 @@ const COURSE := preload("res://scripts/course.gdshader")
 const VCOL := preload("res://scripts/vcol.gdshader")
 const TOWN := preload("res://scripts/town.gdshader")
 const Player := preload("res://scripts/player.gd")
+const Life := preload("res://scripts/life.gd")
+const Quest := preload("res://scripts/quest.gd")
+const Map := preload("res://scripts/map.gd")
 
 # Blender interiors: material name -> [colour, roughness, bake gain, strata, joint height, joint width]
 const BAKED := {
@@ -76,6 +79,23 @@ var shot_path := ""
 var shot_at := ""
 var shot_look := ""
 var frames := 0
+var life: Node3D
+var quest: Node3D
+var minimap: Control
+var fullmap: Control
+var hud_toast: Label
+var hud_quest: Label
+var toasts := []              # [[text, seconds]]
+var toast_left := 0.0
+var riding: Node3D = null
+var hint_camel: Node3D = null
+var storm := false
+var storm_k := 0.0
+var fog_base := Color(0.84, 0.78, 0.65)
+var day_k := 1.0
+var shot_keys := ""
+var walk_from := Vector3.INF
+var walk_t := 0.0
 
 
 func _ready() -> void:
@@ -84,6 +104,7 @@ func _ready() -> void:
 		if a.begins_with("--at="): shot_at = a.substr(5)
 		if a.begins_with("--look="): shot_look = a.substr(7)
 		if a.begins_with("--hour="): hour = float(a.substr(7))
+		if a.begins_with("--do="): shot_keys = a.substr(5)
 	world = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	heights = FileAccess.get_file_as_bytes("res://data/terrain.bin").to_float32_array()
 	insc_index = JSON.parse_string(FileAccess.get_file_as_string("res://data/inscriptions.json"))
@@ -101,6 +122,14 @@ func _ready() -> void:
 		_place_model(m)
 	player = Player.new()
 	add_child(player)
+	life = Life.new()
+	add_child(life)
+	life.setup(self, world)
+	quest = Quest.new()
+	add_child(quest)
+	quest.setup(world["artifacts"], pois.slice(0, world["landmarks"].size()), shot_path == "")
+	quest.toast.connect(toast)
+	quest.changed.connect(func(): hud_quest.text = quest.summary())
 	_hud()
 	var start := 0
 	for i in travel.size():
@@ -108,11 +137,14 @@ func _ready() -> void:
 			start = i
 			break
 	_go(start)
-	if shot_at == "": player.look_at_point(Vector3(-94, 30, 84))        # Khufu and Khafre from the overlook
+	if start == 0:
+		player.face_pending = 0
+		player.look_at_point(Vector3(-94, 30, 84))        # Khufu and Khafre from the overlook
 	if shot_look != "":
 		var c := shot_look.split(",")
 		if c.size() == 6:
-			player.fly = true
+			player.fly = not shot_keys.contains("walk")
+			player.face_pending = 0
 			player.teleport(Vector3(float(c[0]), float(c[1]), float(c[2])))
 			player.look_at_point(Vector3(float(c[3]), float(c[4]), float(c[5])))
 	_apply_time()
@@ -145,7 +177,8 @@ func _environment() -> void:
 	sun = DirectionalLight3D.new()
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 900.0
+	sun.directional_shadow_max_distance = 600.0
+	sun.directional_shadow_blend_splits = true
 	sun.shadow_bias = 0.06
 	sun.shadow_normal_bias = 2.0
 	add_child(sun)
@@ -171,13 +204,14 @@ func _apply_time() -> void:
 	var ld := d if el > 0.5 else Vector3(-d.x, maxf(0.35, -d.y), -d.z).normalized()     # after dusk: a dim moon opposite
 	sun.look_at_from_position(ld * 100.0, Vector3.ZERO, Vector3.UP)
 	sun.light_color = Color(1.0, 0.96, 0.88).lerp(Color(1.0, 0.62, 0.36), warm * 0.8) if el > 0.5 else Color(0.55, 0.65, 1.0)
-	sun_energy = (0.2 + 0.95 * smoothstep(0.0, 30.0, el)) if el > 0.5 else 0.06
-	sky_mat.sky_top_color = Color(0.20, 0.38, 0.68).lerp(Color(0.012, 0.018, 0.045), 1.0 - day)
-	sky_mat.sky_horizon_color = Color(0.72, 0.78, 0.84).lerp(Color(0.95, 0.62, 0.38), warm * day).lerp(Color(0.03, 0.04, 0.07), 1.0 - day)
+	sun_energy = (0.2 + 0.95 * smoothstep(0.0, 30.0, el)) if el > 0.5 else 0.22
+	sky_mat.sky_top_color = Color(0.20, 0.38, 0.68).lerp(Color(0.03, 0.045, 0.1), 1.0 - day)
+	sky_mat.sky_horizon_color = Color(0.72, 0.78, 0.84).lerp(Color(0.95, 0.62, 0.38), warm * day).lerp(Color(0.05, 0.065, 0.11), 1.0 - day)
 	sky_mat.ground_horizon_color = sky_mat.sky_horizon_color
 	sky_mat.ground_bottom_color = Color(0.66, 0.62, 0.52).lerp(Color(0.02, 0.02, 0.03), 1.0 - day)
 	sky_mat.sun_angle_max = 6.0
-	env.fog_light_color = Color(0.84, 0.78, 0.65).lerp(Color(0.95, 0.66, 0.42), warm * day).lerp(Color(0.02, 0.03, 0.05), 1.0 - day)
+	day_k = day
+	fog_base = Color(0.84, 0.78, 0.65).lerp(Color(0.95, 0.66, 0.42), warm * day).lerp(Color(0.02, 0.03, 0.05), 1.0 - day)
 	if town_mat: town_mat.set_shader_parameter("night", clampf((4.0 - el) / 8.0, 0.0, 1.0))
 	set_meta("night", night)
 
@@ -222,6 +256,7 @@ func _materials() -> void:
 	for k in ["sphinx", "rock", "vcol"]:
 		var vm := ShaderMaterial.new()
 		vm.shader = VCOL
+		if k == "sphinx": vm.set_shader_parameter("tint", 0.72)
 		if k == "vcol":
 			vm.set_shader_parameter("roughness_value", 0.4)
 			vm.set_shader_parameter("grain", 0.0)
@@ -427,7 +462,7 @@ func _hud() -> void:
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	hint.modulate = Color(1, 1, 1, 0.8)
-	hint.text = "WASD move · mouse look · C crouch · Shift run · Space jump · F fly · L lamp · T time of day · Tab / M travel · Esc release mouse"
+	hint.text = "WASD move · mouse look · C crouch · Shift run · Space jump · F fly · L lamp · E ride a camel\nT time of day · K sandstorm · M map · Tab travel list · O / - / = minimap · Esc release mouse"
 	layer.add_child(hint)
 	hud_pos = Label.new()
 	hud_pos.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
@@ -436,6 +471,42 @@ func _hud() -> void:
 	hud_pos.add_theme_font_size_override("font_size", 14)
 	hud_pos.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	layer.add_child(hud_pos)
+	hud_quest = Label.new()
+	hud_quest.position = Vector2(16, 54)
+	hud_quest.add_theme_font_size_override("font_size", 14)
+	hud_quest.add_theme_color_override("font_color", Color("ffd98a"))
+	hud_quest.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	hud_quest.text = quest.summary()
+	layer.add_child(hud_quest)
+	hud_toast = Label.new()
+	hud_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	hud_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	hud_toast.position.y = 84
+	hud_toast.custom_minimum_size = Vector2(620, 0)
+	hud_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hud_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_toast.add_theme_font_size_override("font_size", 17)
+	hud_toast.add_theme_color_override("font_color", Color("fff1cf"))
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.06, 0.03, 0.78)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(12)
+	hud_toast.add_theme_stylebox_override("normal", sb)
+	hud_toast.visible = false
+	layer.add_child(hud_toast)
+	minimap = Map.new()
+	minimap.setup(world, travel, quest, player, false)
+	minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	minimap.custom_minimum_size = Vector2(200, 200)
+	minimap.size = Vector2(200, 200)
+	minimap.position = Vector2(-216, 16)
+	layer.add_child(minimap)
+	fullmap = Map.new()
+	fullmap.setup(world, travel, quest, player, true)
+	fullmap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fullmap.visible = false
+	fullmap.travel.connect(func(i): _go(i); _toggle_map())
+	layer.add_child(fullmap)
 	menu = ItemList.new()
 	menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	menu.custom_minimum_size = Vector2(640, 560)
@@ -453,13 +524,104 @@ func _toggle_menu() -> void:
 	if menu.visible: menu.grab_focus()
 
 
+func _toggle_map() -> void:
+	if menu.visible: _toggle_menu()
+	fullmap.visible = not fullmap.visible
+	minimap.visible = not fullmap.visible
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if fullmap.visible else Input.MOUSE_MODE_CAPTURED
+	player.frozen = fullmap.visible
+	if fullmap.visible: fullmap.centre = Vector2(clampf(player.global_position.x, -1400, 1000), clampf(player.global_position.z, -600, 1400))
+
+
+func toast(text: String, seconds := 3.0) -> void:
+	toasts.append([text, seconds])
+
+
 func _go(i: int) -> void:
+	if riding: _dismount()
 	player.fly = false
-	player.teleport(travel[i]["pos"])
+	# face the open side; outdoors, lean towards the nearest big thing
+	var p: Vector3 = travel[i]["pos"]
+	var hint := p
+	var bd := 1e9
+	for py in world["pyramids"]:
+		var c := Vector3(float(py["x"]), p.y, float(py["z"]))
+		if p.distance_to(c) < bd:
+			bd = p.distance_to(c)
+			hint = c
+	for q in pois:
+		var d: float = p.distance_to(q["pos"])
+		if d > 4.0 and d < bd and d < q["radius"]:
+			bd = d
+			hint = q["pos"]
+	player.teleport(p, true, hint)
+
+
+# ---- camel riding: walk up to a saddled camel and press E ------------------------
+func _nearest_camel() -> Node3D:
+	var best: Node3D = null
+	var bd := 4.2
+	var p := player.global_position
+	for c in life.rideables:
+		var d := Vector2(c.position.x - p.x, c.position.z - p.z).length()
+		if d < bd and absf(c.position.y - p.y) < 3.0:
+			bd = d
+			best = c
+	return best
+
+
+func _mount(c: Node3D) -> void:
+	riding = c
+	player.fly = false
+	life.set_solid(c, false)
+	player.teleport(c.position + Vector3(0, 0.3, 0))
+	player.speed_mul = 1.45
+	player.eye_extra = 2.8
+	toast("Up you go! Walk to amble, Shift to trot — E to get down.", 3.2)
+
+
+func _dismount() -> void:
+	var c := riding
+	riding = null
+	player.speed_mul = 1.0
+	player.eye_extra = 0.0
+	var th := c.rotation.y
+	var x := c.position.x + sin(th) * 2.4
+	var z := c.position.z + cos(th) * 2.4
+	player.teleport(Vector3(x, terrain_height(x, z) + 0.5, z))
+	life.animate_camel(c, 0.0, 0.0)
+	life.set_solid(c, true)
+
+
+func _update_ride(dt: float) -> void:
+	if riding:
+		var want: float = player.yaw + PI / 2          # the camel faces +X, the player -Z
+		riding.rotation.y = lerp_angle(riding.rotation.y, want, minf(1.0, dt * 4.0))
+		var th := riding.rotation.y
+		var x := player.global_position.x + cos(th) * 0.2
+		var z := player.global_position.z - sin(th) * 0.2
+		riding.position = Vector3(x, terrain_height(x, z), z)
+		life.animate_camel(riding, life.t, Vector2(player.velocity.x, player.velocity.z).length() * 0.45)
+		return
+	var c: Node3D = null if player.fly else _nearest_camel()
+	if c != null and c != hint_camel: toast("A saddled camel — press E to ride", 2.2)
+	hint_camel = c
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if ev.is_action_pressed("travel_menu"): _toggle_menu()
+	if ev.is_action_pressed("travel_menu"):
+		if fullmap.visible: _toggle_map()
+		_toggle_menu()
+	elif ev.is_action_pressed("map"): _toggle_map()
+	elif ev.is_action_pressed("use"):
+		if riding: _dismount()
+		elif not player.fly and _nearest_camel() != null: _mount(_nearest_camel())
+	elif ev.is_action_pressed("storm"):
+		storm = not storm
+		toast("A sandstorm is rolling in…" if storm else "The storm is passing.", 2.5)
+	elif ev.is_action_pressed("map_orient"): minimap.heading_up = not minimap.heading_up
+	elif ev.is_action_pressed("map_zoom_in"): minimap.zoom(1.25)
+	elif ev.is_action_pressed("map_zoom_out"): minimap.zoom(0.8)
 	elif ev.is_action_pressed("toggle_lamp"): lamp_user = not lamp_user
 	elif ev.is_action_pressed("time_of_day"):
 		hour_i = (hour_i + 1) % HOURS.size()
@@ -467,8 +629,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		_apply_time()
 	elif ev.is_action_pressed("ui_cancel"):
 		if menu.visible: _toggle_menu()
+		elif fullmap.visible: _toggle_map()
 		else: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif ev is InputEventMouseButton and ev.pressed and not menu.visible:
+	elif ev is InputEventMouseButton and ev.pressed and not menu.visible and not fullmap.visible:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -477,14 +640,34 @@ func _process(dt: float) -> void:
 	# indoors the sun and sky are shut out; the rooms carry their own (baked) light
 	var inside := _is_inside(p + Vector3(0, 1.0, 0))
 	inside_k = move_toward(inside_k, 1.0 if inside else 0.0, dt * 3.0)
-	sun.light_energy = sun_energy * (1.0 - inside_k)
+	storm_k = move_toward(storm_k, 1.0 if storm else 0.0, dt * 0.25)
+	var open := 1.0 - inside_k
+	sun.light_energy = sun_energy * open * (1.0 - 0.8 * storm_k)
 	env.ambient_light_energy = lerpf(0.7, 0.0, inside_k)
-	env.background_energy_multiplier = lerpf(1.0, 0.0, inside_k)
-	env.fog_density = lerpf(0.00018, 0.0, inside_k)
+	env.background_energy_multiplier = open
+	env.fog_density = (0.00018 + 0.016 * storm_k * storm_k) * open
+	env.fog_sky_affect = storm_k
+	env.fog_aerial_perspective = 0.6 * (1.0 - storm_k)
+	env.fog_light_color = fog_base.lerp(fog_base.lerp(Color(0.72, 0.56, 0.36), 0.85) * (0.25 + 0.75 * day_k), storm_k)
 	var in_zone := false
 	for z in zones:
 		if z.has_point(p): in_zone = true
 	var night: float = get_meta("night", 0.0)
+	_update_ride(dt)
+	life.update(dt, p, night * (1.0 - storm_k), riding)
+	var sph: Dictionary = world["sphinx"]
+	quest.update(dt, p, {"fly": player.fly, "on_floor": player.is_on_floor(), "speed": Vector2(player.velocity.x, player.velocity.z).length(),
+		"outdoors": not inside, "night": night > 0.5, "storm": storm_k > 0.5, "riding": riding != null,
+		"sphinx": absf(p.x - (float(sph["x"]) + 30.0)) < 8.0 and absf(p.z - float(sph["z"])) < 8.0 and p.y < float(sph["floorY"]) + 3.0,
+		"show": night > 0.5 and not inside and p.distance_to(life.show_origin()) < 160.0})
+	if toast_left > 0.0:
+		toast_left -= dt
+		if toast_left <= 0.0: hud_toast.visible = false
+	elif toasts.size() > 0:
+		var tt: Array = toasts.pop_front()
+		hud_toast.text = tt[0]
+		hud_toast.visible = true
+		toast_left = tt[1]
 	var auto := inside or night > 0.5
 	player.lamp.visible = lamp_user != auto
 	player.lamp.light_energy = 1.2 if in_zone else 4.0
@@ -501,6 +684,21 @@ func _process(dt: float) -> void:
 	hud_pos.text = "E %d  N %d  alt %d m ASL   ·   %02d:%02d" % [roundi(p.x), roundi(-p.z), roundi(p.y + float(world["geo"]["datumASL"])), hh, int((hour - hh) * 60)]
 	if shot_path != "":
 		frames += 1
-		if frames == 40:
+		if frames == 24:
+			if shot_keys.contains("map"): _toggle_map()
+			if shot_keys.contains("storm"):
+				storm = true
+				storm_k = 1.0
+			if shot_keys.contains("ride") and _nearest_camel() != null: _mount(_nearest_camel())
+			if shot_keys.contains("fwd"):
+				Input.action_press("move_forward")
+				walk_from = player.global_position
+		if walk_from != Vector3.INF:
+			walk_t += dt
+			if walk_t < 9.0: return
+			var q := player.global_position
+			print("WALK from %s to %s: %.1f m in %.1f s, ground %.2f, on floor %s" % [walk_from, q, Vector2(q.x - walk_from.x, q.z - walk_from.z).length(), walk_t, terrain_height(q.x, q.z), player.is_on_floor()])
+			frames = 70
+		if frames == 70:
 			get_viewport().get_texture().get_image().save_png(shot_path)
 			get_tree().quit()

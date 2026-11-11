@@ -32,8 +32,8 @@ void fragment() {
 	float gravel = smoothstep(0.55, 0.8, fbm(wp.xz * 0.05 + 3.0));
 	float near = smoothstep(90.0, 12.0, distance(wp, CAMERA_POSITION_WORLD));
 	ripple = mix(0.5, ripple, near);
-	vec3 c = vec3(0.80, 0.70, 0.55) * (0.9 + 0.1 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
-	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.7);
+	vec3 c = vec3(0.80, 0.70, 0.55) * (0.95 + 0.05 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
+	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.35);
 	vec3 ratio = texture(ground_tex, g).rgb * 2.0;
 	c *= mix(vec3(1.0), ratio, 0.55);
 	vec2 rm = texture(roads_tex, g).rg;

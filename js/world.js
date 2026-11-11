@@ -1071,6 +1071,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   for (const [x, z, rot, col] of [[SPHINX.center.x + 30, SPHINX.center.z - 48, 1.0, 0xb03030], [SPHINX.center.x + 46, SPHINX.center.z - 56, 1.4, 0x2d5aa0],
     [40, -165, 0.4, 0xd8a030], [52, -172, 0.9, 0x3f7f3f], [-725, 1140, 2.2, 0xb03030], [-740, 1132, 2.6, 0x8a3fa0]]) {
     const c = buildCamel(deco.camel, x, z, rot, { saddle: col });
+    c.userData.dynamic = true; c.userData.saddle = col;       // (dynamic: the native export leaves them out and builds its own)
     group.add(c); rideables.push(c);
   }
 
