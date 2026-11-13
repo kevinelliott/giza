@@ -112,9 +112,11 @@ burial chamber): photographs by Diego Delso, delso.photo, CC BY-SA 4.0 — the
 texture files `assets/textures/kv62_*.jpg` are derived from them and carry the
 same licence. The KV62 entrance sign is cropped from a photograph by Benjamín
 Núñez González, CC BY-SA 4.0. Full list: `research/photos/*/CREDITS.md`.
-The south wall of that chamber is **not** a photograph: no freely licensed
-one exists, so it is a drawn reconstruction of the documented composition
-(`tools/art/kv62_south_wall.py`), and the game says so on the spot.
+The south wall of that chamber is a photograph of a painted full-size
+**replica** of the wall, not of the wall itself (Sat Ra, CC BY-SA 4.0): no
+freely licensed photograph of the original exists, and the game says so on
+the spot. Masjed El Salhen is modelled from photographs by EliziR (CC BY-SA
+3.0) and Sara Adel Sayed (CC BY-SA 4.0).
 (Wikimedia Commons). Dream Stele drawing: C. R. Lepsius, *Denkmäler* (1849),
 public domain. Hieroglyph font: Noto Sans Egyptian Hieroglyphs (SIL OFL).
 Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains

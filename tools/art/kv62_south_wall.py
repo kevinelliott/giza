@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""A RECONSTRUCTION, not a photograph: the surviving western 2.8 m of the south wall of
+"""The south wall of Tutankhamun's burial chamber.
+
+If research/photos/valley-of-the-kings/09-kv62-south-wall-replica.jpg is present (Sat Ra's
+photograph of a full-size painted replica of the whole wall, CC BY-SA 4.0), the texture is
+its right-hand 2.82 m at true scale (500 px/m by the height of the figure field): Anubis,
+the king and Hathor, which is the stretch that survives in the tomb. Otherwise it falls
+back to the drawing below.
+
+FALLBACK — a RECONSTRUCTION, not a photograph: the surviving western 2.8 m of the south wall of
 Tutankhamun's burial chamber, drawn from its documented composition because no freely
 licensed photograph of it exists (research/sites/valley-of-the-kings.md, 2.3).
 
@@ -16,6 +24,16 @@ import os, random
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PHOTO = os.path.join(ROOT, 'research', 'photos', 'valley-of-the-kings', '09-kv62-south-wall-replica.jpg')
+if os.path.exists(PHOTO):
+    src = Image.open(PHOTO).convert('RGB')
+    w, h = src.size                              # 2300 x 1300: the whole wall; height = the 2.6 m figure field
+    ppm = h / 2.60
+    crop = src.crop((int(w - 2.82 * ppm), 0, w, h))
+    for dst in ('assets/textures/kv62_south.jpg', 'godot/textures/kv62_south.jpg'):
+        crop.save(os.path.join(ROOT, dst), quality=90)
+    print('wrote kv62_south.jpg from the replica photograph', crop.size)
+    raise SystemExit
 PPM = 500                                   # pixels per metre
 W, H = int(2.82 * PPM), int(2.60 * PPM)
 random.seed(1922)

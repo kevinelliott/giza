@@ -281,3 +281,7 @@ Modern fittings in KV9 (photos 13, 14): timber boardwalk with cross-battens down
 - The DEM cannot give the wadi floor or the cliff faces at model scale; terrain near the tombs will have to be sculpted from the TMP datums in 1.2, the OSM cliff lines and photos 01, 02 and 04.
 - KV9: sarcophagus dimensions; exact shape of the sunk floor and pit (the plan shows them skewed); pillar-face scene list; which Amduat hours are on which wall.
 - KV17 (Seti I): sheets fetched, not measured.
+
+## Follow-up, 13 Nov 2026 — south wall
+
+The south-wall texture is no longer the drawn reconstruction. It is cropped from Sat Ra's photograph (CC BY-SA 4.0, 2012) of a painted full-size **replica** of the wall (`research/photos/valley-of-the-kings/09-kv62-south-wall-replica.jpg`): the right-hand 2.82 m — Anubis, the king, Hathor — which is the part that survives in the tomb. Status: *photograph of a replica*, not of the original; the replica is cleaner than the real wall (no brown spotting, sharper outlines). `tools/art/kv62_south_wall.py` falls back to the drawn version only if the photograph is missing. A photograph of the original wall is still wanted.

@@ -694,6 +694,99 @@ function buildMosque(group, x, z) {
   add(new THREE.ConeGeometry(0.85, 4, 8), trim, 6.2, 25.9, 8.2);
 }
 
+// Masjed El Salhen (Masjid al-Salihin), Nazlet el-Semman, modelled from two
+// photographs (research/photos/giza-town/, EliziR 2014 and Sara Adel Sayed
+// 2019): a two-storey hall faced in tan stone with round-arched windows, a
+// pointed-arch door, a parapet of stepped merlons, a small ribbed dome with a
+// crescent, and at one end a tall square minaret with two balconies. It
+// stands on the mapped 10 x 27 m footprint beside the two photographs'
+// geotags (29.98354 N 31.14253 E; 29.98414 N 31.14230 E) — the identification
+// of that footprint, and which way the front faces, are inferred. Heights
+// are scaled from the photographs, not measured.
+function buildSalhen(group, collidables, x, z) {
+  const y = terrainHeight(x, z) - 0.3, L = 27, D = 11, H = 9.2;
+  const stone = new THREE.MeshStandardMaterial({ color: 0xb4935f, roughness: 0.92 });
+  const trim = new THREE.MeshStandardMaterial({ color: 0x8f7248, roughness: 0.9 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x241c14, roughness: 1 });
+  const domeM = new THREE.MeshStandardMaterial({ color: 0xa39679, roughness: 0.8, flatShading: true });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x6f6a4e, roughness: 0.5, metalness: 0.6 });
+  const G = { stone: [], trim: [], dark: [], dome: [], metal: [] };
+  const box = (k, sx, sy, sz, px, py, pz) => G[k].push(new THREE.BoxGeometry(sx, sy, sz).translate(px, py, pz));
+  // a round- or pointed-arched opening set into the front (local +z) or a tower face
+  const arch = (px, py, pz, w, h, pointed, ry = 0) => {
+    const g1 = new THREE.BoxGeometry(w, h - w / 2, 0.12).translate(0, (h - w / 2) / 2, 0);
+    const g2 = new THREE.CylinderGeometry(w / 2, w / 2, 0.12, pointed ? 4 : 14, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2).translate(0, h - w / 2, 0);
+    if (pointed) g2.scale(1, 1.5, 1).translate(0, -(h - w / 2) * 0.5, 0);
+    for (const g of [g1, g2]) G.dark.push(g.rotateY(ry).translate(px, py, pz));
+  };
+  // hall
+  box('stone', L, H, D, 0, H / 2, 0);
+  box('trim', L + 0.3, 0.35, D + 0.3, 0, 4.6, 0);                    // string course between the storeys
+  box('trim', L + 0.4, 0.4, D + 0.4, 0, H - 0.2, 0);                 // cornice
+  box('trim', L + 0.2, 0.9, D + 0.2, 0, 0.45, 0);                    // plinth
+  for (let i = 0; i < 44; i++) {                                     // stepped merlons, front and both ends
+    const u = -L / 2 + 0.35 + i * (L - 0.7) / 43;
+    for (const [w, h, yy] of [[0.5, 0.3, 0.15], [0.32, 0.25, 0.42], [0.14, 0.22, 0.65]]) {
+      box('stone', w, h, 0.18, u, H + yy, D / 2 - 0.1); box('stone', w, h, 0.18, u, H + yy, -D / 2 + 0.1);
+    }
+  }
+  for (let i = 0; i < 18; i++) {
+    const w = -D / 2 + 0.35 + i * (D - 0.7) / 17;
+    for (const [ww, h, yy] of [[0.5, 0.3, 0.15], [0.32, 0.25, 0.42], [0.14, 0.22, 0.65]]) {
+      box('stone', 0.18, h, ww, L / 2 - 0.1, H + yy, w); box('stone', 0.18, h, ww, -L / 2 + 0.1, H + yy, w);
+    }
+  }
+  const zf = D / 2 + 0.02;
+  // upper storey: a group of three narrow lights, then three wide arched windows (as photographed)
+  for (const u of [-5.6, -4.6, -3.6]) arch(u, 5.6, zf, 0.7, 2.0, false);
+  for (const u of [0.5, 5.2, 9.9]) arch(u, 5.5, zf, 1.9, 2.3, false);
+  // ground storey: the pointed-arch door beside the minaret, plain rectangular openings along the rest
+  arch(-8.6, 0.9, zf, 2.6, 4.2, true);
+  box('trim', 3.6, 0.3, 0.5, -8.6, 0.75, D / 2 + 0.5); box('trim', 3.2, 0.3, 0.5, -8.6, 0.45, D / 2 + 0.9); box('trim', 2.8, 0.3, 0.5, -8.6, 0.15, D / 2 + 1.3);
+  for (const u of [-2.5, 2.2, 6.9, 11.2]) box('dark', 1.5, 1.7, 0.12, u, 2.4, zf);
+  // dome on a low drum, behind the parapet
+  G.trim.push(new THREE.CylinderGeometry(2.3, 2.3, 1.0, 16).translate(-3.2, H + 0.5, -0.6));
+  G.dome.push(new THREE.SphereGeometry(2.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1).translate(-3.2, H + 1.0, -0.6));
+  G.metal.push(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 6).translate(-3.2, H + 4.5, -0.6));
+  G.metal.push(new THREE.SphereGeometry(0.22, 8, 6).translate(-3.2, H + 3.9, -0.6));
+  G.metal.push(new THREE.TorusGeometry(0.38, 0.06, 6, 14, Math.PI * 1.5).rotateZ(Math.PI * 0.75).translate(-3.2, H + 5.6, -0.6));
+  // minaret at the end of the front: square base, tall square shaft, two balconies, pointed cap
+  const mx = -L / 2 + 2.6, mz = D / 2 - 2.6, B = 5.2;
+  box('stone', B, 12.6, B, mx, 6.3, mz);
+  G.trim.push(new THREE.CylinderGeometry(2.3, 3.85, 1.1, 4).rotateY(Math.PI / 4).translate(mx, 13.15, mz));   // the tiled skirt where base narrows to shaft
+  for (const [dx, dz, ry] of [[0, 1, 0], [1, 0, Math.PI / 2], [0, -1, 0], [-1, 0, Math.PI / 2]])
+    for (const o of [-0.9, 0.9]) arch(mx + dx * (B / 2 + 0.02) + (ry ? 0 : o), 10.0, mz + dz * (B / 2 + 0.02) + (ry ? o : 0), 0.9, 1.9, false, ry);
+  const S = 3.2;
+  box('stone', S, 10.2, S, mx, 13.6 + 5.1, mz);
+  for (const [dx, dz, ry] of [[0, 1, 0], [1, 0, Math.PI / 2], [0, -1, 0], [-1, 0, Math.PI / 2]])
+    for (const yy of [15.2, 19.2]) arch(mx + dx * (S / 2 + 0.02), yy, mz + dz * (S / 2 + 0.02), 0.75, 1.9, false, ry);
+  box('trim', S + 1.5, 0.4, S + 1.5, mx, 24.0, mz);                  // lower balcony (the loudspeakers hang here)
+  box('stone', S + 1.5, 1.0, 0.16, mx, 24.7, mz + (S + 1.5) / 2 - 0.08); box('stone', S + 1.5, 1.0, 0.16, mx, 24.7, mz - (S + 1.5) / 2 + 0.08);
+  box('stone', 0.16, 1.0, S + 1.5, mx + (S + 1.5) / 2 - 0.08, 24.7, mz); box('stone', 0.16, 1.0, S + 1.5, mx - (S + 1.5) / 2 + 0.08, 24.7, mz);
+  for (const [dx, dz] of [[1, 1], [-1, -1]]) G.metal.push(new THREE.ConeGeometry(0.28, 0.6, 8, 1, true).rotateZ(-dx * Math.PI / 2).translate(mx + dx * 2.7, 24.6, mz + dz * 1.4));
+  const S2 = 2.4;
+  box('stone', S2, 5.2, S2, mx, 24.2 + 2.6, mz);
+  for (const [dx, dz, ry] of [[0, 1, 0], [1, 0, Math.PI / 2], [0, -1, 0], [-1, 0, Math.PI / 2]])
+    arch(mx + dx * (S2 / 2 + 0.02), 25.6, mz + dz * (S2 / 2 + 0.02), 0.7, 2.0, false, ry);
+  box('trim', S2 + 1.2, 0.35, S2 + 1.2, mx, 29.5, mz);               // upper balcony
+  box('stone', S2 + 1.2, 0.8, 0.14, mx, 30.05, mz + (S2 + 1.2) / 2 - 0.07); box('stone', S2 + 1.2, 0.8, 0.14, mx, 30.05, mz - (S2 + 1.2) / 2 + 0.07);
+  box('stone', 0.14, 0.8, S2 + 1.2, mx + (S2 + 1.2) / 2 - 0.07, 30.05, mz); box('stone', 0.14, 0.8, S2 + 1.2, mx - (S2 + 1.2) / 2 + 0.07, 30.05, mz);
+  box('stone', 1.7, 3.0, 1.7, mx, 31.2, mz);
+  for (const [dx, dz, ry] of [[0, 1, 0], [1, 0, Math.PI / 2], [0, -1, 0], [-1, 0, Math.PI / 2]])
+    arch(mx + dx * 0.87, 30.4, mz + dz * 0.87, 0.6, 1.6, false, ry);
+  G.trim.push(new THREE.ConeGeometry(1.35, 2.6, 4).rotateY(Math.PI / 4).translate(mx, 34.0, mz));
+  G.metal.push(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 6).translate(mx, 36.2, mz));
+  G.metal.push(new THREE.SphereGeometry(0.2, 8, 6).translate(mx, 35.7, mz), new THREE.SphereGeometry(0.14, 8, 6).translate(mx, 36.3, mz));
+  const root = new THREE.Group(); root.name = 'masjed_el_salhen';
+  root.position.set(x, y, z); root.rotation.y = Math.PI / 2;        // the front faces east, on to the street and its small square
+  for (const [k, mat] of [['stone', stone], ['trim', trim], ['dark', dark], ['dome', domeM], ['metal', metal]]) {
+    const m = new THREE.Mesh(mergeGeometries(G[k].map(g => g.index ? g.toNonIndexed() : g), false), mat);
+    m.castShadow = k !== 'dark'; m.receiveShadow = true; root.add(m);
+    if (k === 'stone') { m.userData.collidable = true; collidables.push(m); }
+  }
+  group.add(root); root.updateMatrixWorld(true);
+}
+
 // The Grand Egyptian Museum, on the skyline 2.2 km north-west of the Great
 // Pyramid (bearing 320 deg) and a kilometre beyond the edge of the map: a
 // plain massing of its ~445 x 557 m wedge, 46 m high at the front (OSM
@@ -1064,7 +1157,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   const deco = deco0;
   const mastabas = [], buildings = [], town = [];
   buildTombs(mats, collidables, group, mastabas);
-  buildTown(mats, collidables, group, town, [{ ...KHUFU_VALLEY.center, r: 36 }]);
+  buildTown(mats, collidables, group, town, [{ ...KHUFU_VALLEY.center, r: 36 }, { x: 780, z: -513, r: 6 }]);   // the second makes room for Masjed El Salhen
   buildPalms(deco, group);
 
   // Quarries: the Central Field south of Khafre's causeway, and Menkaure's
@@ -1225,6 +1318,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   }
   const roadTick = models.vehicles ? buildRoadTraffic(group, models.vehicles) : null;
   buildMosque(group, 783, 643);
+  buildSalhen(group, collidables, 780, -513);
   buildGEM(group, mats);
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);

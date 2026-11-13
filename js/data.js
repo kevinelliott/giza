@@ -633,6 +633,7 @@ export const TOWN_PLACES = [
   ['Sound and Light theatre', 540, 516, 55, 'The open-air terrace of seats where audiences watch the evening Sound and Light show play over the Sphinx and the pyramids — as they have since 1961.'],
   ['Nazlet el-Semman stables', 763, 604, 40, 'The village has kept horses and camels for visitors for generations; the yards lie behind the houses. Since 2025 the animals work only in set zones on the south side of the plateau.'],
   ['Masjid Naser', 783, 643, 26, 'A neighbourhood mosque of Nazlet el-Semman, on Naser Street. Its position comes from a web directory listing only — the map data records no mosque in the village — and the building shown is the ordinary modern type, not a survey of this one.'],
+  ['Masjed El Salhen', 780, -513, 30, 'The mosque of the Righteous (al-Salihin), Nazlet el-Semman: a stone-faced prayer hall with a crenellated parapet, a small ribbed dome and a tall square minaret with two balconies, facing a little square with benches. Modelled from two photographs taken in 2014 and 2019; it stands on the mapped building beside the photographs\' geotags, which is an inference, and its heights are scaled from the photographs rather than measured.'],
   ['St George\'s Church', 684, -418, 30, 'The Coptic church of Mar Girgis, Nazlet el-Semman.'],
   ['King Farouk\'s rest house', 170, -119, 30, 'A small royal rest house on the edge of the plateau north-east of the Great Pyramid, built for King Farouk in the 1940s.'],
   ['9 Pyramids Lounge', -224, 1264, 40, 'An open-air restaurant on the southern ridge, opened in October 2020: 1.3 km from the Great Pyramid, looking north at all of them.'],
@@ -695,7 +696,7 @@ export const FAR_PLACES = {
   ['north', 'North wall', 'Right: Ay, the next king, in a priest\'s leopard skin, opens the mouth of Tutankhamun\'s mummy. Centre: Nut greets the king. Left: the king and his ka are embraced by Osiris.', 2.4],
   ['west', 'West wall', 'The first hour of the Amduat: twelve baboons, one for each hour of the night, below the sun-god as a scarab in his barque.', 2.2],
   ['east', 'East wall', 'The funeral: twelve courtiers in white draw the sledge that carries the king\'s mummy under a canopy of garlands.', 2.2],
-  ['south', 'South wall', 'Hathor, mistress of the West, holds the sign of life to the king\'s nose; Anubis stands behind him. Only this western end survives — the rest was painted on the partition Carter took down. What you see here is a drawn reconstruction of the composition, not a photograph: no freely licensed photograph of this wall exists.', 1.8],
+  ['south', 'South wall', 'Hathor, mistress of the West, holds the sign of life to the king\'s nose; Anubis stands behind him. Only this western end survives — the rest, with Isis and three gods of the underworld, was painted on the partition Carter took down. What you see is a photograph of a painted full-size replica of the wall (Sat Ra, 2012), not of the wall itself: no freely licensed photograph of the original exists, and the replica is cleaner than the real plaster, which is spotted brown like the other walls.', 1.8],
   ['treasury', 'Treasury', 'The treasury, guarded by the Anubis shrine: it held the gilded canopic shrine, model boats and chests of jewellery.', 2.5]
 ] }
 };

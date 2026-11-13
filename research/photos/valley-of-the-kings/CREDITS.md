@@ -21,7 +21,13 @@ CC BY / CC BY-SA files need attribution (and share-alike for BY-SA) if they are 
 | `14-kv9-burial-chamber.jpg` | KV9 burial chamber J: vault with Books of Day and Night, rear wall, broken sarcophagus | https://commons.wikimedia.org/wiki/File:Tumba_de_Rams%C3%A9s_V_y_de_Rams%C3%A9s_VI,_Valle_de_las_Reyes,_Luxor,_Egipto,_2022-04-03,_DD_54.jpg | Diego Delso | CC BY-SA 4.0 |
 | `15-kv9-burial-chamber-ceiling.jpg` | KV9 burial chamber ceiling: double image of Nut (Book of the Day / Book of the Night) | https://commons.wikimedia.org/wiki/File:KV9_Tomb_of_Ramses_V-VI_DSCF2858.jpg | R Prazeres | CC BY-SA 4.0 |
 
+## Added 13 Nov 2026
+
+| File | Shows | Source | Author | Licence |
+|---|---|---|---|---|
+| `09-kv62-south-wall-replica.jpg` (2300×1300) | A painted full-size **replica** of the whole south wall of KV62's burial chamber, as it was before Carter took down the partition: three squatting gods and Isis (lost part, left), Anubis, the king, Hathor (surviving part, right). Photographed 16 April 2012. The right-hand 2.82 m is cropped for `assets/textures/kv62_south.jpg` by `tools/art/kv62_south_wall.py`; the texture carries the same licence. | https://commons.wikimedia.org/wiki/File:Replikat_der_S%C3%BCdwand_der_Grabkammer_Tutanchamuns_(KV62)_(repairandskew)_(cropped).jpg | Sat Ra | CC BY-SA 4.0 |
+
 ## Wanted but not downloaded
 
-- **KV62 south wall.** Only one Commons file shows it: `File:By ovedc - KV62 - south wall.jpg` (720 × 628, black-and-white reproduction, Ovedc, CC BY-SA 4.0), https://commons.wikimedia.org/wiki/File:By_ovedc_-_KV62_-_south_wall.jpg . Wikimedia answered HTTP 429 on every attempt to fetch the original on 2026-11-11; retry later. The south wall cannot be photographed straight-on from the visitor platform (the platform is against it).
+- **KV62 south wall, the original.** (A photograph of a replica is now used — see above.) Only one Commons file shows the wall itself: `File:By ovedc - KV62 - south wall.jpg` (720 × 628, black-and-white reproduction, Ovedc, CC BY-SA 4.0), https://commons.wikimedia.org/wiki/File:By_ovedc_-_KV62_-_south_wall.jpg . Wikimedia answered HTTP 429 on every attempt to fetch the original on 2026-11-11; retry later. The south wall cannot be photographed straight-on from the visitor platform (the platform is against it).
 - Other good candidates seen in the Commons category listings but not fetched: `KV62, Egypt 01–25.jpg` (ولاء, public domain, 2020s interior series), `KV9 Tomb of Ramses V-VI DSCF2744–2935.jpg` (R Prazeres, CC BY-SA 4.0, section-by-section series with captions naming each corridor), `Tombe Ramsès V Ramsès VI Vallée Rois - Louxor (EG) - 2025-12-10 - N.jpg` (Chabe01, CC BY-SA 4.0, 130+ frames).

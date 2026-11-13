@@ -26,6 +26,15 @@ they are kept here as **reference**, not as game textures.
 | `al-haram-street-2012.jpg` (1280×919) | Al-Haram (Pyramids) Road further east: divided road with underpass ramp, 10–12-storey blocks, pencil minaret, rooftop dishes and masts | https://commons.wikimedia.org/wiki/File:Giza_-_Al-Haram_street.jpg | Radosław Botev | CC BY 3.0 PL | 2012-11-16 |
 | `pyramids-from-mansouria-road.jpg` (1280×960) | Khufu and Khafre over a rubble-stone wall, trees and unfinished concrete-frame blocks, from El Mansouria Road | https://commons.wikimedia.org/wiki/File:Pyramids_from_El_Mansouria_Road,_Giza,_GG,_EGY_(46986517805).jpg | Warren LeMay | CC0 1.0 | 2019-05-12 |
 
+Added 13 Nov 2026:
+
+| File | Shows | Source | Author | Licence | Date |
+|---|---|---|---|---|---|
+| `masjed-el-salhen-2014.jpg` (1280×960) | Masjed El Salhen, Nazlet el-Semman, across its small square: two-storey tan stone hall, stepped-merlon parapet, small ribbed dome with crescent, tall square minaret with two balconies and loudspeakers; lamp standards, benches, street trees | https://commons.wikimedia.org/wiki/File:Masjed_El_Salhen,_Nazlet_El-Semman,_Al_Haram,_Giza,_Egypt_-_panoramio_(15).jpg | EliziR | CC BY-SA 3.0 | 2014 |
+| `masjed-el-salhen-2019.jpg` (1280×960) | The same mosque from close by, against the sky: minaret stages, parapet, dome finial, the neighbouring brick-and-stone houses | Wikimedia Commons, category "Masjed El Salhen" (file 08 of the 2019 series) | Sara Adel Sayed | CC BY-SA 4.0 | 2019 |
+
+Geotags on the two Commons files: 29.98354 N 31.14253 E and 29.98414 N 31.14230 E.
+
 Not found on Commons (searched 2026-11-11): any photograph of the Giza Plateau
 hop-on hop-off electric visitor bus; a rooftop view of Nazlet el-Semman with
 the pyramids behind; a recent exterior of the Marriott Mena House. Downloaded,
@@ -35,3 +44,8 @@ a CTA double-decker, a camel group.
 Wikimedia note: requests for original-size files returned HTTP 429 with the
 message "use thumbnail images in sizes listed on https://w.wiki/GHai"; the
 standard widths (500, 960, 1280, 1920) were served at once.
+
+Searched again 2026-11-13 (Commons, Openverse, Smithsonian, Egyptian Streets,
+Lonely Planet, Moris Insider): still no photograph or description of the
+plateau visitor bus's make or livery. The in-game shuttle stays a generic
+white electric bus with a green band, labelled unverified.
