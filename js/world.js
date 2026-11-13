@@ -676,35 +676,42 @@ function buildBoatPit(pit, mats, collidables, group) {
   return { x: cx, y: y + 4, z: cz };
 }
 
-// Masjid Naser, Nazlet el-Semman: a neighbourhood mosque with a dome and a
-// minaret. Its position (29.97337 N, 31.14233 E) comes from a web directory
-// listing only — no map dataset records a mosque in the village — and its
-// form is the ordinary modern Egyptian type, not this building's own.
-function buildMosque(group, x, z) {
-  const y = terrainHeight(x, z);
-  const wall = new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.9 }), trim = new THREE.MeshStandardMaterial({ color: 0x3f7a5a, roughness: 0.7 });
-  const add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x + px, y + py, z + pz); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
-  add(new THREE.BoxGeometry(15, 8, 19), wall, 0, 4, 0);
-  add(new THREE.BoxGeometry(15.6, 0.5, 19.6), trim, 0, 8.25, 0);
-  add(new THREE.SphereGeometry(4.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), trim, 0, 8.5, -2);
-  add(new THREE.CylinderGeometry(1.1, 1.3, 14, 8), wall, 6.2, 7, 8.2);
-  add(new THREE.CylinderGeometry(1.6, 1.6, 0.5, 8), trim, 6.2, 14.2, 8.2);
-  add(new THREE.CylinderGeometry(0.8, 0.95, 9, 8), wall, 6.2, 19, 8.2);
-  add(new THREE.CylinderGeometry(1.25, 1.25, 0.45, 8), trim, 6.2, 23.6, 8.2);
-  add(new THREE.ConeGeometry(0.85, 4, 8), trim, 6.2, 25.9, 8.2);
+// Masjid Naser, Nazlet el-Semman. A web directory puts it at 29.97337 N
+// 31.14233 E and no photograph of it has been found. 68 m from that point
+// the satellite image shows the only domed roof in the neighbourhood: a low
+// flat-roofed block (mapped footprint ~38 x 28 m) with a small dome in a
+// square roof lantern, and no minaret that can be made out. That building is
+// modelled here as seen from above — walls, colour and door are generic,
+// and that it is this mosque is probable, not confirmed.
+function buildNaser(group, collidables, x, z, yaw) {
+  const y = terrainHeight(x, z) - 0.3, H = 7;
+  const wall = new THREE.MeshStandardMaterial({ color: 0xd8cdb4, roughness: 0.92 }), trim = new THREE.MeshStandardMaterial({ color: 0xb9ad92, roughness: 0.9 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x241c14, roughness: 1 }), domeM = new THREE.MeshStandardMaterial({ color: 0xbfb49a, roughness: 0.8 });
+  const root = new THREE.Group(); root.name = 'masjid_naser'; root.position.set(x, y, z); root.rotation.y = yaw;
+  const add = (geo, mat, px, py, pz, solid) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true; m.receiveShadow = true; root.add(m); if (solid) { m.userData.collidable = true; collidables.push(m); } return m; };
+  add(new THREE.BoxGeometry(30, H, 24), wall, 0, H / 2, 0, true);
+  add(new THREE.BoxGeometry(30.3, 0.7, 24.3), trim, 0, H + 0.35, 0);                          // parapet
+  add(new THREE.BoxGeometry(6.4, 1.4, 6.4), trim, 6.6, H + 0.7, 1.3);                          // the square lantern
+  add(new THREE.SphereGeometry(2.3, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), domeM, 6.6, H + 1.4, 1.3);   // and its dome
+  for (const u of [-11, -6, 6, 11]) add(new THREE.BoxGeometry(1.3, 2.2, 0.12), dark, u, 3.6, 12.02);
+  add(new THREE.BoxGeometry(2.2, 3.2, 0.12), dark, 0, 1.6, 12.02);
+  group.add(root); root.updateMatrixWorld(true);
 }
 
-// Masjed El Salhen (Masjid al-Salihin), Nazlet el-Semman, modelled from two
+// Masjed El Salhen (Masjid al-Salihin), Nazlet el-Semman, modelled from four
 // photographs (research/photos/giza-town/, EliziR 2014 and Sara Adel Sayed
 // 2019): a two-storey hall faced in tan stone with round-arched windows, a
 // pointed-arch door, a parapet of stepped merlons, a small ribbed dome with a
-// crescent, and at one end a tall square minaret with two balconies. It
-// stands on the mapped 10 x 27 m footprint beside the two photographs'
-// geotags (29.98354 N 31.14253 E; 29.98414 N 31.14230 E) — the identification
-// of that footprint, and which way the front faces, are inferred. Heights
-// are scaled from the photographs, not measured.
-function buildSalhen(group, collidables, x, z) {
-  const y = terrainHeight(x, z) - 0.3, L = 27, D = 11, H = 9.2;
+// crescent, and at the east end of the front a tall square minaret with two
+// balconies. It stands on the northern lobe (26 x 20 m, mapped 9.3 m high) of
+// the mapped block 25-35 m from the "object location" the photographers gave
+// (29.98412 N 31.14231 E), chosen because the satellite image shows there
+// what the 2014 photograph shows: a sandy square, a lane of parked cars, a
+// belt of trees, then a north-facing front. A wing of the same stone runs on
+// to the west (plain massing). Probable, not surveyed; the heights of the
+// minaret are scaled from the photographs.
+function buildSalhen(group, collidables, x, z, yaw) {
+  const y = terrainHeight(x, z) - 0.3, L = 27, D = 20, H = 9.3;
   const stone = new THREE.MeshStandardMaterial({ color: 0xb4935f, roughness: 0.92 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x8f7248, roughness: 0.9 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x241c14, roughness: 1 });
@@ -777,8 +784,11 @@ function buildSalhen(group, collidables, x, z) {
   G.trim.push(new THREE.ConeGeometry(1.35, 2.6, 4).rotateY(Math.PI / 4).translate(mx, 34.0, mz));
   G.metal.push(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 6).translate(mx, 36.2, mz));
   G.metal.push(new THREE.SphereGeometry(0.2, 8, 6).translate(mx, 35.7, mz), new THREE.SphereGeometry(0.14, 8, 6).translate(mx, 36.3, mz));
+  // the adjoining wing of the same block, to the west: plain massing with the same parapet line
+  box('stone', 34, 8.6, 28, 32, 4.3, -9); box('trim', 34.3, 0.4, 28.3, 32, 8.4, -9);
+  for (const u of [20, 26, 32, 38, 44]) { arch(u, 5.2, 5.02, 1.6, 2.2, false); box('dark', 1.5, 1.7, 0.12, u, 2.2, 5.02); }
   const root = new THREE.Group(); root.name = 'masjed_el_salhen';
-  root.position.set(x, y, z); root.rotation.y = Math.PI / 2;        // the front faces east, on to the street and its small square
+  root.position.set(x, y, z); root.rotation.y = yaw;                // the front faces north-north-west, on to the lane and the square
   for (const [k, mat] of [['stone', stone], ['trim', trim], ['dark', dark], ['dome', domeM], ['metal', metal]]) {
     const m = new THREE.Mesh(mergeGeometries(G[k].map(g => g.index ? g.toNonIndexed() : g), false), mat);
     m.castShadow = k !== 'dark'; m.receiveShadow = true; root.add(m);
@@ -1157,7 +1167,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   const deco = deco0;
   const mastabas = [], buildings = [], town = [];
   buildTombs(mats, collidables, group, mastabas);
-  buildTown(mats, collidables, group, town, [{ ...KHUFU_VALLEY.center, r: 36 }, { x: 780, z: -513, r: 6 }]);   // the second makes room for Masjed El Salhen
+  buildTown(mats, collidables, group, town, [{ ...KHUFU_VALLEY.center, r: 36 }, { x: 756, z: -559, r: 3 }, { x: 795.5, z: 710, r: 2 }]);   // the last two are the blocks rebuilt as Masjed El Salhen and Masjid Naser
   buildPalms(deco, group);
 
   // Quarries: the Central Field south of Khafre's causeway, and Menkaure's
@@ -1317,8 +1327,8 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
     farTp(F.title + ' — antechamber', anchors.tp_antechamber); farTp(F.title + ' — burial chamber', anchors.tp_burial_chamber);
   }
   const roadTick = models.vehicles ? buildRoadTraffic(group, models.vehicles) : null;
-  buildMosque(group, 783, 643);
-  buildSalhen(group, collidables, 780, -513);
+  buildSalhen(group, collidables, 767, -577, -2.687);
+  buildNaser(group, collidables, 796, 709, 0.5);
   buildGEM(group, mats);
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);

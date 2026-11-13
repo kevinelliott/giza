@@ -19,10 +19,11 @@ import { ROADS, LAMPS } from './roadnet.js';
 const TYPES = {
   car: [4.4, 0.42, 0, 9, 1.0, 0x111111], taxi: [4.4, 0.16, 0, 9, 1.0, 0x0c0c0c], microbus: [4.9, 0.15, 1, 9, 1.0, 0x111111],
   tuktuk: [2.65, 0.12, 0, 2, 0.7, 0xd9b21a], pickup: [5.0, 0.09, 0, 9, 0.9, 0x111111], bus: [11.8, 0.06, 2, 9, 0.8, 0xb8262a],
-  coach: [12.2, 0.04, 2, 9, 0.75, 0x1f4f9a], shuttle: [7.6, 0.0, 0, 9, 0.8, 0x2f8f4f]
+  coach: [12.2, 0.04, 2, 9, 0.75, 0x1f4f9a], shuttle: [10.5, 0.0, 0, 9, 0.8, 0x121212]
 };
 const PAINTS = [0xe8e8e6, 0xe8e8e6, 0xc9ccd0, 0x9a9da2, 0x2b2d31, 0x101113, 0x7a1f1f, 0x1f3f7a, 0xb9a98a, 0x6b6f5a];
-const WHITE = ['taxi', 'microbus', 'bus', 'coach', 'shuttle'];
+const WHITE = ['taxi', 'microbus', 'bus', 'coach'];
+const AMBER = 0xd08a24;   // the plateau's visitor buses: amber-gold, from the 2022 press photograph
 
 let seed = 21;
 const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -92,7 +93,7 @@ export function buildRoadTraffic(group, vehicles) {
     const e = randomEdge(kind, TYPES[type][2], TYPES[type][3]);
     if (e < 0 || !models[type]) continue;
     counts[type] = (counts[type] || 0) + 1;
-    const paint = WHITE.includes(type) ? 0xf0f0ee : (type === 'tuktuk' ? 0x15161a : PAINTS[Math.floor(rnd() * PAINTS.length)]);
+    const paint = type === 'shuttle' ? AMBER : WHITE.includes(type) ? 0xf0f0ee : (type === 'tuktuk' ? 0x15161a : PAINTS[Math.floor(rnd() * PAINTS.length)]);
     cars.push({ type, i: counts[type] - 1, e, dir: rnd() < 0.5 ? 1 : -1, s: rnd() * edges[e].len, v: 0, yaw: 0, paint, site: kind, init: false });
   }
   const fleets = {};

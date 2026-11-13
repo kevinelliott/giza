@@ -11,7 +11,7 @@ One mesh per vehicle, facing +X, wheels on Z = 0, real sizes:
   pickup    light truck, 5.0 x 1.75 x 1.75 m
   bus       city bus, 11.8 x 2.5 x 3.1 m
   coach     tour coach, 12.2 x 2.55 x 3.6 m
-  shuttle   the plateau's electric visitor shuttle, 7.6 x 2.3 x 2.9 m
+  shuttle   the plateau's electric visitor bus (amber-gold, black mask), ~10.5 x 2.5 x 3.15 m
 Material slots: "paint" (recoloured per vehicle), "paint2" (second colour),
 "glass", "tyre", "trim", "lamp_f", "lamp_r".
 """
@@ -179,10 +179,47 @@ def bus(name, L, W, H, floor=0.38, band=None, doors=2):
     return b.done()
 
 
+def shuttle():
+    """The plateau's electric visitor bus, from the press photograph of the
+    fleet at its September 2022 launch (research/sites/giza-town-and-roads.md):
+    a full-size two-axle low-floor city bus, amber-gold, with a black front
+    mask and a black band round the windows, amber mirror housings on hooked
+    arms, a red LED destination sign and ORASCOM lettering (not drawn). The
+    length (~10.5 m) is judged from the photograph; the maker is not known."""
+    L, W, H, floor = 10.5, 2.5, 3.15, 0.34
+    b = Build('shuttle'); hw = W / 2; x0, x1 = -L / 2, L / 2
+    b.prism([(x0, floor), (x1 - 0.12, floor), (x1, floor + 0.35), (x1, H - 0.3), (x1 - 0.3, H), (x0 + 0.15, H), (x0, H - 0.15)], -hw, hw, 'paint', 0.1)
+    wz0, wz1 = floor + 1.0, H - 0.42
+    b.box(x0 + 0.25, x1 - 0.02, -hw - 0.006, hw + 0.006, wz0 - 0.06, wz1 + 0.06, 'paint2')        # the black band the windows sit in
+    n = 6
+    for i in range(n):
+        xa = x0 + 0.9 + i * (L - 2.6) / n
+        b.box(xa + 0.05, xa + (L - 2.6) / n - 0.05, -hw - 0.012, hw + 0.012, wz0, wz1, 'glass')
+    b.box(x1 - 0.04, x1 + 0.014, -hw + 0.04, hw - 0.04, floor + 0.3, H - 0.12, 'paint2')            # black front mask, bumper to roof
+    b.box(x1 - 0.03, x1 + 0.022, -hw + 0.12, hw - 0.12, floor + 1.05, H - 0.62, 'glass')            # the deep windscreen
+    b.box(x1 - 0.03, x1 + 0.026, -0.55, 0.55, H - 0.52, H - 0.26, 'lamp_r')                         # LED destination sign: "Pyramids"
+    b.box(x1 - 0.03, x1 + 0.024, -0.7, 0.7, floor + 0.62, floor + 0.66, 'trim')                     # chrome bar under the lettering
+    b.box(x0 - 0.014, x0 + 0.04, -hw + 0.25, hw - 0.25, wz0 + 0.1, wz1, 'glass')
+    for s in (-1, 1):                                                                           # mirrors: amber housings hung on hooked black arms
+        b.box(x1 - 0.05, x1 + 0.5, s * (hw + 0.02), s * (hw + 0.1), H - 0.75, H - 0.67, 'paint2')
+        b.box(x1 + 0.42, x1 + 0.5, s * (hw + 0.02), s * (hw + 0.1), H - 1.2, H - 0.67, 'paint2')
+        b.box(x1 + 0.38, x1 + 0.54, s * (hw - 0.02), s * (hw + 0.2), H - 1.55, H - 1.1, 'paint', 0.03)
+    for k in range(2):                                                                          # doors on the kerb side (number assumed: that side is not in the photograph)
+        xd = x1 - 2.0 - k * 4.4
+        b.box(xd, xd + 1.25, -hw - 0.016, -hw + 0.02, floor + 0.05, H - 0.5, 'glass')
+        b.box(xd + 0.6, xd + 0.65, -hw - 0.02, -hw + 0.02, floor + 0.05, H - 0.5, 'trim')
+    b.box(x0 - 0.1, x0 + 0.02, -hw + 0.05, hw - 0.05, floor - 0.05, floor + 0.22, 'trim', 0.03)
+    for s in (-1, 1):
+        b.box(x1 - 0.02, x1 + 0.03, s * (hw - 0.62), s * (hw - 0.12), floor + 0.3, floor + 0.44, 'lamp_f')   # slim LED headlamps low in the corners
+        b.box(x0 - 0.03, x0 + 0.02, s * (hw - 0.4), s * (hw - 0.18), floor + 0.5, floor + 1.3, 'lamp_r')
+        for x in (x1 - 2.55, x0 + 2.9): b.wheel(x, s * (hw - 0.16), 0.48, 0.3)
+    return b.done()
+
+
 saloon('car'); saloon('taxi', True); microbus(); tuktuk(); pickup()
 bus('bus', 11.8, 2.5, 3.1, band=True, doors=2)
 bus('coach', 12.2, 2.55, 3.6, floor=0.42, band=True, doors=1)
-bus('shuttle', 7.6, 2.3, 2.9, floor=0.36, band=True, doors=1)
+shuttle()
 for i, o in enumerate(o for o in COL.objects):
     o.location.y = i * 5.0                                    # spread out (the game reads the meshes, not the placement)
 out = os.path.join(ROOT, 'assets', 'models', 'vehicles.glb')

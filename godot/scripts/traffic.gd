@@ -13,7 +13,7 @@ const TYPES := {
 	# name: [length, share on public streets, min rank, max rank, speed factor, paint2 colour]
 	"car": [4.4, 0.42, 0, 9, 1.0, 0x111111], "taxi": [4.4, 0.16, 0, 9, 1.0, 0x0c0c0c], "microbus": [4.9, 0.15, 1, 9, 1.0, 0x111111],
 	"tuktuk": [2.65, 0.12, 0, 2, 0.7, 0xd9b21a], "pickup": [5.0, 0.09, 0, 9, 0.9, 0x111111], "bus": [11.8, 0.06, 2, 9, 0.8, 0xb8262a],
-	"coach": [12.2, 0.04, 2, 9, 0.75, 0x1f4f9a], "shuttle": [7.6, 0.0, 0, 9, 0.8, 0x2f8f4f],
+	"coach": [12.2, 0.04, 2, 9, 0.75, 0x1f4f9a], "shuttle": [10.5, 0.0, 0, 9, 0.8, 0x121212],
 }
 const PAINTS := [0xe8e8e6, 0xe8e8e6, 0xc9ccd0, 0x9a9da2, 0x2b2d31, 0x101113, 0x7a1f1f, 0x1f3f7a, 0xb9a98a, 0x6b6f5a]
 
@@ -70,7 +70,8 @@ func setup(main_node: Node, world: Dictionary) -> void:
 		var e := _random_edge(p[1], TYPES[p[0]][2], TYPES[p[0]][3])
 		if e < 0: continue
 		var paint: int = PAINTS[rng.randi() % PAINTS.size()]
-		if p[0] in ["taxi", "microbus", "bus", "coach", "shuttle"]: paint = 0xf0f0ee
+		if p[0] in ["taxi", "microbus", "bus", "coach"]: paint = 0xf0f0ee
+		if p[0] == "shuttle": paint = 0xd08a24      # amber-gold, from the 2022 press photograph of the fleet
 		if p[0] == "tuktuk": paint = 0x15161a
 		counts[p[0]] = counts.get(p[0], 0) + 1
 		cars.append({"type": p[0], "i": counts[p[0]] - 1, "e": e, "dir": 1 if rng.randf() < 0.5 else -1, "s": rng.randf() * edges[e]["len"],

@@ -33,7 +33,9 @@ Added 13 Nov 2026:
 | `masjed-el-salhen-2014.jpg` (1280×960) | Masjed El Salhen, Nazlet el-Semman, across its small square: two-storey tan stone hall, stepped-merlon parapet, small ribbed dome with crescent, tall square minaret with two balconies and loudspeakers; lamp standards, benches, street trees | https://commons.wikimedia.org/wiki/File:Masjed_El_Salhen,_Nazlet_El-Semman,_Al_Haram,_Giza,_Egypt_-_panoramio_(15).jpg | EliziR | CC BY-SA 3.0 | 2014 |
 | `masjed-el-salhen-2019.jpg` (1280×960) | The same mosque from close by, against the sky: minaret stages, parapet, dome finial, the neighbouring brick-and-stone houses | Wikimedia Commons, category "Masjed El Salhen" (file 08 of the 2019 series) | Sara Adel Sayed | CC BY-SA 4.0 | 2019 |
 
-Geotags on the two Commons files: 29.98354 N 31.14253 E and 29.98414 N 31.14230 E.
+Also from Sara Adel Sayed's 2019 series (CC BY-SA 4.0), Commons category "Masjed El Salhen, Nazlet El-Semman": `masjed-el-salhen-2019-b.jpg` (file "… 4.jpg": minaret, dome, front with the three narrow lights and pointed door behind trees) and `masjed-el-salhen-2019-c.jpg` (file "… 6.jpg": the minaret standing at the corner of the hall, both faces visible). `masjed-el-salhen-2019.jpg` is file "… 08.jpg".
+
+Coordinates on the Commons pages — object location: 29°59′02.83″N 31°08′32.32″E (2014) and 29°59′02.9″N 31°08′32.28″E (2019, file 6), agreeing to 3 m; files 08 and 4 give an object location beside their own camera (29°59′00.74″N 31°08′33.1″E), which does not fit. Camera locations: 29°59′05.42″N 31°08′32.58″E (2014); 29°59′02.58″N 31°08′34.12″E (file 6).
 
 Not found on Commons (searched 2026-11-11): any photograph of the Giza Plateau
 hop-on hop-off electric visitor bus; a rooftop view of Nazlet el-Semman with
@@ -45,7 +47,4 @@ Wikimedia note: requests for original-size files returned HTTP 429 with the
 message "use thumbnail images in sizes listed on https://w.wiki/GHai"; the
 standard widths (500, 960, 1280, 1920) were served at once.
 
-Searched again 2026-11-13 (Commons, Openverse, Smithsonian, Egyptian Streets,
-Lonely Planet, Moris Insider): still no photograph or description of the
-plateau visitor bus's make or livery. The in-game shuttle stays a generic
-white electric bus with a green band, labelled unverified.
+Visitor bus, found 2026-11-13: a press photograph of the fleet at its launch (uncredited; Egypt Independent item of 13 Sept 2022 as republished at https://ozarab.media/photos-electric-bus-system-7-integrated-service-stations-begin-operating-at-pyramids/ , image `…/2022/09/70AB6578-594E-41CF-8C5C-3BCF67B36596.jpeg`). Not free, so looked at and **not** stored here. It shows four identical full-size two-axle low-floor buses: amber-gold body, black front mask and black window band, amber mirror housings on hooked arms, red LED sign reading "Pyramids", "ORASCOM Pyramids Entertainment" in gold on the front and flank. The maker's badge is not legible.

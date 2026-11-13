@@ -27,6 +27,8 @@ CC BY / CC BY-SA files need attribution (and share-alike for BY-SA) if they are 
 |---|---|---|---|---|
 | `09-kv62-south-wall-replica.jpg` (2300×1300) | A painted full-size **replica** of the whole south wall of KV62's burial chamber, as it was before Carter took down the partition: three squatting gods and Isis (lost part, left), Anubis, the king, Hathor (surviving part, right). Photographed 16 April 2012. The right-hand 2.82 m is cropped for `assets/textures/kv62_south.jpg` by `tools/art/kv62_south_wall.py`; the texture carries the same licence. | https://commons.wikimedia.org/wiki/File:Replikat_der_S%C3%BCdwand_der_Grabkammer_Tutanchamuns_(KV62)_(repairandskew)_(cropped).jpg | Sat Ra | CC BY-SA 4.0 |
 
+| `10-kv62-south-wall-original-bw.jpg` (720×628) | The **real** south wall as it survives — but as a phone photograph of a black-and-white figure printed on an information board (figure "6"). Shows the brown spotting, and the doorway from the antechamber cutting the wall's left edge beside Anubis. Used only to check the replica crop against; too small and colourless for a texture. | https://commons.wikimedia.org/wiki/File:By_ovedc_-_KV62_-_south_wall.jpg | Ovedc (2017) | CC BY-SA 4.0 |
+
 ## Wanted but not downloaded
 
 - **KV62 south wall, the original.** (A photograph of a replica is now used — see above.) Only one Commons file shows the wall itself: `File:By ovedc - KV62 - south wall.jpg` (720 × 628, black-and-white reproduction, Ovedc, CC BY-SA 4.0), https://commons.wikimedia.org/wiki/File:By_ovedc_-_KV62_-_south_wall.jpg . Wikimedia answered HTTP 429 on every attempt to fetch the original on 2026-11-11; retry later. The south wall cannot be photographed straight-on from the visitor platform (the platform is against it).

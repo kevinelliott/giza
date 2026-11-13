@@ -116,7 +116,9 @@ The south wall of that chamber is a photograph of a painted full-size
 **replica** of the wall, not of the wall itself (Sat Ra, CC BY-SA 4.0): no
 freely licensed photograph of the original exists, and the game says so on
 the spot. Masjed El Salhen is modelled from photographs by EliziR (CC BY-SA
-3.0) and Sara Adel Sayed (CC BY-SA 4.0).
+3.0) and Sara Adel Sayed (CC BY-SA 4.0). The plateau's visitor buses follow a
+2022 press photograph of the fleet (amber-gold, black mask); their maker is
+not known.
 (Wikimedia Commons). Dream Stele drawing: C. R. Lepsius, *Denkmäler* (1849),
 public domain. Hieroglyph font: Noto Sans Egyptian Hieroglyphs (SIL OFL).
 Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains
