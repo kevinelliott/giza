@@ -632,6 +632,7 @@ export const TOWN_PLACES = [
   ['Panorama Pyramids Inn', 667, 519, 14, 'Another of the inns facing the Sphinx, with a rooftop café.'],
   ['Sound and Light theatre', 540, 516, 55, 'The open-air terrace of seats where audiences watch the evening Sound and Light show play over the Sphinx and the pyramids — as they have since 1961.'],
   ['Nazlet el-Semman stables', 763, 604, 40, 'The village has kept horses and camels for visitors for generations; the yards lie behind the houses. Since 2025 the animals work only in set zones on the south side of the plateau.'],
+  ['Masjid Naser', 783, 643, 26, 'A neighbourhood mosque of Nazlet el-Semman, on Naser Street. Its position comes from a web directory listing only — the map data records no mosque in the village — and the building shown is the ordinary modern type, not a survey of this one.'],
   ['St George\'s Church', 684, -418, 30, 'The Coptic church of Mar Girgis, Nazlet el-Semman.'],
   ['King Farouk\'s rest house', 170, -119, 30, 'A small royal rest house on the edge of the plateau north-east of the Great Pyramid, built for King Farouk in the 1940s.'],
   ['9 Pyramids Lounge', -224, 1264, 40, 'An open-air restaurant on the southern ridge, opened in October 2020: 1.3 km from the Great Pyramid, looking north at all of them.'],
@@ -643,3 +644,58 @@ export const TOWN_PLACES = [
   ['Visitor bus stop — Khufu', 67, -214, 25, 'The visitor bus stop for the Great Pyramid.'],
   ['Visitor bus stop — Sphinx', 579, 409, 25, 'The visitor bus stop at the Sphinx, by the exit to the village.']
 ];
+
+// ---------------------------------------------------------------------
+//  Places beyond Giza. They are far too distant to sit at their true
+//  offset, and single-precision physics loses its grip on stairs and slopes
+//  a few kilometres out, so Luxor has its own frame within 4.1 km of the
+//  origin: the East Bank ferry landing at river level is set 3.6 km east of
+//  Khufu, and the Valley of the Kings keeps its true offset from it (KV62's
+//  entrance is 3623 m west, 4581 m north and ~105 m above the landing).
+//  Each place is shown only while the player is there.
+//  pois: [anchor key, name, blurb, radius]
+// ---------------------------------------------------------------------
+const LUXOR_ORIGIN = { x: 3600, y: 0, z: 600 };
+export const FAR_PLACES = {
+  luxor: { file: 'luxor_nile.glb', title: 'Luxor — the Nile', outdoor: true, river: true, position: LUXOR_ORIGIN,
+    pois: [
+  ['corniche', 'Luxor Corniche', 'The East Bank river front: a stone embankment with the promenade above and the lower quay, where the boats lie, below.', 30],
+  ['river', 'The Nile at Luxor', 'The river here is about half a kilometre wide and flows north. Since the High Dam (1970) it no longer floods; its level changes by only a metre or two through the year.', 200],
+  ['cruisers', 'Nile cruise ships', 'The Luxor–Aswan "floating hotels": about 72 m long and 14 m in beam, three cabin decks under a sun deck. There are so many that they moor two and three abreast, and passengers walk through one ship to reach the next.', 60],
+  ['feluccas', 'Feluccas', 'Open wooden passenger sailboats with a single lateen sail on a very long yard — the traditional way to drift on the river at sunset. Press E beside the one at the steps to go out.', 30],
+  ['dahabiya', 'Dahabiya', 'A two-masted lateen houseboat: the way nineteenth-century travellers went up the Nile, revived today as small, quiet cruise boats, usually towed by a tug when the wind fails.', 40],
+  ['ferry', 'National ferry', 'The public ferry to the West Bank, used by townspeople and by visitors bound for the Valley of the Kings. Small covered motor launches make the same crossing for hire.', 25],
+  ['temple', 'Luxor Temple', 'The pylon of Ramesses II, 65 m wide and 24 m high, with two seated colossi of the king and one obelisk of red granite — its twin has stood in the Place de la Concorde in Paris since 1836. The massing here is schematic.', 40],
+  ['colonnade', 'Colonnade of Amenhotep III', 'Fourteen papyrus columns nearly 16 m high in two rows: the processional way along which the barques of Amun, Mut and Khonsu were carried at the Opet festival.', 30],
+  ['haggag', 'Mosque of Abu al-Haggag', 'A mosque built in the thirteenth century on top of the then-buried court of Ramesses II, and still in use: when the temple was dug out, it was left standing high on the old ground level.', 22],
+  ['avenue', 'Avenue of Sphinxes', 'The sphinx-lined processional road that runs 2.7 km north from here to the temples of Karnak, reopened along its whole length in 2021.', 45],
+  ['winter', 'Winter Palace', 'The Winter Palace hotel of 1907, ochre-fronted, on the corniche south of the temple. Lord Carnarvon stayed here, and it was on its noticeboard that news of Tutankhamun\'s tomb was posted in 1922.', 45],
+  ['west', 'West Bank landing', 'The landing at al-Gezira: beyond the fields the road runs to the Colossi of Memnon and the Theban necropolis.', 40]
+] },
+  valley: { file: 'valley_kings.glb', title: 'Valley of the Kings', outdoor: true, river: true,
+    position: { x: LUXOR_ORIGIN.x - 3623, y: 105, z: LUXOR_ORIGIN.z - 4581 },
+    pois: [
+  ['kv62', 'KV62 — Tomb of Tutankhamun', 'The entrance Howard Carter\'s workmen uncovered on 4 November 1922, under the debris of huts built for the cutting of KV9 just above. The whitewashed walls, the roof over the stair and the gate are modern.', 14],
+  ['visitor_centre', 'Visitor centre', 'The visitor centre at the mouth of the wadi: tickets, a large model of the valley and its tombs, and the booth for the "taf-taf", the little road train that carries visitors the last half-kilometre.', 45],
+  ['qurn', 'al-Qurn', 'Al-Qurn, "the Horn": the pyramid-shaped peak, about 450 m above sea level, that stands over the valley — perhaps the reason the kings chose this wadi for their tombs.', 220],
+  ['valley', 'Valley of the Kings', 'The wadi where the pharaohs of the New Kingdom (c. 1539–1075 BC) were buried in rock-cut tombs — sixty-five are numbered. The pyramid-shaped peak above is al-Qurn.', 90]
+].concat([['KV9', 'Ramesses V and VI'], ['KV17', 'Seti I'], ['KV11', 'Ramesses III'], ['KV2', 'Ramesses IV'], ['KV6', 'Ramesses IX'], ['KV8', 'Merenptah'],
+  ['KV14', 'Tausret and Setnakht'], ['KV35', 'Amenhotep II'], ['KV16', 'Ramesses I'], ['KV47', 'Siptah'], ['KV57', 'Horemheb'], ['KV5', 'the sons of Ramesses II'], ['KV1', 'Ramesses VII']]
+  .map(([k, who], i) => ['n' + i, k + ' — ' + who, 'Entrance of ' + k + ', the tomb of ' + who + ', placed from the Theban Mapping Project survey. Its interior is not built yet.', 7])) },
+  kv62: { file: 'kv62.glb', title: 'Tomb of Tutankhamun (KV62)', outdoor: false,
+    position: { x: LUXOR_ORIGIN.x - 3623, y: 105, z: LUXOR_ORIGIN.z - 4581 },
+    pois: [
+  ['stair', 'Entrance stair', 'Sixteen steps cut down into the valley floor. The lowest six were hacked away in antiquity to bring in the sarcophagus and shrines, and again by Carter to bring them out.', 3],
+  ['corridor', 'Corridor', 'A plain descending corridor, 8 m long. It was filled with limestone chips after the tomb was first robbed, and the robbers who came back tunnelled through the fill.', 4],
+  ['antechamber', 'Antechamber', 'Antechamber — 7.85 × 3.55 m. Here Carter saw "wonderful things": dismantled chariots, three gilded couches, chests and the two guardian statues that flanked the sealed door to the burial chamber.', 3.5],
+  ['mummy', 'Tutankhamun', 'The king himself. Since 2007 his mummy has lain here in a climate-controlled case, rather than in the sarcophagus.', 2],
+  ['annexe', 'Annexe', 'A low doorway leads to the annexe, its floor nearly a metre lower — a store room found heaped with furniture, jars of wine and oils, and baskets of food.', 2.2],
+  ['burial', 'Burial chamber', 'Burial chamber — 6.37 × 4.02 m, the only decorated room. Four gilded shrines, one inside another, almost filled it. The floor is nearly a metre below the antechamber; visitors look down from the platform.', 4],
+  ['sarcophagus', 'Sarcophagus', 'Carved from a single block of quartzite, with a goddess at each corner spreading her wings. The lid is red granite, painted to match and cracked across — a hurried substitute.', 2.5],
+  ['north', 'North wall', 'Right: Ay, the next king, in a priest\'s leopard skin, opens the mouth of Tutankhamun\'s mummy. Centre: Nut greets the king. Left: the king and his ka are embraced by Osiris.', 2.4],
+  ['west', 'West wall', 'The first hour of the Amduat: twelve baboons, one for each hour of the night, below the sun-god as a scarab in his barque.', 2.2],
+  ['east', 'East wall', 'The funeral: twelve courtiers in white draw the sledge that carries the king\'s mummy under a canopy of garlands.', 2.2],
+  ['south', 'South wall', 'Hathor, mistress of the West, holds the sign of life to the king\'s nose; Anubis stands behind him. Only this western end survives — the rest was painted on the partition Carter took down. What you see here is a drawn reconstruction of the composition, not a photograph: no freely licensed photograph of this wall exists.', 1.8],
+  ['treasury', 'Treasury', 'The treasury, guarded by the Anubis shrine: it held the gilded canopic shrine, model boats and chests of jewellery.', 2.5]
+] }
+};

@@ -525,6 +525,8 @@
    "id": "kv62",
    "file": "kv62.glb",
    "title": "Tomb of Tutankhamun (KV62)",
+   "outdoor": false,
+   "river": false,
    "position": [
     -23,
     105,
@@ -590,6 +592,12 @@
      "name": "East wall",
      "blurb": "The funeral: twelve courtiers in white draw the sledge that carries the king's mummy under a canopy of garlands.",
      "radius": 2.2
+    },
+    {
+     "key": "south",
+     "name": "South wall",
+     "blurb": "Hathor, mistress of the West, holds the sign of life to the king's nose; Anubis stands behind him. Only this western end survives — the rest was painted on the partition Carter took down. What you see here is a drawn reconstruction of the composition, not a photograph: no freely licensed photograph of this wall exists.",
+     "radius": 1.8
     },
     {
      "key": "treasury",

@@ -112,6 +112,9 @@ burial chamber): photographs by Diego Delso, delso.photo, CC BY-SA 4.0 — the
 texture files `assets/textures/kv62_*.jpg` are derived from them and carry the
 same licence. The KV62 entrance sign is cropped from a photograph by Benjamín
 Núñez González, CC BY-SA 4.0. Full list: `research/photos/*/CREDITS.md`.
+The south wall of that chamber is **not** a photograph: no freely licensed
+one exists, so it is a drawn reconstruction of the documented composition
+(`tools/art/kv62_south_wall.py`), and the game says so on the spot.
 (Wikimedia Commons). Dream Stele drawing: C. R. Lepsius, *Denkmäler* (1849),
 public domain. Hieroglyph font: Noto Sans Egyptian Hieroglyphs (SIL OFL).
 Map data © OpenStreetMap contributors (ODbL), via Overture Maps. Contains
@@ -123,8 +126,10 @@ COPERNICUS by the European Union and ESA.
 
 A compiled desktop version is in [`godot/`](godot/README.md): the same
 plateau, Blender models and data in the Godot 4.5 engine, exporting to macOS,
-Windows and Linux. It has everything the web version has, and more that the
-web version does not have yet:
+Windows and Linux. It has everything the web version has. The web version now
+shares the road traffic, the Nile at Luxor, the Valley of the Kings and
+Tutankhamun's tomb (boats and the road train stand still there, with no boat
+trips, and its people and camels are still the simple block figures):
 
 - **Blender-built, animated camels, horses and people** (`tools/blender/creatures.py`).
 - **Road traffic on the mapped roads only** (`tools/geo/build_roadnet.py`,

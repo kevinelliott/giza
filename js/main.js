@@ -6,7 +6,7 @@ import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { DayCycle, Sandstorm, Stars, Clouds } from './atmosphere.js';
 import { animateCamelLegs } from './life.js';
-import { loadModels, BAKED_ZONES } from './models.js';
+import { loadModels, BAKED_ZONES, OPEN_PLACES } from './models.js';
 import { Quest } from './quest.js';
 import { SERAPEUM, TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
 import { GEO, EXTENT } from './geodata.js';
@@ -565,6 +565,8 @@ function insidePyramid(p) {
 // drives the auto headlamp, ambient sound and where dust can rise.
 function isUnderground(p) {
   if (insidePyramid(p)) return true;
+  for (const z of BAKED_ZONES) if (z.containsPoint(p)) return true;          // the pre-lit interiors
+  for (const b of OPEN_PLACES) if (b.containsPoint(p)) return false;         // Luxor, the Valley of the Kings: open air
   const inSphinxPit = Math.abs(p.x - SPHINX.center.x - 2) < 55 && Math.abs(p.z - SPHINX.center.z) < 34;
   return !inSphinxPit && p.y < terrainHeight(p.x, p.z) - 1.2;
 }

@@ -55,7 +55,7 @@ const OUTDOOR := {
 	"plaster": [Color("ddd5c4"), 0.9, 0.0, 0.2, 0.0, 1.0],
 	"wood": [Color("6b4a2b"), 0.85, 0.0, 0.6, 0.0, 1.0],
 }
-const PHOTOS := ["belzoni", "kv62_north", "kv62_west", "kv62_east", "kv62_sign", "dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
+const PHOTOS := ["belzoni", "kv62_north", "kv62_west", "kv62_east", "kv62_south", "kv62_sign", "dream_stele", "mer_pillar", "mer_wpillar", "mer_north", "mer_east", "mer_west", "mer_kawab", "mer_jamb", "mer_list"]
 const HOURS := [9.5, 12.0, 16.0, 18.4, 21.5, 6.2]
 const LAT := 29.98
 

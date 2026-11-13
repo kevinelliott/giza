@@ -11,11 +11,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { triplanarPatch } from './materials.js';
 import { inscriptionTexture, loadGlyphFont, INSCRIPTIONS } from './inscriptions.js';
 
-export const MODEL_FILES = { serapeum: 'serapeum.glb', khufuUpper: 'khufu_upper.glb', khufuLower: 'khufu_lower.glb', khafre: 'khafre.glb', meresankh: 'meresankh.glb', menkaure: 'menkaure.glb' };
+export const MODEL_FILES = { serapeum: 'serapeum.glb', khufuUpper: 'khufu_upper.glb', khufuLower: 'khufu_lower.glb', khafre: 'khafre.glb',
+  vehicles: 'vehicles.glb', boats: 'boats.glb', luxorNile: 'luxor_nile.glb', valleyKings: 'valley_kings.glb', kv62: 'kv62.glb', meresankh: 'meresankh.glb', menkaure: 'menkaure.glb' };
 // Photographs / drawings used directly as wall textures (see research/ for credits).
 export const PANEL_TEXTURES = {
   dream_stele: 'assets/textures/dream_stele.png',
   belzoni: 'assets/textures/belzoni.png',
+  kv62_north: 'assets/textures/kv62_north.jpg', kv62_west: 'assets/textures/kv62_west.jpg', kv62_east: 'assets/textures/kv62_east.jpg',
+  kv62_south: 'assets/textures/kv62_south.jpg', kv62_sign: 'assets/textures/kv62_sign.jpg',
   mer_pillar: 'assets/textures/mer_pillar.jpg',
   mer_north: 'assets/textures/mer_north.jpg',
   mer_east: 'assets/textures/mer_east.jpg',
@@ -107,6 +110,9 @@ function library(mats) {
     ceiling_red: bakedStone(null, { color: 0xa8685e, roughness: 0.95, gain: 0.5, key: 'ceilred', plain: true, strata: 0.6 }),   // painted to imitate granite
     statue: bakedStone(null, { color: 0x8a8070, roughness: 0.97, gain: 0.55, key: 'statue', plain: true, strata: 0.5 }),
     wood: bakedStone(null, { color: 0x6e4a2a, roughness: 0.8, gain: 0.45, key: 'wood', plain: true }),
+    paint_yellow: bakedStone(null, { color: 0xb8862a, roughness: 0.9, gain: 0.5, key: 'pyellow', plain: true, strata: 0.25 }),
+    quartzite: bakedStone(null, { color: 0x8a6a44, roughness: 0.6, gain: 0.55, key: 'quartz', plain: true, strata: 0.5 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0xbfe0e6, transparent: true, opacity: 0.16, roughness: 0.05, side: THREE.DoubleSide, depthWrite: false }),
     dark: new THREE.MeshBasicMaterial({ color: 0x0b0907 }),
     fixture: new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xfff0d0, emissiveIntensity: 2.2 })
   };
@@ -128,7 +134,9 @@ export function placeModel(model, { position, rotationY = 0, mats, group, collid
       const name = n.material.name;
       n.material = ((n.name.startsWith('steps') || n.parent.name.startsWith('steps')) ? M.rock : M[name]) || M.rock;
       n.castShadow = false; n.receiveShadow = true;
-      if (name !== 'fixture' && name !== 'dark' && !isDeco(n)) n.userData.collidable = true;
+      // col_*: unseen smooth ramps laid over stairs too steep for a capsule (the stairs themselves are then modelled as deco)
+      if (n.name.startsWith('col_')) { n.visible = false; n.userData.collidable = true; }
+      else if (name !== 'fixture' && name !== 'dark' && name !== 'glass' && !n.name.startsWith('fixture') && !isDeco(n)) n.userData.collidable = true;
     } else if (n.name.startsWith('insc_') || n.name.startsWith('tex_')) panels.push(n);
     else if (n.name.startsWith('poi_') || n.name.startsWith('tp_') || n.name === 'spawn') anchorNodes.push(n);
   });
@@ -154,4 +162,65 @@ export function placeModel(model, { position, rotationY = 0, mats, group, collid
     if (p) landmarks.push({ name, blurb, radius, pos: { x: p.x, y: p.y, z: p.z } });
   }
   return { root, anchors };
+}
+
+// ---------------------------------------------------------------------
+//  Sunlit, outdoor models (the Nile at Luxor, the Valley of the Kings):
+//  no baked light. Materials by name: "water", the ground kinds "theban" /
+//  "desert" / "silt", "limestone", and plain colours "c_RRGGBB".
+//  Returns the root, its anchors (poi_/tp_/moor_/... empties by name: world
+//  position and heading) and its bounding box.
+// ---------------------------------------------------------------------
+export const OPEN_PLACES = [];       // world boxes of the outdoor places (never "underground")
+const OUT = new Map();
+function outdoorMaterial(name, mats) {
+  if (OUT.has(name)) return OUT.get(name);
+  let m;
+  if (name === 'water') m = new THREE.MeshStandardMaterial({ color: 0x24403c, roughness: 0.18, metalness: 0.1, envMapIntensity: 0.9 });
+  else if (name === 'theban') m = new THREE.MeshStandardMaterial({ color: 0xc4a67e, roughness: 1, side: THREE.DoubleSide });
+  else if (name === 'desert') m = new THREE.MeshStandardMaterial({ color: 0xcdb085, roughness: 1, side: THREE.DoubleSide });
+  else if (name === 'silt') m = new THREE.MeshStandardMaterial({ color: 0x6f6a4c, roughness: 1, side: THREE.DoubleSide });
+  else if (name === 'limestone') m = mats.limestone;
+  else m = new THREE.MeshStandardMaterial({ color: name.startsWith('c_') ? parseInt(name.slice(2, 8), 16) : 0xcccccc, roughness: 0.85, side: THREE.DoubleSide });
+  OUT.set(name, m);
+  return m;
+}
+export function dressOutdoor(obj, mats) {
+  obj.traverse(n => { if (n.isMesh) { n.material = outdoorMaterial(n.material.name, mats); n.castShadow = true; n.receiveShadow = true; } });
+  return obj;
+}
+export function placeOutdoor(model, { position, mats, group, collidables, landmarks, pois = [], textures = {} }) {
+  const root = new THREE.Group();
+  root.position.set(position.x, position.y, position.z);
+  const panels = [], anchorNodes = [];
+  model.traverse(n => {
+    if (n.isMesh) {
+      const water = n.material.name === 'water';
+      n.material = outdoorMaterial(n.material.name, mats);
+      n.castShadow = !water; n.receiveShadow = true;
+      if ((!water && !isDeco(n)) || n.name.startsWith('riverbed')) n.userData.collidable = true;
+    } else if (n.name.startsWith('tex_')) panels.push(n);
+    else if (n.name && n.type === 'Object3D') anchorNodes.push(n);
+  });
+  root.add(model);
+  for (const e of panels) {
+    const tex = textures[e.name.slice(4).replace(/\.\d+$/, '')];
+    if (!tex) continue;
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    e.add(quad);
+  }
+  group.add(root); root.updateMatrixWorld(true);
+  root.traverse(n => { if (n.isMesh && n.userData.collidable) collidables.push(n); });
+  const box = new THREE.Box3().setFromObject(root);
+  OPEN_PLACES.push(box.clone().expandByScalar(60));
+  const anchors = {};
+  for (const n of anchorNodes) {
+    const pos = n.getWorldPosition(new THREE.Vector3()), fw = new THREE.Vector3(1, 0, 0).transformDirection(n.matrixWorld);
+    anchors[n.name] = { pos, yaw: Math.atan2(-fw.z, fw.x) };
+  }
+  for (const [k, name, blurb, radius] of pois) {
+    const a = anchors['poi_' + k];
+    if (a) landmarks.push({ name, blurb, radius, pos: { x: a.pos.x, y: a.pos.y, z: a.pos.z } });
+  }
+  return { root, anchors, box };
 }

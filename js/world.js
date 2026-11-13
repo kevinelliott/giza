@@ -9,7 +9,7 @@ import {
   KHAFRE_MORTUARY, MENKAURE_QUARRY, KHUFU_MORTUARY, KHUFU_CAUSEWAY,
   SATELLITES, BOAT_PITS, KHUFU_VALLEY,
   TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SERAPEUM,
-  TOWN_PLACES, KHUFU_UPPER, KHUFU_LOWER, KHAFRE_ENTRY, KHAFRE_SUB, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
+  TOWN_PLACES, FAR_PLACES, TELEPORTS, KHUFU_UPPER, KHUFU_LOWER, KHAFRE_ENTRY, KHAFRE_SUB, MENKAURE_INTERIOR, MENKAURE_ENTRY, MENKAURE_SUB, MERESANKH
 } from './data.js';
 import {
   buildPyramidGeometry, buildSteppedPyramidGeometry, buildInterior, buildStaircase
@@ -17,7 +17,8 @@ import {
 import { terrainHeight, inPit, groundUnder, GRID, SPHINX_PIT } from './terrain.js';
 import { TOMBS, TOWN, TREES, TEMPLES, EXTENT, PARKING, SITES as GEO_SITES } from './geodata.js';
 import { buildSphinxGeometry, rockify } from './sphinx.js';
-import { placeModel } from './models.js';
+import { placeModel, placeOutdoor, dressOutdoor } from './models.js';
+import { buildRoadTraffic } from './traffic.js';
 import { TEMPLE_PLAN } from './templedata.js';
 import { inscriptionTexture } from './inscriptions.js';
 import { buildCamel, animateCamelLegs, buildTraffic, buildVisitors, buildSummitMast, buildLightShow } from './life.js';
@@ -675,6 +676,24 @@ function buildBoatPit(pit, mats, collidables, group) {
   return { x: cx, y: y + 4, z: cz };
 }
 
+// Masjid Naser, Nazlet el-Semman: a neighbourhood mosque with a dome and a
+// minaret. Its position (29.97337 N, 31.14233 E) comes from a web directory
+// listing only — no map dataset records a mosque in the village — and its
+// form is the ordinary modern Egyptian type, not this building's own.
+function buildMosque(group, x, z) {
+  const y = terrainHeight(x, z);
+  const wall = new THREE.MeshStandardMaterial({ color: 0xe9e2d0, roughness: 0.9 }), trim = new THREE.MeshStandardMaterial({ color: 0x3f7a5a, roughness: 0.7 });
+  const add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x + px, y + py, z + pz); m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
+  add(new THREE.BoxGeometry(15, 8, 19), wall, 0, 4, 0);
+  add(new THREE.BoxGeometry(15.6, 0.5, 19.6), trim, 0, 8.25, 0);
+  add(new THREE.SphereGeometry(4.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), trim, 0, 8.5, -2);
+  add(new THREE.CylinderGeometry(1.1, 1.3, 14, 8), wall, 6.2, 7, 8.2);
+  add(new THREE.CylinderGeometry(1.6, 1.6, 0.5, 8), trim, 6.2, 14.2, 8.2);
+  add(new THREE.CylinderGeometry(0.8, 0.95, 9, 8), wall, 6.2, 19, 8.2);
+  add(new THREE.CylinderGeometry(1.25, 1.25, 0.45, 8), trim, 6.2, 23.6, 8.2);
+  add(new THREE.ConeGeometry(0.85, 4, 8), trim, 6.2, 25.9, 8.2);
+}
+
 // The Grand Egyptian Museum, on the skyline 2.2 km north-west of the Great
 // Pyramid (bearing 320 deg) and a kilometre beyond the edge of the map: a
 // plain massing of its ~445 x 557 m wedge, 46 m high at the front (OSM
@@ -1176,6 +1195,36 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
     if (anchors.tp_burial) Object.assign(MERESANKH.tpBurial, { x: anchors.tp_burial.x, y: anchors.tp_burial.y, z: anchors.tp_burial.z });
     shell(c.x, y - 1, c.z, 34, 20, 36);
   }
+  // ---- places beyond Giza (see FAR_PLACES in data.js): shown only while the player is there ----
+  const farRoots = [];
+  const farTp = (label, a) => { if (a) TELEPORTS.push({ label, pos: { x: a.x, y: a.y, z: a.z } }); };
+  const boatKinds = {};
+  if (models.boats) for (const o of [...models.boats.children]) { boatKinds[o.name] = dressOutdoor(o, mats); }
+  const moor = (anchors, holder) => {                       // boats and the road train stand where the scene's empties put them
+    for (const name in anchors) {
+      const kind = name.startsWith('moor_') || name.startsWith('board_') ? name.split('_')[1] : (name === 'ferry_a' ? 'ferry' : (name === 'train_0_a' ? 'taftaf' : null));
+      if (!kind || !boatKinds[kind]) continue;
+      const b = boatKinds[kind].clone(); b.position.copy(anchors[name].pos); b.rotation.set(0, anchors[name].yaw, 0);
+      b.traverse(n => { n.userData.dynamic = true; });
+      holder.add(b);
+    }
+  };
+  for (const [key, model] of [['luxor', models.luxorNile], ['valley', models.valleyKings]]) {
+    if (!model) continue;
+    const F = FAR_PLACES[key];
+    const { root, anchors, box } = placeOutdoor(model, { position: F.position, mats, group, collidables, landmarks, pois: F.pois, textures: models.textures });
+    const holder = new THREE.Group(); group.add(holder); moor(anchors, holder);
+    farRoots.push([box, root], [box, holder]);
+    for (const name in anchors) if (name.startsWith('tp_')) farTp(F.title + ' — ' + name.slice(3).replace(/_/g, ' '), anchors[name].pos);
+  }
+  if (models.kv62) {
+    const F = FAR_PLACES.kv62;
+    const { root, anchors } = place(models.kv62, F.position, F.pois);
+    farRoots.push([new THREE.Box3().setFromObject(root), root]);
+    farTp(F.title + ' — antechamber', anchors.tp_antechamber); farTp(F.title + ' — burial chamber', anchors.tp_burial_chamber);
+  }
+  const roadTick = models.vehicles ? buildRoadTraffic(group, models.vehicles) : null;
+  buildMosque(group, 783, 643);
   buildGEM(group, mats);
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);
@@ -1188,6 +1237,8 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   buildCasingRemnants(PYRAMIDS.khufu, mats, collidables, group);
   const birdTick = buildBirds(group);
   const tick = t => {
+    if (camera) for (const [box, root] of farRoots) root.visible = box.distanceToPoint(camera.position) < 1800;
+    if (roadTick && camera) roadTick(t, camera.position, 0);
     birdTick(t);
     touristTick(t);
     trafficTick(t);

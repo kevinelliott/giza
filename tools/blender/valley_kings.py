@@ -83,8 +83,8 @@ def interior():
     sec = lambda hw, h: [(-hw, 0), (hw, 0), (hw, h), (-hw, h)]
     void('stair_land', lambda bm: G.box(bm, -LAND - 0.02, 0.3, -SW, SW, -0.08, 3.4))
     void('stair_open', lambda bm: prism_x(bm, [(-SW, -0.02), (SW, -0.02), (SW, 3.6), (-SW, 3.6)], -LAND, SX * 0.72, 0.0, (SX * 0.72 + LAND) / TREAD * RISE))
-    void('stair_roofed', lambda bm: prism_x(bm, sec(SW, 2.75), SX * 0.72 + 0.02, SX - 0.02, (SX * 0.72 + LAND) / TREAD * RISE, SZ))
-    void('gate_b', lambda bm: prism_x(bm, sec(CW, 2.75), SX, GBX - 0.02, SZ, GBZ))
+    void('stair_roofed', lambda bm: prism_x(bm, sec(SW, 3.05), SX * 0.72 + 0.02, SX - 0.02, (SX * 0.72 + LAND) / TREAD * RISE, SZ))
+    void('gate_b', lambda bm: prism_x(bm, sec(CW, 3.05), SX, GBX - 0.02, SZ, GBZ))
     void('corridor', lambda bm: prism_x(bm, sec(CW, BH), GBX, BX - 0.02, GBZ, BZ))
     void('gate_i', lambda bm: prism_x(bm, sec(CW, BH), BX, GIX - 0.02, BZ, GIZ))
     void('antechamber', lambda bm: G.box(bm, AX0, AX1, AS, AN + PART + 0.02, F1, F1 + AH))
@@ -126,11 +126,11 @@ def interior():
     bm = bmesh.new()
     for i in range(NSTEP):
         G.box(bm, -LAND - (i + 1) * TREAD, -LAND - i * TREAD, -SW, SW, -(i + 1) * RISE - 0.3, -(i + 1) * RISE + RISE)
-    solids.append(G.obj(bm, 'steps_entrance', 'masonry'))
+    deco.append(G.obj(bm, 'deco_entrance_steps', 'masonry'))        # drawn only: the walkers use the unseen ramp below
     # an unseen smooth ramp along the step nosings carries the player (a capsule jams on real 24 cm risers)
     bm = bmesh.new(); prism_x(bm, [(-SW, -0.06), (SW, -0.06), (SW, 0.0), (-SW, 0.0)], -LAND + 0.05, SX, 0.0, SZ + 0.02)
     ramp = G.obj(bm, 'col_stair', 'dark'); ramp.hide_render = True
-    solids.append(G.box_obj('steps_gate_i', 'wood', GIX - 0.35, GIX + 0.02, -0.77, 0.77, F1, F1 + 0.14))
+    solids.append(G.box_obj('gate_i_step', 'wood', GIX - 0.35, GIX + 0.02, -0.77, 0.77, F1, F1 + 0.14))
     # the visitors' timber ramp down the corridor with handrails, and the raised timber floor of the antechamber
     bm = bmesh.new()
     prism_x(bm, [(-CW + 0.12, 0.0), (CW - 0.12, 0.0), (CW - 0.12, 0.04), (-CW + 0.12, 0.04)], GBX, BX, GBZ, BZ)
@@ -150,9 +150,19 @@ def interior():
     for x in np.linspace(AX0 + 0.08, AX1 - GAP - 0.04, 4): G.box(bm, x - 0.04, x + 0.04, EDGE - 0.1, EDGE - 0.02, F1, F1 + 1.05)
     solids.append(G.obj(bm, 'balustrade', 'wood'))
     solids.append(G.box_obj('glass_panels', 'glass', AX0 + 0.12, AX1 - GAP - 0.08, EDGE - 0.07, EDGE - 0.05, F1 + 0.1, F1 + 1.0))
+    # a boarded ramp with cleats down into the burial chamber (a ramp, because the web build's walker cannot take steps this steep)
     bm = bmesh.new()
-    for i in range(4): G.box(bm, AX1 - GAP + 0.04, JE - 0.02, EDGE - 0.02 + i * 0.28, EDGE + 0.3 + i * 0.28, F2 - 0.02, F1 - (i + 1) * 0.94 / 5)
-    solids.append(G.obj(bm, 'steps_burial', 'wood'))
+    vs = [(AX1 - GAP + 0.04, EDGE - 0.02, F2 - 0.02), (JE - 0.02, EDGE - 0.02, F2 - 0.02), (JE - 0.02, EDGE + 1.95, F2 - 0.02), (AX1 - GAP + 0.04, EDGE + 1.95, F2 - 0.02),
+          (AX1 - GAP + 0.04, EDGE - 0.02, F1), (JE - 0.02, EDGE - 0.02, F1)]
+    V = [bm.verts.new(v) for v in vs]
+    bm.faces.new((V[0], V[1], V[2], V[3])); bm.faces.new((V[4], V[5], V[2], V[3])); bm.faces.new((V[0], V[1], V[5], V[4])); bm.faces.new((V[0], V[4], V[3])); bm.faces.new((V[1], V[5], V[2]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    solids.append(G.obj(bm, 'wramp_burial', 'wood'))
+    bm = bmesh.new()
+    for i in range(1, 6):
+        y = EDGE + i * 0.32; z = F1 - 0.94 * (y - EDGE + 0.02) / 1.97
+        G.box(bm, AX1 - GAP + 0.1, JE - 0.08, y - 0.025, y + 0.025, z, z + 0.035)
+    deco.append(G.obj(bm, 'deco_ramp_cleats', 'wood'))
     # steel grilles across the annexe and treasury doorways (drawn standing open; the annexe floor is a straight 1.07 m drop)
     bm = bmesh.new()
     for i in range(6): G.box(bm, AX0 - 0.02, AX0 + 0.02, NDY1 + 0.05 + i * 0.16, NDY1 + 0.08 + i * 0.16, F1 + 0.05, F1 + 1.4)
@@ -201,6 +211,10 @@ def interior():
     G.empty('tex_kv62_north', ((JW0 + JE) / 2, JN - 0.012, top - hn / 2), (1, 0, 0), (0, 0, 1), JL, hn)
     G.empty('tex_kv62_west', (JW0 + 0.012, (JS + JN) / 2, top - hw / 2), (0, 1, 0), (0, 0, 1), JWD, hw)
     G.empty('tex_kv62_east', (JE - 0.012, (JS + JN) / 2, top - he / 2), (0, -1, 0), (0, 0, 1), JWD, he)
+    # the surviving western 2.8 m of the south wall: a drawn reconstruction (tools/art/kv62_south_wall.py), not a photograph
+    sw_ = AX0 - JW0
+    G.empty('tex_kv62_south', ((JW0 + AX0) / 2, JS + 0.012, top - 1.3), (-1, 0, 0), (0, 0, 1), sw_, 2.6)
+    G.empty('poi_south', ((JW0 + AX0) / 2, JS + 0.8, F2 + 1.7))
     final = [room, G.join(solids, 'solids')]
     G.join(deco, 'deco')
     G.bake_and_export(final, 'kv62.glb', samples=96)
