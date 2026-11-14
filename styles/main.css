@@ -180,3 +180,28 @@ b { color: #ffd98a; }
 #help li { font-size: 0.88rem; line-height: 1.45; padding-left: 0.9rem; border-left: 2px solid rgba(255, 217, 138, 0.4); }
 #help .credits { font-size: 11px; opacity: 0.65; margin-top: 10px; line-height: 1.4; }
 .mapcredit { font-size: 10px; opacity: 0.7; }
+
+/* ---- Narrow windows -------------------------------------------------------
+   The readout (bottom left), the hotbar (bottom centre) and the site caption
+   (bottom right) share one line only in a wide window; below that the readout
+   and caption sit above the hotbar, each in its own half. The banner never
+   reaches the minimap. On a phone-width window the minimap shrinks, the
+   compass and clock move to the left, and the banner drops below the map. */
+#toast { max-width: min(520px, calc(100vw - 440px)); }
+@media (max-width: 1340px) {
+  #hud { bottom: 78px; max-width: calc(50vw - 24px); }
+  #lm { bottom: 78px; max-width: calc(50vw - 24px); }
+}
+@media (max-width: 620px) {
+  #minimap { width: 120px; height: 120px; top: 8px; right: 8px; }
+  #compass { left: 10px; transform: none; top: 8px; font-size: 0.8rem; padding: 3px 10px; }
+  #clock { left: 10px; transform: none; top: 38px; }
+  #toast { top: 140px; max-width: calc(100vw - 28px); width: max-content; font-size: 0.88rem; }
+  #hotbar { gap: 4px; }
+  #hotbar .slot { width: 44px; height: 44px; font-size: 21px; }
+  #hud { bottom: 66px; max-width: calc(100vw - 28px); font-size: 0.76rem; }
+  #pos { font-size: 0.88rem; }
+  #lm { bottom: 150px; left: 14px; right: 14px; max-width: none; }
+  #lmName { font-size: 1rem; }
+  #lmBlurb { font-size: 0.8rem; }
+}

@@ -1002,7 +1002,7 @@ function travelTo(wx, wz) {
   }
   else {
     _ray.set(new THREE.Vector3(wx, 400, wz), new THREE.Vector3(0, -1, 0)); _ray.far = 900;
-    const hit = collider.geometry.boundsTree.raycastFirst(_ray, THREE.DoubleSide);
+    const hit = collider.geometry.boundsTree.raycastFirst(_ray.ray, THREE.DoubleSide);     // the BVH wants the Ray, not the Raycaster: passing the Raycaster threw, so a click on open ground did nothing
     player.teleport({ x: wx, y: hit ? hit.point.y + 0.1 : 6, z: wz });
   }
   toggleMap();
@@ -1126,7 +1126,7 @@ function setStatus(t) {
 }
 
 // Expose a small hook for debugging / automated screenshots.
-window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer, isUnderground, travelTo,
+window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer, isUnderground, travelTo, mapView, arrivalYaw,
   inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, SPHINX, PYRAMIDS, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 
