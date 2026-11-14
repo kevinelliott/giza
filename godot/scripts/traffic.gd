@@ -349,6 +349,12 @@ func update_walkers(dt: float, eye: Vector3) -> void:
 		g.visible = far < 700.0
 		(g.get_meta("ap") as AnimationPlayer).active = far < 220.0
 		if not g.visible: continue
+		# where a house stands right at the kerb, walk in the edge of the road instead of through its wall
+		if far < 220.0 and life._blocked(p.x, p.y):
+			p = a[0] + Vector2(-dirv.y, dirv.x) * w["side"] * (float(e["hw"]) - 0.5)
+			if life._blocked(p.x, p.y):            # the mapped street itself runs under a building here: out of sight until past it
+				g.visible = false
+				continue
 		g.position = Vector3(p.x, main.terrain_height(p.x, p.y), p.y)
 		g.rotation.y = atan2(-dirv.y, dirv.x)
 		life._play(g, "walk", w["speed"] / 1.5)

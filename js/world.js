@@ -389,6 +389,15 @@ function buildTombs(mats, collidables, group, out) {
   const hash = (a, b) => { const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return v - Math.floor(v); };
   const place = (g, rot, x, y, z) => { g.rotateY(-rot * DEG); g.translate(x, y, z); return g; };
   for (const [x, z, L, W, rot, h, kind, name] of TOMBS) {
+    // The mapped footprint 30 m north of Menkaure's entrance is not a mastaba: satellite imagery shows
+    // a low wall round an open, sunken rectangle (purpose not identified). Built as that, 1.1 m high,
+    // instead of the 6 m solid block the general rule made of it.
+    if (Math.abs(x + 574.7) < 1 && Math.abs(z - 657.4) < 1) {
+      const yb = groundUnder(x, z, L / 2, W / 2) - 0.4, yt = terrainHeight(x, z) + 1.1, Hh = yt - yb;
+      for (const [sx, sz, cx, cz] of [[L, 0.7, 0, W / 2 - 0.35], [L, 0.7, 0, -W / 2 + 0.35], [0.7, W, L / 2 - 0.35, 0], [0.7, W, -L / 2 + 0.35, 0]])
+        ruined.push(new THREE.BoxGeometry(sx, Hh, sz).translate(cx, 0, cz).rotateY(-rot * DEG).translate(x, yb + Hh / 2, z));
+      continue;
+    }
     const y0 = groundUnder(x, z, L / 2, W / 2) - 0.4;
     const top = Math.max(terrainHeight(x, z), terrainHeight(x + L / 2, z), terrainHeight(x - L / 2, z)) + h;
     const H = top - y0, r1 = hash(x, z), r2 = hash(z, x);

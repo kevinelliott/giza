@@ -78,6 +78,7 @@ var town_mat: ShaderMaterial
 var hour_i := 0
 var hour := 9.5
 var sun_energy := 1.0
+var walk_min_open := 1.0
 var inside_k := 0.0
 var lamp_user := false
 var hud_site: Label
@@ -828,7 +829,8 @@ func _process(dt: float) -> void:
 				for q in life.movers: groups["mover"].append(q["g"])
 				for q in life.caravan: groups["caravan"].append(q["g"])
 				for q in life.rideables: groups["rideable"].append(q)
-				for q in traffic.walkers: groups["walker"].append(q["g"])
+				for q in traffic.walkers:
+					if q["g"].visible: groups["walker"].append(q["g"])
 				for gk in groups:
 					var nfloat := 0
 					var nsunk := 0
@@ -917,6 +919,7 @@ func _process(dt: float) -> void:
 				walk_from = player.global_position
 		if walk_from != Vector3.INF:
 			walk_t += dt
+			walk_min_open = minf(walk_min_open, 1.0 - inside_k)
 			if shot_keys.contains("trace") and int(walk_t) != int(walk_t - dt):
 				var tp := player.global_position
 				var hits := ""
@@ -955,6 +958,7 @@ func _process(dt: float) -> void:
 				var kc := player.get_slide_collision(ci)
 				print("  HIT ", kc.get_collider().get_parent().name, " normal ", kc.get_normal(), " at ", kc.get_position())
 			var q := player.global_position
+			print("LIGHT darkest moment of the walk: %.0f%% of full daylight" % (walk_min_open * 100.0))
 			print("WALK from %s to %s: %.1f m in %.1f s, ground %.2f, on floor %s" % [walk_from, q, Vector2(q.x - walk_from.x, q.z - walk_from.z).length(), walk_t, terrain_height(q.x, q.z), player.is_on_floor()])
 			frames = 70
 		if frames == 70:

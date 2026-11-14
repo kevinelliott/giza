@@ -214,7 +214,7 @@ export function buildVisitors(group) {
   return t => {
     const dt = Math.min(0.1, last ? t - last : 0); last = t;
     if (!checked && visitorProbe.blocked) {
-      checked = true;
+      checked = true; visitorProbe.people = people;
       for (const p of people) if (blocked(p.x, p.z)) { const f = freeSpot(p.sp); if (f) { p.x = p.tx = f[0]; p.z = p.tz = f[1]; } }
     }
     people.forEach((p, k) => {
