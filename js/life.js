@@ -142,6 +142,9 @@ export function buildTraffic(group, camelMat) {
       onRoute(m.r, m.s, p);
       m.g.position.set(p.x, terrainHeight(p.x, p.z), p.z);
       m.g.rotation.y = p.yaw;
+      // lean with the slope, so the horse ahead of its cart and the cameleer ahead of his camel stay on the ground
+      const fx = Math.cos(p.yaw) * 2.2, fz = -Math.sin(p.yaw) * 2.2;
+      m.g.rotation.z = Math.atan2(terrainHeight(p.x + fx, p.z + fz) - terrainHeight(p.x - fx, p.z - fz), 4.4);
       if (m.type === 'carriage') {
         const { legs, wheels } = m.g.userData;
         legs.forEach((l, k) => { l.rotation.z = Math.sin(t * 7 + m.ph + (k % 2) * Math.PI + (k > 1 ? 1.2 : 0)) * 0.45; });
@@ -152,6 +155,11 @@ export function buildTraffic(group, camelMat) {
 }
 
 // ---- visitors who walk -------------------------------------------------
+// Set by main.js once the collision mesh exists: blocked(x, z) is true where
+// masonry stands on the ground (a mastaba, a wall, a fallen block). Visitors
+// are not started inside it and do not pick a walk that crosses it — before
+// this, up to a quarter of them at some spots stood buried in stone.
+export const visitorProbe = { blocked: null };
 export function buildVisitors(group) {
   const spots = [
     { x: 7, z: -150, r: 38, n: 34 }, { x: 150, z: -110, r: 25, n: 10 }, { x: 448, z: 452, r: 22, n: 26 },
@@ -189,9 +197,26 @@ export function buildVisitors(group) {
   }
   const m = new THREE.Matrix4(), base = new THREE.Matrix4(), local = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
   const sc = new THREE.Vector3(), v = new THREE.Vector3();
-  let last = 0;
+  let last = 0, checked = false;
+  const blocked = (x, z) => visitorProbe.blocked ? visitorProbe.blocked(x, z) : false;
+  const pathClear = (x0, z0, x1, z1) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 1.5));
+    for (let i = 1; i <= n; i++) if (blocked(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false;
+    return true;
+  };
+  const freeSpot = sp => {
+    for (let i = 0; i < 24; i++) {
+      const a = rnd() * 6.283, r = Math.sqrt(rnd()) * sp.r, x = sp.x + Math.cos(a) * r, z = sp.z + Math.sin(a) * r;
+      if (!blocked(x, z)) return [x, z];
+    }
+    return null;
+  };
   return t => {
     const dt = Math.min(0.1, last ? t - last : 0); last = t;
+    if (!checked && visitorProbe.blocked) {
+      checked = true;
+      for (const p of people) if (blocked(p.x, p.z)) { const f = freeSpot(p.sp); if (f) { p.x = p.tx = f[0]; p.z = p.tz = f[1]; } }
+    }
     people.forEach((p, k) => {
       let walk = 0;
       if (p.wait > 0) { p.wait -= dt; p.look = Math.sin(t * 0.7 + p.ph) * 0.6; }
@@ -199,8 +224,11 @@ export function buildVisitors(group) {
         const dx = p.tx - p.x, dz = p.tz - p.z, d = Math.hypot(dx, dz);
         if (d < 0.3) {
           p.wait = 2 + rnd() * 9;
-          const a = rnd() * 6.283, r = Math.sqrt(rnd()) * p.sp.r;
-          p.tx = p.sp.x + Math.cos(a) * r; p.tz = p.sp.z + Math.sin(a) * r;
+          for (let tries = 0; tries < 6; tries++) {            // a walk that does not cross masonry; else stay put
+            const a = rnd() * 6.283, r = Math.sqrt(rnd()) * p.sp.r;
+            const tx = p.sp.x + Math.cos(a) * r, tz = p.sp.z + Math.sin(a) * r;
+            if (pathClear(p.x, p.z, tx, tz)) { p.tx = tx; p.tz = tz; break; }
+          }
         } else { p.x += dx / d * p.speed * dt; p.z += dz / d * p.speed * dt; p.yaw = Math.atan2(dx, dz); walk = 1; }
       }
       const ph = t * p.speed * 5.2 + p.ph, sw = Math.sin(ph) * 0.5 * walk;

@@ -1003,14 +1003,27 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   let csm = null;
   const csmMaterials = new Set();
   if (camera) {
+    // Four cascades with hand-set splits: the first reaches only 28 m, so a
+    // person's shadow is sharp and starts at their feet (with three cascades
+    // on the automatic split the nearest one spanned ~185 m — 15 cm a texel —
+    // and people, camels and lamp posts cast almost nothing: they looked as
+    // if they hovered). The offset along the surface normal grows with each
+    // cascade's texel size instead of being 0.9 m everywhere, which cut the
+    // bottom off every shadow.
+    const SPLITS = [28, 110, 380, 1100];
     csm = new CSM({
-      camera, parent: scene, cascades: 3, maxFar: 1100, mode: 'practical',
+      camera, parent: scene, cascades: 4, maxFar: 1100, mode: 'custom',
+      customSplitsCallback: (n, near, far, breaks) => { for (const d of SPLITS) breaks.push(Math.min(1, d / far)); },
       shadowMapSize: 2048, lightDirection: sunDir.clone().negate(), lightIntensity: 3.4,
       lightMargin: 400, lightFar: 4000, shadowBias: -0.00015
     });
     csm.fade = true;
     csm.updateFrustums();
-    for (const l of csm.lights) { l.color.set(0xfff0d2); l.shadow.normalBias = 0.9; }
+    csm.lights.forEach((l, i) => {
+      l.color.set(0xfff0d2);
+      l.shadow.normalBias = [0.04, 0.12, 0.4, 0.9][i];
+      l.shadow.bias = [-0.00002, -0.00004, -0.0001, -0.0002][i];   // times the 4 km light range: 8 cm to 80 cm
+    });
   } else {
     const sun = new THREE.DirectionalLight(0xfff0d2, 3.0);
     sun.position.copy(sunDir).multiplyScalar(900);

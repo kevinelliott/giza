@@ -26,13 +26,16 @@ void vertex() {
 void fragment() {
 	vec2 g = (wp.xz - extent.xy) / extent.zw;
 	// wind ripples (fine), dune tone (broad), gravel spreads
-	float ripple = sin((wp.x * 0.86 + wp.z * 0.5) * 9.0 + fbm(wp.xz * 0.6) * 5.0) * 0.5 + 0.5;
+	float ripple = sin((wp.x * 0.86 + wp.z * 0.5) * 26.0 + fbm(wp.xz * 0.6) * 7.0) * 0.5 + 0.5;       // wind ripples ~25 cm apart
 	float grain = noise2(wp.xz * 28.0);
 	float tonal = fbm(wp.xz * 0.012 + 11.0);
 	float gravel = smoothstep(0.55, 0.8, fbm(wp.xz * 0.05 + 3.0));
-	float near = smoothstep(90.0, 12.0, distance(wp, CAMERA_POSITION_WORLD));
-	ripple = mix(0.5, ripple, near);
-	vec3 c = vec3(0.80, 0.70, 0.55) * (0.95 + 0.05 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
+	// Fade each pattern out as it shrinks towards a pixel. Left unfiltered, the 0.7 m ripples and the
+	// 4 cm grain alias into broad bands and sparkle that crawl over the sand as the camera moves.
+	float px = max(length(dFdx(wp.xz)), length(dFdy(wp.xz)));
+	ripple = mix(0.5, ripple, 1.0 - smoothstep(0.03, 0.1, px));
+	grain = mix(0.5, grain, 1.0 - smoothstep(0.012, 0.035, px));
+	vec3 c = vec3(0.80, 0.70, 0.55) * (0.97 + 0.045 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
 	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.35);
 	// beyond the mapped extent (the apron under the Grand Egyptian Museum) there is no imagery: plain desert
 	float mapped = step(0.0, g.x) * step(g.x, 1.0) * step(0.0, g.y) * step(g.y, 1.0);
@@ -52,5 +55,4 @@ void fragment() {
 	c = mix(c, vec3(0.36, 0.29, 0.2) * (0.8 + 0.4 * tonal), steep * 0.8);
 	ALBEDO = pow(c, vec3(2.2));       // the palette above is sRGB
 	ROUGHNESS = mix(1.0, 0.85, road);
-	NORMAL_MAP = vec3(0.5 + (ripple - 0.5) * 0.12 * (1.0 - road), 0.5 + (grain - 0.5) * 0.1, 1.0);
 }

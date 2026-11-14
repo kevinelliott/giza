@@ -199,10 +199,16 @@ func _environment() -> void:
 	sun = DirectionalLight3D.new()
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 600.0
+	# The nearest split ends at 25 m, so a figure's shadow is sharp and starts at the feet; with the
+	# default splits of a 600 m range it was soft enough that people seemed to hover.
+	sun.directional_shadow_max_distance = 450.0
+	sun.directional_shadow_split_1 = 0.055
+	sun.directional_shadow_split_2 = 0.2
+	sun.directional_shadow_split_3 = 0.5
 	sun.directional_shadow_blend_splits = true
-	sun.shadow_bias = 0.06
-	sun.shadow_normal_bias = 2.0
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 1.0
+	sun.shadow_blur = 0.6
 	add_child(sun)
 
 
@@ -355,18 +361,31 @@ func terrain_height(x: float, z: float) -> float:
 	return h00 + u * (h10 - h00) + v * (h11 - h10)
 
 
+## Is there anything overhead? The interiors' bounding boxes and the pyramids'
+## envelopes take in open ground too (the foot of the Great Pyramid's entrance
+## stair, the pavement north of Khafre, the open stair of KV62), so "indoors"
+## also needs a roof: without this the sun and sky went out as you walked there.
+func _roofed(p: Vector3) -> bool:
+	var rq := PhysicsRayQueryParameters3D.create(p + Vector3(0, 0.6, 0), p + Vector3(0, 160.0, 0))
+	rq.exclude = [player.get_rid()]
+	rq.hit_back_faces = true
+	rq.hit_from_inside = false
+	return not get_world_3d().direct_space_state.intersect_ray(rq).is_empty()
+
+
 func _is_inside(p: Vector3) -> bool:
+	var enclosed := false
 	for z in zones:
-		if z.has_point(p): return true
-	for op in open_places:
-		if op.has_point(p): return false
-	for py in world["pyramids"]:
-		var y := p.y - float(py["baseY"])
-		var w: float = float(py["base"]) / 2.0 * (1.0 - maxf(0.0, y) / float(py["height"])) - 1.2
-		if absf(p.x - float(py["x"])) < w and absf(p.z - float(py["z"])) < w: return true
-	var s: Dictionary = world["sphinx"]
-	var in_pit := absf(p.x - float(s["x"]) - 2.0) < 55.0 and absf(p.z - float(s["z"])) < 34.0
-	return not in_pit and p.y < terrain_height(p.x, p.z) - 1.2
+		if z.has_point(p): enclosed = true
+	if not enclosed:
+		for op in open_places:
+			if op.has_point(p): return false
+		for py in world["pyramids"]:
+			var y := p.y - float(py["baseY"])
+			var w: float = float(py["base"]) / 2.0 * (1.0 - maxf(0.0, y) / float(py["height"])) - 1.2
+			if absf(p.x - float(py["x"])) < w and absf(p.z - float(py["z"])) < w: enclosed = true
+		if p.y < terrain_height(p.x, p.z) - 1.2: enclosed = true
+	return enclosed and _roofed(p)
 
 
 # ---- the Blender interiors ---------------------------------------------------
@@ -783,6 +802,110 @@ func _process(dt: float) -> void:
 					var rq := PhysicsRayQueryParameters3D.create(q, q + Vector3(0, -40, 0))
 					var hit := get_world_3d().direct_space_state.intersect_ray(rq)
 					print("PROBE ", q, " -> ", hit.get("position", "none"), " ", hit.get("collider", "").get_parent().name if hit.has("collider") else "")
+			if shot_keys.contains("audit"):
+				var sp := get_world_3d().direct_space_state
+				for spt in life.SPOTS:
+					var worst := 0.0
+					var sum := 0.0
+					var names := {}
+					for k in 60:
+						var aa := k * 2.39996
+						var rr := sqrt((k + 0.5) / 60.0) * float(spt[2])
+						var xx: float = spt[0] + cos(aa) * rr
+						var zz: float = spt[1] + sin(aa) * rr
+						var th := terrain_height(xx, zz)
+						var hit := sp.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(xx, th + 40, zz), Vector3(xx, th - 40, zz)))
+						if hit.is_empty(): continue
+						var dd: float = th - hit["position"].y
+						sum += absf(dd)
+						if absf(dd) > absf(worst): worst = dd
+						if absf(dd) > 0.3: names[hit["collider"].get_parent().name] = names.get(hit["collider"].get_parent().name, 0) + 1
+					print("AUDIT spot ", spt, " mean |d| %.2f worst %.2f " % [sum / 60.0, worst], names)
+			if shot_keys.contains("audit"):
+				var sp2 := get_world_3d().direct_space_state
+				var groups := {"visitor": [], "mover": [], "caravan": [], "rideable": [], "walker": []}
+				for q in life.people: groups["visitor"].append(q["g"])
+				for q in life.movers: groups["mover"].append(q["g"])
+				for q in life.caravan: groups["caravan"].append(q["g"])
+				for q in life.rideables: groups["rideable"].append(q)
+				for q in traffic.walkers: groups["walker"].append(q["g"])
+				for gk in groups:
+					var nfloat := 0
+					var nsunk := 0
+					var worstf := 0.0
+					var worsts := 0.0
+					var wheref := Vector3.ZERO
+					var wheres := Vector3.ZERO
+					for gn in groups[gk]:
+						var gp: Vector3 = gn.global_position
+						var rq2 := PhysicsRayQueryParameters3D.create(gp + Vector3(0, 30, 0), gp + Vector3(0, -30, 0))
+						rq2.collision_mask = 1
+						var ex: Array[RID] = []
+						for ch in gn.find_children("*", "CollisionObject3D", true, false): ex.append(ch.get_rid())
+						rq2.exclude = ex
+						var h2 := sp2.intersect_ray(rq2)
+						if h2.is_empty(): continue
+						var d2: float = gp.y - h2["position"].y
+						if d2 > 0.15:
+							nfloat += 1
+							if d2 > worstf:
+								worstf = d2
+								wheref = gp
+						if d2 < -0.15:
+							nsunk += 1
+							if d2 < worsts:
+								worsts = d2
+								wheres = gp
+					print("AUDIT2 %s n=%d floating %d (worst %.2f at %s) sunk/under %d (worst %.2f at %s)" % [gk, groups[gk].size(), nfloat, worstf, wheref, nsunk, worsts, wheres])
+			if shot_keys.contains("rooms"):
+				for tp in travel:
+					print("ROOM ", tp["label"], " inside=", _is_inside(tp["pos"] + Vector3(0, 1.0, 0)))
+				for q in pois:
+					var inz2 := false
+					for z2 in zones:
+						if z2.has_point(q["pos"]): inz2 = true
+					if inz2 and not _is_inside(q["pos"] + Vector3(0, 0.3, 0)): print("POI in a zone but open to the sky: ", q["name"], " ", q["pos"])
+			if shot_keys.contains("where"):
+				for q in life.movers: print("MOVER ", "carriage" if q["carriage"] else "camel", " ", q["g"].global_position, " yaw ", q["g"].rotation.y)
+				for q in life.caravan: print("CARAVAN ", q["g"].global_position)
+				for q in life.rideables: print("RIDEABLE ", q.global_position)
+			if shot_keys.contains("lattice"):
+				var sp3 := get_world_3d().direct_space_state
+				var low := {}
+				var dark := {}
+				var high := {}
+				var nlow := 0
+				var nhigh := 0
+				var x3 := -1490.0
+				while x3 < 1090.0:
+					var z3 := -690.0
+					while z3 < 1490.0:
+						var th3 := terrain_height(x3, z3)
+						var rq3 := PhysicsRayQueryParameters3D.create(Vector3(x3, th3 + 150, z3), Vector3(x3, th3 - 60, z3))
+						var h3 := sp3.intersect_ray(rq3)
+						if not h3.is_empty():
+							var d3: float = h3["position"].y - th3
+							var nm3 := String(h3["collider"].get_parent().name)
+							var key := "%d,%d" % [int(floor(x3 / 100.0)) * 100, int(floor(z3 / 100.0)) * 100]
+							if _is_inside(h3["position"] + Vector3(0, 1.0, 0)):
+								var why := "zone"
+								var inz := false
+								for zz3 in zones:
+									if zz3.has_point(h3["position"] + Vector3(0, 1.0, 0)): inz = true
+								if not inz: why = "pyr/terrain"
+								var k5 := "%s %d,%d" % [why, int(floor(x3 / 50.0)) * 50, int(floor(z3 / 50.0)) * 50]
+								dark[k5] = dark.get(k5, 0) + 1
+							if d3 < -2.2:
+								nlow += 1
+								low[key] = low.get(key, 0) + 1
+							if nm3.begins_with("sand") and absf(d3) > 0.3:
+								nhigh += 1
+								high[key] = maxf(high.get(key, 0.0), absf(d3))
+						z3 += 4.0
+					x3 += 4.0
+				print("LATTICE false-inside points ", nlow, " ", low)
+				print("LATTICE open-sky spots treated as indoors: ", dark)
+				print("LATTICE sand-vs-grid mismatch >0.3 m: ", nhigh, " ", high)
 			if shot_keys.contains("map"): _toggle_map()
 			if shot_keys.contains("storm"):
 				storm = true

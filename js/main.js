@@ -5,7 +5,7 @@ import { buildWorld, terrainHeight, inPit } from './world.js';
 import { buildCollider, Player } from './player.js';
 import { Dust, BlowingSand, NearDebris, createRocks, createLensflare, createPost, AudioFX } from './fx.js';
 import { DayCycle, Sandstorm, Stars, Clouds } from './atmosphere.js';
-import { animateCamelLegs } from './life.js';
+import { animateCamelLegs, visitorProbe } from './life.js';
 import { loadModels, BAKED_ZONES, OPEN_PLACES } from './models.js';
 import { Quest } from './quest.js';
 import { SERAPEUM, TELEPORTS, PYRAMIDS, QUEENS_KHUFU, QUEENS_MENKAURE, SPHINX, KHENTKAUS, WORKERS_VILLAGE, WALL_OF_CROW, MENKAURE_VALLEY, KHAFRE_VALLEY, SATELLITES, BOAT_PITS, KHUFU_VALLEY, TRIAL_PASSAGES, KHENTKAUS_TOWN, WORKERS_CEMETERY, GIS_QUARRY, SPHINX_TEMPLE, AMENHOTEP_TEMPLE, KHAFRE_MORTUARY, KHUFU_MORTUARY, MENKAURE_QUARRY } from './data.js';
@@ -561,14 +561,38 @@ function insidePyramid(p) {
   }
   return false;
 }
-// Enclosed / below the natural surface (but not the open-air Sphinx pit):
-// drives the auto headlamp, ambient sound and where dust can rise.
+// Is there anything overhead? The interiors' bounding boxes and the pyramids'
+// envelopes take in open ground too — the foot of the Great Pyramid's
+// entrance stair, the pavement north of Khafre, the open stair of KV62 — so
+// "indoors" also needs a roof. (Without this the headlamp came on in
+// daylight, and the dust and wind cut out, as you walked past them.)
+const _roofRay = new THREE.Ray(new THREE.Vector3(), new THREE.Vector3(0, 1, 0));
+const _roofMemo = { x: NaN, y: NaN, z: NaN, v: false };
+function roofed(p) {
+  if (p.x === _roofMemo.x && p.y === _roofMemo.y && p.z === _roofMemo.z) return _roofMemo.v;
+  _roofRay.origin.set(p.x, p.y + 0.6, p.z);
+  const hit = player.collider.geometry.boundsTree.raycastFirst(_roofRay, THREE.DoubleSide);
+  _roofMemo.x = p.x; _roofMemo.y = p.y; _roofMemo.z = p.z;
+  return (_roofMemo.v = !!hit && hit.distance < 160);
+}
+// Where masonry stands on the ground (for the visitors: see life.js).
+const _downRay = new THREE.Ray(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
+visitorProbe.blocked = (x, z) => {
+  const th = terrainHeight(x, z);
+  _downRay.origin.set(x, th + 40, z);
+  const hit = player.collider.geometry.boundsTree.raycastFirst(_downRay, THREE.DoubleSide);
+  return !!hit && hit.distance < 40 - 0.3;
+};
+// Enclosed / below the natural surface, with something overhead: drives the
+// auto headlamp, ambient sound and where dust can rise.
 function isUnderground(p) {
-  if (insidePyramid(p)) return true;
-  for (const z of BAKED_ZONES) if (z.containsPoint(p)) return true;          // the pre-lit interiors
-  for (const b of OPEN_PLACES) if (b.containsPoint(p)) return false;         // Luxor, the Valley of the Kings: open air
-  const inSphinxPit = Math.abs(p.x - SPHINX.center.x - 2) < 55 && Math.abs(p.z - SPHINX.center.z) < 34;
-  return !inSphinxPit && p.y < terrainHeight(p.x, p.z) - 1.2;
+  let enclosed = insidePyramid(p);
+  if (!enclosed) for (const z of BAKED_ZONES) if (z.containsPoint(p)) { enclosed = true; break; }   // the pre-lit interiors
+  if (!enclosed) {
+    for (const b of OPEN_PLACES) if (b.containsPoint(p)) return false;       // Luxor, the Valley of the Kings: open air
+    enclosed = p.y < terrainHeight(p.x, p.z) - 1.2;
+  }
+  return enclosed && roofed(p);
 }
 
 function updateHUD() {
@@ -1071,7 +1095,7 @@ function setStatus(t) {
 }
 
 // Expose a small hook for debugging / automated screenshots.
-window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer,
+window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer, isUnderground,
   inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, SPHINX, PYRAMIDS, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 

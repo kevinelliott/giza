@@ -11,6 +11,7 @@ var caravan := []
 var birds := []
 var rideables: Array[Node3D] = []
 var people := []
+var visitors_checked := false
 var camel_scene: PackedScene = load("res://models/camel.glb")
 var horse_scene: PackedScene = load("res://models/horse.glb")
 var person_scene: PackedScene = load("res://models/person.glb")
@@ -287,7 +288,39 @@ func _visitors() -> void:
 			people.append(p)
 
 
+## True where masonry stands on the ground (a mastaba, a wall, a fallen block). Visitors are not
+## started inside it and do not pick a walk that crosses it: before this, up to a quarter of them at
+## some spots stood buried in stone.
+func _blocked(x: float, z: float) -> bool:
+	var th: float = main.terrain_height(x, z)
+	var rq := PhysicsRayQueryParameters3D.create(Vector3(x, th + 40.0, z), Vector3(x, th + 0.3, z))
+	return not get_world_3d().direct_space_state.intersect_ray(rq).is_empty()
+
+
+func _path_clear(x0: float, z0: float, x1: float, z1: float) -> bool:
+	var n := maxi(1, ceili(Vector2(x1 - x0, z1 - z0).length() / 1.5))
+	for i in range(1, n + 1):
+		if _blocked(lerpf(x0, x1, float(i) / n), lerpf(z0, z1, float(i) / n)): return false
+	return true
+
+
 func _update_visitors(dt: float, eye: Vector3) -> void:
+	if not visitors_checked and Engine.get_physics_frames() > 2:
+		visitors_checked = true
+		for p in people:
+			if not _blocked(p["x"], p["z"]): continue
+			for i in 24:
+				var a := rng.randf() * TAU
+				var r := sqrt(rng.randf()) * float(p["sr"])
+				var x: float = p["sx"] + cos(a) * r
+				var z: float = p["sz"] + sin(a) * r
+				if _blocked(x, z): continue
+				p["x"] = x
+				p["z"] = z
+				p["tx"] = x
+				p["tz"] = z
+				p.erase("placed")
+				break
 	for p in people:
 		var g: Node3D = p["g"]
 		var far: float = absf(p["x"] - eye.x) + absf(p["z"] - eye.z)
@@ -307,10 +340,15 @@ func _update_visitors(dt: float, eye: Vector3) -> void:
 			var d := sqrt(dx * dx + dz * dz)
 			if d < 0.3:
 				p["wait"] = 2.0 + rng.randf() * 9.0
-				var a := rng.randf() * TAU
-				var r := sqrt(rng.randf()) * float(p["sr"])
-				p["tx"] = p["sx"] + cos(a) * r
-				p["tz"] = p["sz"] + sin(a) * r
+				for tries in 6:                                  # a walk that does not cross masonry; else stay put
+					var a := rng.randf() * TAU
+					var r := sqrt(rng.randf()) * float(p["sr"])
+					var tx: float = p["sx"] + cos(a) * r
+					var tz: float = p["sz"] + sin(a) * r
+					if _path_clear(p["x"], p["z"], tx, tz):
+						p["tx"] = tx
+						p["tz"] = tz
+						break
 			else:
 				p["x"] += dx / d * p["speed"] * dt
 				p["z"] += dz / d * p["speed"] * dt
@@ -358,6 +396,9 @@ func update(dt: float, eye: Vector3, night: float, riding: Node3D) -> void:
 		var g: Node3D = m["g"]
 		g.position = Vector3(p.x, main.terrain_height(p.x, p.y), p.y)
 		g.rotation.y = p.z
+		# lean with the slope, so the horse ahead of its cart and the cameleer ahead of his camel stay on the ground
+		var fwd := Vector2(cos(p.z), -sin(p.z)) * 2.2
+		g.rotation.z = atan2(main.terrain_height(p.x + fwd.x, p.y + fwd.y) - main.terrain_height(p.x - fwd.x, p.y - fwd.y), 4.4)
 		if absf(p.x - eye.x) + absf(p.y - eye.z) > 500.0: continue
 		if m["carriage"]:
 			_play(g.get_meta("horse"), "walk", m["speed"] / 1.7, m["ph"])
