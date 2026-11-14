@@ -146,7 +146,9 @@ func _ready() -> void:
 	_place_plateau()
 	for t in world["teleports"]:
 		var p: Array = t["pos"]
-		travel.append({"label": t["label"], "pos": Vector3(p[0], p[1], p[2])})
+		var stop := {"label": t["label"], "pos": Vector3(p[0], p[1], p[2])}
+		if t.has("look"): stop["look"] = Vector3(t["look"][0], p[1], t["look"][1])
+		travel.append(stop)
 	for l in world["landmarks"]:
 		var q: Array = l["pos"]
 		pois.append({"name": l["name"], "blurb": l["blurb"], "radius": float(l["radius"]), "pos": Vector3(q[0], q[1], q[2])})
@@ -663,7 +665,8 @@ func _go(i: int) -> void:
 		if d > 4.0 and d < bd and d < q["radius"]:
 			bd = d
 			hint = q["pos"]
-	player.teleport(p, true, hint)
+	if travel[i].has("look"): hint = travel[i]["look"]       # the thing the stop is named for
+	player.teleport(p, true, hint, travel[i].has("look"))
 
 
 # ---- boats: E beside a boat you can board takes a trip on the river; E again goes ashore -------------
@@ -770,7 +773,7 @@ const TOUR_EXTRA := [
 	["sunset", 650, 60, 560, -250, 20, 330, 18.4, ""], ["night-plateau", 405, -33, 431, 330, -28, 431, 21.5, ""],
 	["night-town", 705, -31, 440, 640, -36, 412, 21.5, ""], ["dawn", 24, 4.2, -176, 5, 0.5, -150, 6.2, ""],
 	["sandstorm", 24, 4.2, -176, 5, 0.5, -150, 9.5, "storm"], ["full-map", 24, 4.2, -176, 5, 0.5, -150, 9.5, "map"],
-	["luxor-ships", 3612, 15, 660, 3500, 0, 400, 9.5, ""], ["luxor-corniche", 3640, 4, 560, 3660, 6, 300, 9.5, ""],
+	["luxor-ships", 3612, 15, 660, 3500, 0, 400, 9.5, ""], ["edge-of-map", -1300, 75, -500, -1700, 40, -1500, 9.5, ""],
 	["valley-floor", 120, 118, -4120, -300, 150, -3700, 9.5, ""], ["kv62-south", -43.0, 98.9, -3988.7, -43.26, 99.2, -3985.4, 9.5, ""],
 	["kv62-north", -40.6, 98.6, -3984.6, -42.6, 98.4, -3988.5, 9.5, ""], ["rideable-camel", -1366, 41, 748, -1372, 40, 742, 9.5, ""]]
 
@@ -850,6 +853,11 @@ func _process(dt: float) -> void:
 	elif toasts.size() > 0:
 		var tt: Array = toasts.pop_front()
 		hud_toast.text = tt[0]
+		# keep clear of the minimap in a small window (it is 200 px wide at the top right)
+		hud_toast.custom_minimum_size.x = clampf(get_viewport().get_visible_rect().size.x - 2.0 * 250.0, 260.0, 620.0)
+		hud_toast.size.x = hud_toast.custom_minimum_size.x
+		hud_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		hud_toast.position.y = 84
 		hud_toast.visible = true
 		toast_left = tt[1]
 	var auto := inside or night > 0.5
@@ -938,6 +946,24 @@ func _process(dt: float) -> void:
 					for z2 in zones:
 						if z2.has_point(q["pos"]): inz2 = true
 					if inz2 and not _is_inside(q["pos"] + Vector3(0, 0.3, 0)): print("POI in a zone but open to the sky: ", q["name"], " ", q["pos"])
+			if shot_keys.contains("sight"):          # where can you stand and see the Sphinx's head?  (for placing the travel stop)
+				var sp4 := get_world_3d().direct_space_state
+				var sx4: float = world["sphinx"]["x"]
+				var sz4: float = world["sphinx"]["z"]
+				var head := Vector3(sx4 + 14.0, float(world["sphinx"]["floorY"]) + 15.0, sz4)
+				for ang in range(-80, 81, 10):
+					for rad in [45, 55, 65, 80, 100]:
+						var cx4: float = sx4 + cos(deg_to_rad(ang)) * float(rad)
+						var cz4: float = sz4 + sin(deg_to_rad(ang)) * float(rad)
+						var dn := sp4.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(cx4, 60, cz4), Vector3(cx4, -80, cz4)))
+						if dn.is_empty(): continue
+						var eye4: Vector3 = dn["position"] + Vector3(0, 1.6, 0)
+						var blk := sp4.intersect_ray(PhysicsRayQueryParameters3D.create(eye4, head))
+						var seen: bool = blk.is_empty() or String(blk["collider"].get_parent().name).begins_with("sphinx")
+						var feet := sp4.intersect_ray(PhysicsRayQueryParameters3D.create(eye4, Vector3(sx4 + 30.0, float(world["sphinx"]["floorY"]) + 1.0, sz4)))
+						var paws: bool = feet.is_empty() or String(feet["collider"].get_parent().name).begins_with("sphinx")
+						if ang == 0: print("SIGHTDBG rad %d ground %s on %s; toward head first hit %s at %s" % [rad, dn["position"], dn["collider"].get_parent().name, blk["collider"].get_parent().name if not blk.is_empty() else "nothing", blk.get("position", Vector3.ZERO)])
+						if seen: print("SIGHT ang %d rad %d  pos (%.0f, %.1f, %.0f) on %s  paws %s" % [ang, rad, cx4, dn["position"].y, cz4, dn["collider"].get_parent().name, paws])
 			if shot_keys.contains("where"):
 				print("CAMERA ", get_viewport().get_camera_3d().global_position, " player ", player.global_position, " ground here ", terrain_height(player.global_position.x, player.global_position.z))
 				for q in life.people:

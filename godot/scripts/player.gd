@@ -21,6 +21,7 @@ var yaw := 0.0
 var pitch := 0.0
 var speed_mul := 1.0          # riding a camel: faster, and seated higher
 var eye_extra := 0.0
+var face_exact := false       # the hint is the stop's own subject: look straight at it if nothing is in the way
 var face_pending := 0         # after a teleport: turn to face the open side
 var face_hint := Vector3.ZERO
 
@@ -52,7 +53,7 @@ func _init() -> void:
 	safe_margin = 0.01
 
 
-func teleport(p: Vector3, face := false, hint := Vector3.ZERO) -> void:
+func teleport(p: Vector3, face := false, hint := Vector3.ZERO, exact := false) -> void:
 	global_position = p
 	velocity = Vector3.ZERO
 	if is_inside_tree():                      # arriving somewhere low: start crouched
@@ -62,6 +63,7 @@ func teleport(p: Vector3, face := false, hint := Vector3.ZERO) -> void:
 	if face:
 		face_pending = 3
 		face_hint = hint
+		face_exact = exact
 
 
 # Turn towards the most open direction (so a teleport never leaves you
@@ -71,22 +73,50 @@ func _face_open() -> void:
 	var eye := global_position + Vector3(0, height - 0.18, 0)
 	var to_hint := Vector3(face_hint.x - eye.x, 0, face_hint.z - eye.z)
 	var hint_dir := to_hint.normalized() if to_hint.length() > 3.0 else Vector3.ZERO
-	var best := -1.0
+	# how far you can see in each of 32 directions. In a passage (something close overhead) a
+	# sloping ray counts too, since corridors are open along their slope; out of doors only the
+	# level ray does — a ray tilted up clears any wall and called every direction open.
+	var up := PhysicsRayQueryParameters3D.create(eye, eye + Vector3(0, 9.0, 0))
+	up.exclude = [get_rid()]
+	var tilts := [0.0, -0.47, 0.47] if not space.intersect_ray(up).is_empty() else [0.0]
+	var open := PackedFloat32Array()
 	for k in 32:
 		var a := k * TAU / 32.0
 		var d := Vector3(-sin(a), 0, -cos(a))
 		var dist := 0.0
-		for tilt in [0.0, -0.47, 0.47]:           # sloping passages are open along their slope
+		for tilt in tilts:
 			var dd := (d * cos(tilt) + Vector3(0, sin(tilt), 0))
 			var q := PhysicsRayQueryParameters3D.create(eye, eye + dd * 60.0)
 			q.exclude = [get_rid()]
 			var hit := space.intersect_ray(q)
 			dist = maxf(dist, 60.0 if hit.is_empty() else eye.distance_to(hit["position"]))
-		var score := minf(dist, 25.0) + 12.0 * d.dot(hint_dir)
+		open.append(minf(dist, 40.0))
+	# Score a heading by the whole view it gives (about 55 degrees across), not one ray down its
+	# centre: a single ray was happy to look along a wall that then filled half the screen.
+	var best := -1.0
+	for k in 32:
+		var a := k * TAU / 32.0
+		var d := Vector3(-sin(a), 0, -cos(a))
+		var mean := 0.0
+		var least := 1e9
+		for o in range(-2, 3):
+			var v := open[(k + o + 32) % 32]
+			mean += v / 5.0
+			least = minf(least, v)
+		var score := 0.45 * mean + 0.55 * minf(least, 25.0) + 9.0 * d.dot(hint_dir)
 		if score > best:
 			best = score
 			yaw = a
+	if OS.get_cmdline_user_args().has("--face-debug"): print("FACE at ", global_position, " yaw ", yaw, " best ", best, " hint ", hint_dir, " open ", open)
 	pitch = 0.0
+	if face_exact and to_hint.length() > 3.0:
+		# only with room to take it in: from close to, a monument straight ahead is just a wall,
+		# and the oblique view chosen above is the better one
+		var q2 := PhysicsRayQueryParameters3D.create(eye, eye + hint_dir * minf(to_hint.length(), 20.0))
+		q2.exclude = [get_rid()]
+		if space.intersect_ray(q2).is_empty():
+			yaw = atan2(-hint_dir.x, -hint_dir.z)
+			pitch = 0.06
 	_apply_look()
 
 

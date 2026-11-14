@@ -806,13 +806,59 @@ function buildSalhen(group, collidables, x, z, yaw) {
   group.add(root); root.updateMatrixWorld(true);
 }
 
+// The land beyond the mapped rectangle (drawn, not walkable): the ground
+// carried on outwards from the map's edge for four kilometres, so the world
+// does not stop at a line and the Grand Egyptian Museum stands on something.
+// Heights are the edge's own, smoothed along it and eased to a common level
+// far out — a continuation for the eye, not surveyed terrain.
+function buildSkirt(mats, group) {
+  const { x0, z0, step, nx, nz } = GRID, x1 = x0 + (nx - 1) * step, z1 = z0 + (nz - 1) * step;
+  const OUT = [60, 200, 600, 1500, 4000];
+  const axis = (a0, n) => [...OUT.slice().reverse().map(d => a0 - d), ...Array.from({ length: n }, (_, i) => a0 + i * step), ...OUT.map(d => a0 + (n - 1) * step + d)];
+  const X = axis(x0, nx), Z = axis(z0, nz), o = OUT.length;
+  const edgeH = (ex, ez) => terrainHeight(Math.min(x1, Math.max(x0, ex)), Math.min(z1, Math.max(z0, ez)));
+  let level = 0, cnt = 0;
+  for (let x = x0; x <= x1; x += 100) { level += terrainHeight(x, z0) + terrainHeight(x, z1); cnt += 2; }
+  for (let z = z0; z <= z1; z += 100) { level += terrainHeight(x0, z) + terrainHeight(x1, z); cnt += 2; }
+  level /= cnt;
+  const sm = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const height = (x, z) => {
+    const ex = Math.min(x1, Math.max(x0, x)), ez = Math.min(z1, Math.max(z0, z)), d = Math.hypot(x - ex, z - ez);
+    if (d === 0) return terrainHeight(ex, ez);
+    const alongX = (ez === z0 || ez === z1) && ex > x0 && ex < x1;      // on a north/south edge: smooth along x; else along z
+    let avg = 0;
+    for (let k = -5; k <= 5; k++) avg += edgeH(ex + (alongX ? k * 50 : 0), ez + (alongX ? 0 : k * 50)) / 11;
+    const h = terrainHeight(ex, ez) + (avg - terrainHeight(ex, ez)) * sm(0, 300, d);
+    return h + (level - h) * sm(1500, 4000, d);
+  };
+  const W = EXTENT.x1 - EXTENT.x0, D = EXTENT.z1 - EXTENT.z0;
+  const id = new Map(), pos = [], uv = [], idx = [];
+  const node = (i, j) => {
+    const k = j * X.length + i; let v = id.get(k);
+    if (v === undefined) { v = pos.length / 3; id.set(k, v); pos.push(X[i], height(X[i], Z[j]), Z[j]); uv.push((X[i] - EXTENT.x0) / W, (Z[j] - EXTENT.z0) / D); }
+    return v;
+  };
+  for (let j = 0; j < Z.length - 1; j++) for (let i = 0; i < X.length - 1; i++) {
+    if (i >= o && i < o + nx - 1 && j >= o && j < o + nz - 1) continue;      // the mapped ground itself
+    const a = node(i, j), b = node(i, j + 1), c = node(i + 1, j + 1), d = node(i + 1, j);
+    idx.push(a, b, c, a, c, d);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, mats.sand); mesh.receiveShadow = true; mesh.name = 'skirt';
+  group.add(mesh);
+  return height;
+}
+
 // The Grand Egyptian Museum, on the skyline 2.2 km north-west of the Great
 // Pyramid (bearing 320 deg) and a kilometre beyond the edge of the map: a
 // plain massing of its ~445 x 557 m wedge, 46 m high at the front (OSM
 // outline and height tag; research/sites/giza-town-and-roads.md). No detail,
 // no interior — it is there because it is what you see from the plateau.
-function buildGEM(group, mats) {
-  const cx = -1449, cz = -1696, y0 = terrainHeight(-1449, -690) - 3;
+function buildGEM(group, mats, groundAt) {
+  const cx = -1449, cz = -1696, y0 = Math.min(groundAt(cx - 230, cz - 250), groundAt(cx + 225, cz + 230), groundAt(cx, cz + 420)) - 1;
   const mk = (pts, h, color, y = y0) => {
     const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
     const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false }); g.rotateX(-Math.PI / 2); g.translate(cx, y, cz);
@@ -822,9 +868,6 @@ function buildGEM(group, mats) {
   mk([[-80, 280], [225, 230], [228, 244], [-78, 296]], 46, 0xe6dcc4);                          // the 46 m front wall of translucent stone, facing the pyramids
   mk([[-40, 240], [60, 224], [62, 240], [-38, 256]], 48, 0x9fb3c0);                            // the glazed entrance in it
   mk([[-150, 320], [130, 300], [140, 420], [-140, 440]], 1.5, 0xcfc6b2);                       // forecourt
-  // the ground it stands on: desert carried on beyond the map's north-west edge (drawn, not walkable)
-  const gg = new THREE.PlaneGeometry(1500, 1700); gg.rotateX(-Math.PI / 2); gg.translate(cx, y0 - 0.05, -700 - 850);
-  const ground = new THREE.Mesh(gg, mats.sand); ground.receiveShadow = true; group.add(ground);
   const ob = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 16, 4), new THREE.MeshStandardMaterial({ color: 0xa8705a, roughness: 0.7 }));
   ob.position.set(cx - 10, y0 + 9.5, cz + 370); group.add(ob);                                 // the hanging obelisk of Ramesses II in the forecourt
 }
@@ -1354,7 +1397,7 @@ export function buildWorld(scene, mats, { renderer, camera, models = {}, assumeM
   const roadTick = models.vehicles ? buildRoadTraffic(group, models.vehicles) : null;
   buildSalhen(group, collidables, 767, -577, -2.687);
   buildNaser(group, collidables, 796, 709, 0.5);
-  buildGEM(group, mats);
+  buildGEM(group, mats, buildSkirt(mats, group));
   buildPyramidDetails(mats, collidables, group);
   buildBuses(collidables, group);
   const touristTick = buildVisitors(group);

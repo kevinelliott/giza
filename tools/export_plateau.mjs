@@ -131,7 +131,7 @@ const out = {
   grid: { x0: GRID.x0, z0: GRID.z0, step: GRID.step, nx: GRID.nx, nz: GRID.nz },
   pyramids: Object.values(D.PYRAMIDS).map(p => ({ id: p.id, x: p.center.x, z: p.center.z, baseY: p.baseY, base: p.base, height: p.height })),
   sphinx: { x: D.SPHINX.center.x, z: D.SPHINX.center.z, floorY: D.SPHINX.floorY },
-  teleports: D.TELEPORTS.filter(t => !fromModels.test(t.label)).map(t => ({ label: t.label, pos: [r(t.pos.x), r(t.pos.y), r(t.pos.z)] })),
+  teleports: D.TELEPORTS.filter(t => !fromModels.test(t.label)).map(t => ({ label: t.label, pos: [r(t.pos.x), r(t.pos.y), r(t.pos.z)], ...(t.look ? { look: [r(t.look.x), r(t.look.z)] } : {}) })),
   landmarks: world.landmarks.map(l => ({ name: l.name, blurb: l.blurb, radius: l.radius, pos: [r(l.pos.x), r(l.pos.y), r(l.pos.z)] })),
   // life: site roads plied by carriages and camel rides, saddled camels to ride
   routes: ROUTES,

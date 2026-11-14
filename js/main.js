@@ -968,7 +968,12 @@ function travelTo(wx, wz) {
     const d = Math.hypot(t.pos.x - wx, t.pos.z - wz);
     if (d < bd) { bd = d; best = t; }
   }
-  if (best) { player.teleport(best.pos); }
+  if (best) {
+    player.teleport(best.pos);
+    if (best.look) {                      // arrive facing what the stop is named for
+      look.yaw = Math.atan2(-(best.look.x - best.pos.x), -(best.look.z - best.pos.z)); look.pitch = 0; applyLook();
+    }
+  }
   else {
     _ray.set(new THREE.Vector3(wx, 400, wz), new THREE.Vector3(0, -1, 0)); _ray.far = 900;
     const hit = collider.geometry.boundsTree.raycastFirst(_ray, THREE.DoubleSide);

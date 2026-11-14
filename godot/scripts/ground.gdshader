@@ -37,8 +37,11 @@ void fragment() {
 	grain = mix(0.5, grain, 1.0 - smoothstep(0.012, 0.035, px));
 	vec3 c = vec3(0.80, 0.69, 0.51) * (0.97 + 0.045 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
 	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.35);
-	// beyond the mapped extent (the apron under the Grand Egyptian Museum) there is no imagery: plain desert
-	float mapped = step(0.0, g.x) * step(g.x, 1.0) * step(0.0, g.y) * step(g.y, 1.0);
+	// Beyond the mapped extent there is no imagery. The surrounding land carries the edge's colour
+	// and roads outwards and fades them to plain desert over 500 m, so there is no line at the border.
+	vec2 gc = clamp(g, vec2(0.0), vec2(1.0));
+	float mapped = 1.0 - smoothstep(0.0, 500.0, length((g - gc) * extent.zw));
+	g = gc;
 	vec3 ratio = texture(ground_tex, g).rgb * 2.0;
 	// The ratio is a multiplier on linear colour (as in the web build), and c is still sRGB here, so
 	// take the 2.2 root. Multiplying it in directly raised it to the power 2.2: where the plateau's

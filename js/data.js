@@ -523,33 +523,35 @@ export const SERAPEUM = {
 // Outdoor entries are flagged `ground`: their y is a drop height above the
 // terrain, resolved against the real topography when the terrain loads.
 const G = (x, z, y = 1) => ({ x, y, z, ground: true });
+// What to face on arrival (x, z): the thing the stop is named for.
+const L = c => ({ x: c.x, z: c.z });
 const P = PYRAMIDS, crowMid = { x: (WALL_OF_CROW.a.x + WALL_OF_CROW.b.x) / 2, z: (WALL_OF_CROW.a.z + WALL_OF_CROW.b.z) / 2 };
 export const TELEPORTS = [
   { label: 'Plateau Overlook (start)', pos: G(-120, -215) },
-  { label: 'Great Pyramid — base, north face', pos: G(3.6, ENT_Z - 36) },
+  { label: 'Great Pyramid — base, north face', pos: G(3.6, ENT_Z - 36), look: L(P.khufu.center) },
   { label: "Great Pyramid — al-Ma'mun's tunnel (visitor entrance)", pos: KHUFU_LOWER.tpMamun },
   { label: 'Great Pyramid — original entrance', pos: KHUFU_LOWER.tpEntrance },
   { label: "Great Pyramid — King's Chamber", pos: TP_KING },
   { label: "Great Pyramid — Campbell's Chamber (relieving)", pos: KHUFU_UPPER.tpCampbell },
   { label: "Great Pyramid — Queen's Chamber", pos: KHUFU_LOWER.tpQueen },
   { label: 'Great Pyramid — Subterranean Chamber', pos: KHUFU_LOWER.tpSub },
-  { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122) },
+  { label: 'Pyramid of Khafre — north base', pos: G(P.khafre.center.x - 5, P.khafre.center.z - 122), look: L(P.khafre.center) },
   ...[["Pyramid of Khafre — burial chamber", KHAFRE_SUB.tp], ['Pyramid of Khafre — lower chamber', KHAFRE_SUB.tpLower], ['Pyramid of Khafre — lower entrance', KHAFRE_SUB.tpLowerEntrance]]
     .map(([label, t]) => ({ label, pos: Object.assign(t, { x: P.khafre.center.x + t.x, y: P.khafre.baseY + t.y, z: P.khafre.center.z + t.z }) })),
-  { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60) },
-  { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 40.5, SPHINX.center.z, 0.5) },
-  { label: 'Tomb of Khentkaus I', pos: G(KHENTKAUS.center.x, KHENTKAUS.center.z - 38) },
-  { label: "Workers' Town", pos: G(WORKERS_VILLAGE.center.x - 30, WORKERS_VILLAGE.center.z - 62) },
-  { label: 'Menkaure Valley Temple', pos: G(MENKAURE_VALLEY.center.x, MENKAURE_VALLEY.center.z - 34) },
-  { label: 'Khafre Valley Temple', pos: G(KHAFRE_VALLEY.center.x - 32, KHAFRE_VALLEY.center.z + 6) },
-  { label: 'Wall of the Crow (gate)', pos: G(crowMid.x, crowMid.z - 16) },
-  { label: 'Khufu Valley Temple', pos: G(KHUFU_VALLEY.center.x - 24, KHUFU_VALLEY.center.z + 6) },
+  { label: 'Pyramid of Menkaure — north base', pos: G(P.menkaure.center.x - 7, P.menkaure.center.z - 60), look: L(P.menkaure.center) },
+  { label: 'The Great Sphinx', pos: G(SPHINX.center.x + 40, SPHINX.center.z + 19, 0.5), look: L(SPHINX.center) },   // on the enclosure floor off the right paw: head and paws both in view
+  { label: 'Tomb of Khentkaus I', pos: G(KHENTKAUS.center.x, KHENTKAUS.center.z - 38), look: L(KHENTKAUS.center) },
+  { label: "Workers' Town", pos: G(WORKERS_VILLAGE.center.x - 30, WORKERS_VILLAGE.center.z - 62), look: L(WORKERS_VILLAGE.center) },
+  { label: 'Menkaure Valley Temple', pos: G(MENKAURE_VALLEY.center.x, MENKAURE_VALLEY.center.z - 34), look: L(MENKAURE_VALLEY.center) },
+  { label: 'Khafre Valley Temple', pos: G(KHAFRE_VALLEY.center.x + 44, KHAFRE_VALLEY.center.z + 4), look: L(KHAFRE_VALLEY.center) },
+  { label: 'Wall of the Crow (gate)', pos: G(crowMid.x, crowMid.z - 16), look: L(crowMid) },
+  { label: 'Khufu Valley Temple', pos: G(KHUFU_VALLEY.center.x - 24, KHUFU_VALLEY.center.z + 6), look: L(KHUFU_VALLEY.center) },
   { label: 'Trial Passages', pos: G(160, -54) },
-  { label: "Workers' Cemetery", pos: G(WORKERS_CEMETERY.center.x, WORKERS_CEMETERY.center.z - 30) },
-  { label: 'Central Field Quarry', pos: G(GIS_QUARRY.center.x, GIS_QUARRY.center.z - 56) },
-  { label: 'Temple of Amenhotep II', pos: G(AMENHOTEP_TEMPLE.center.x - 6, AMENHOTEP_TEMPLE.center.z - 22) },
-  { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82) },
-  { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149) },
+  { label: "Workers' Cemetery", pos: G(WORKERS_CEMETERY.center.x, WORKERS_CEMETERY.center.z - 30), look: L(WORKERS_CEMETERY.center) },
+  { label: 'Central Field Quarry', pos: G(GIS_QUARRY.center.x, GIS_QUARRY.center.z - 56), look: L(GIS_QUARRY.center) },
+  { label: 'Temple of Amenhotep II', pos: G(AMENHOTEP_TEMPLE.center.x - 6, AMENHOTEP_TEMPLE.center.z - 22), look: L(AMENHOTEP_TEMPLE.center) },
+  { label: 'Menkaure Quarry', pos: G(MENKAURE_QUARRY.center.x, MENKAURE_QUARRY.center.z - 82), look: L(MENKAURE_QUARRY.center) },
+  { label: 'Panorama Viewpoint (south-west)', pos: G(-737, 1149), look: L(P.khafre.center) },
   { label: 'Tomb of Meresankh III', pos: MERESANKH.tp },
   { label: 'Tomb of Meresankh III — burial chamber', pos: MERESANKH.tpBurial },
   { label: 'Pyramid of Menkaure — Panelled Chamber', pos: Object.assign(MENKAURE_SUB.tp, { x: P.menkaure.center.x, y: P.menkaure.baseY + MENKAURE_INTERIOR.chambers[0].center.y - 1.0, z: P.menkaure.center.z + MENKAURE_INTERIOR.chambers[0].center.z }) },
