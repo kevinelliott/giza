@@ -27,6 +27,14 @@ jobs:
           godot --headless --export-release "macOS" ../build/GizaPlateau-macOS.zip
           godot --headless --export-release "Linux" ../build/GizaPlateau-linux.x86_64
           godot --headless --export-release "Windows Desktop" ../build/GizaPlateau-windows.exe
+      - name: Self-check the exported Linux build
+        run: |
+          cd build && chmod +x GizaPlateau-linux.x86_64
+          timeout 300 ./GizaPlateau-linux.x86_64 --headless -- "--shot=/tmp/none.png" "--do=audit,lattice" > /tmp/linux-check.log 2>&1 || true
+          grep -E "AUDIT2|LATTICE s|LATTICE o" /tmp/linux-check.log | cut -c1-200
+          grep -q "AUDIT2 visitor" /tmp/linux-check.log
+          if grep -E "AUDIT2 .* floating [1-9]" /tmp/linux-check.log; then echo "figures are standing in mid-air"; exit 1; fi
+          if grep -E "LATTICE sand-vs-grid mismatch >0.3 m: [1-9]" /tmp/linux-check.log; then echo "ground heights do not match the ground"; exit 1; fi
       - uses: actions/upload-artifact@v4
         with:
           name: GizaPlateau-native
@@ -60,8 +68,9 @@ jobs:
           kill $(cat pid) 2>/dev/null || true
           grep -E "AUDIT2|ROOM|POI|LATTICE|ERROR|rror" check.log | cut -c1-300 || true
           grep -q "AUDIT2 visitor" check.log
-          ! grep -E "AUDIT2 .* floating [1-9]" check.log
-          ! grep -q "LATTICE open-sky spots treated as indoors: { \"" check.log
+          if grep -E "AUDIT2 .* floating [1-9]" check.log; then echo "figures are standing in mid-air"; exit 1; fi
+          if grep -E "LATTICE sand-vs-grid mismatch >0.3 m: [1-9]" check.log; then echo "ground heights do not match the ground"; exit 1; fi
+          if grep -q 'LATTICE open-sky spots treated as indoors: { "' check.log; then echo "open ground counts as indoors"; exit 1; fi
       - name: One windowed frame
         continue-on-error: true
         run: |

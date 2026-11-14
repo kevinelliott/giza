@@ -125,6 +125,14 @@ func _ready() -> void:
 			for q in a.substr(7).split(";"): walk_path.append(Vector2(float(q.split(",")[0]), float(q.split(",")[1])))
 	world = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	heights = FileAccess.get_file_as_bytes("res://data/terrain.bin").to_float32_array()
+	# terrain.bin is not a Godot resource, so it is only in an exported build if export_presets.cfg
+	# lists it. When it was missing, every ground height read garbage: people stood in mid-air and
+	# daylight cut out at random. Refuse to run like that.
+	if heights.size() != int(world["grid"]["nx"]) * int(world["grid"]["nz"]):
+		push_error("data/terrain.bin is missing or the wrong size (%d values): the build is incomplete" % heights.size())
+		OS.alert("This copy of the game is incomplete (terrain data is missing). Please download it again.", "Giza Plateau")
+		get_tree().quit(1)
+		return
 	insc_index = JSON.parse_string(FileAccess.get_file_as_string("res://data/inscriptions.json"))
 	_environment()
 	_materials()
@@ -868,6 +876,17 @@ func _process(dt: float) -> void:
 						if z2.has_point(q["pos"]): inz2 = true
 					if inz2 and not _is_inside(q["pos"] + Vector3(0, 0.3, 0)): print("POI in a zone but open to the sky: ", q["name"], " ", q["pos"])
 			if shot_keys.contains("where"):
+				print("CAMERA ", get_viewport().get_camera_3d().global_position, " player ", player.global_position, " ground here ", terrain_height(player.global_position.x, player.global_position.z))
+				for q in life.people:
+					var gq: Node3D = q["g"]
+					if gq.global_position.distance_to(player.global_position) < 6.0:
+						var top := -1e9
+						var bot := 1e9
+						for mi in gq.find_children("*", "MeshInstance3D", true, false):
+							var ab: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+							top = maxf(top, ab.end.y)
+							bot = minf(bot, ab.position.y)
+						print("NEAR person at ", gq.global_position, " scale ", gq.scale, " ground ", terrain_height(gq.global_position.x, gq.global_position.z), " mesh bottom ", bot, " top ", top)
 				for q in life.movers: print("MOVER ", "carriage" if q["carriage"] else "camel", " ", q["g"].global_position, " yaw ", q["g"].rotation.y)
 				for q in life.caravan: print("CARAVAN ", q["g"].global_position)
 				for q in life.rideables: print("RIDEABLE ", q.global_position)
