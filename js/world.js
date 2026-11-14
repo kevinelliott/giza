@@ -877,7 +877,10 @@ function buildPyramidDetails(mats, collidables, group) {
   group.add(apron);
 }
 
-// Tour buses lined up in the mapped car parks.
+// Tour buses lined up in the mapped car parks — but only those outside the
+// site. Since April 2025 coaches and cars are barred from the plateau and
+// park at the gates (research/sites/giza-town-and-roads.md), so the six car
+// parks still mapped among the monuments stand empty.
 function buildBuses(collidables, group) {
   const geoms = [];
   const liveries = [[0.92, 0.92, 0.9], [0.95, 0.95, 0.95], [0.85, 0.2, 0.18], [0.2, 0.35, 0.65], [0.95, 0.75, 0.2], [0.88, 0.88, 0.86]];
@@ -885,7 +888,7 @@ function buildBuses(collidables, group) {
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
   const paint = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set(toLin(c), i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
   for (const [px, pz, L, W, rot] of PARKING) {
-    if (Math.hypot(px, pz) > 1100) continue;
+    if (px > -1100 && px < 300 && pz > -500 && pz < 600) continue;     // inside the site
     const ax = Math.cos(rot * DEG), az = Math.sin(rot * DEG);
     const cols = Math.floor((L - 6) / 4.2), rows = Math.max(1, Math.floor((W - 4) / 16));
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {

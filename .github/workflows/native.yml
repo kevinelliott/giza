@@ -31,3 +31,52 @@ jobs:
         with:
           name: GizaPlateau-native
           path: build/
+
+  # Starts the exported Mac app on a real Mac and checks it from the inside:
+  # that it loads, that every interior counts as indoors and no open ground
+  # does, and that nobody stands above or inside the ground. It then tries a
+  # windowed frame for a screenshot; hosted Macs may have no usable GPU, so
+  # that step is allowed to fail.
+  mac-smoke:
+    needs: export
+    runs-on: macos-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: GizaPlateau-native
+          path: build
+      - name: Unpack
+        run: |
+          cd build && unzip -q GizaPlateau-macOS.zip && ls
+          xattr -cr *.app || true
+          ls *.app/Contents/MacOS
+      - name: Self-check without a window
+        run: |
+          cd build
+          BIN=$(ls -d "$PWD"/*.app/Contents/MacOS/* | head -1)
+          sw_vers; uname -m
+          ( "$BIN" --headless -- "--shot=/tmp/none.png" "--do=audit,rooms,lattice" > check.log 2>&1 & echo $! > pid )
+          for i in $(seq 1 60); do sleep 5; kill -0 $(cat pid) 2>/dev/null || break; done
+          kill $(cat pid) 2>/dev/null || true
+          grep -E "AUDIT2|ROOM|POI|LATTICE|ERROR|rror" check.log | cut -c1-300 || true
+          grep -q "AUDIT2 visitor" check.log
+          ! grep -E "AUDIT2 .* floating [1-9]" check.log
+          ! grep -q "LATTICE open-sky spots treated as indoors: { \"" check.log
+      - name: One windowed frame
+        continue-on-error: true
+        run: |
+          cd build
+          BIN=$(ls -d "$PWD"/*.app/Contents/MacOS/* | head -1)
+          ( "$BIN" --resolution 1280x760 --windowed -- "--shot=$PWD/mac-frame.png" "--look=24,4.2,-176,5,0.5,-150" > frame.log 2>&1 & echo $! > pid )
+          for i in $(seq 1 36); do sleep 5; kill -0 $(cat pid) 2>/dev/null || break; done
+          kill $(cat pid) 2>/dev/null || true
+          grep -iE "metal|vulkan|opengl|renderer|ERROR" frame.log | head -20 || true
+          ls -la mac-frame.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-smoke
+          path: |
+            build/check.log
+            build/frame.log
+            build/mac-frame.png
