@@ -961,6 +961,34 @@ function mapScreenToWorld(ev) {
     z: mapView.cz + (sy - mapcv.height / 2) / mapView.scale, sx, sy
   };
 }
+// Which way to face on arriving at a stop: straight at what it is named for
+// when there are 20 m of clear ground to take it in; otherwise (the subject
+// is a wall right in front of you) the most open view, leaning towards it.
+// A heading is scored by the whole view it gives, not one ray down its centre.
+const _faceRay = new THREE.Ray();
+function arrivalYaw(target) {
+  const p = player.position, tree = collider.geometry.boundsTree;
+  const hx = target.x - p.x, hz = target.z - p.z, hl = Math.hypot(hx, hz) || 1;
+  const reach = (dx, dz, far) => {
+    _faceRay.origin.set(p.x, p.y + 1.6, p.z); _faceRay.direction.set(dx, 0, dz);
+    const hit = tree.raycastFirst(_faceRay, THREE.DoubleSide);
+    return hit ? Math.min(far, hit.distance) : far;
+  };
+  const direct = Math.atan2(-hx, -hz);
+  if (reach(hx / hl, hz / hl, 20) >= Math.min(20, hl) - 0.01) return direct;
+  const N = 32, open = [];
+  for (let k = 0; k < N; k++) { const a = k * 2 * Math.PI / N; open.push(reach(-Math.sin(a), -Math.cos(a), 40)); }
+  let best = -1, yaw = direct;
+  for (let k = 0; k < N; k++) {
+    const a = k * 2 * Math.PI / N;
+    if (Math.abs(Math.atan2(Math.sin(a - direct), Math.cos(a - direct))) > 0.88) continue;   // keep the subject on screen
+    let mean = 0, least = Infinity;
+    for (let o = -2; o <= 2; o++) { const v = open[(k + o + N) % N]; mean += v / 5; least = Math.min(least, v); }
+    const score = 0.45 * mean + 0.55 * Math.min(least, 25) + 9 * ((-Math.sin(a)) * hx + (-Math.cos(a)) * hz) / hl;
+    if (score > best) { best = score; yaw = a; }
+  }
+  return yaw;
+}
 function travelTo(wx, wz) {
   // snap to a named teleport if one is very close on screen
   let best = null, bd = 18 / mapView.scale;
@@ -970,9 +998,7 @@ function travelTo(wx, wz) {
   }
   if (best) {
     player.teleport(best.pos);
-    if (best.look) {                      // arrive facing what the stop is named for
-      look.yaw = Math.atan2(-(best.look.x - best.pos.x), -(best.look.z - best.pos.z)); look.pitch = 0; applyLook();
-    }
+    if (best.look) { look.yaw = arrivalYaw(best.look); look.pitch = 0; applyLook(); }
   }
   else {
     _ray.set(new THREE.Vector3(wx, 400, wz), new THREE.Vector3(0, -1, 0)); _ray.far = 900;
@@ -1100,7 +1126,7 @@ function setStatus(t) {
 }
 
 // Expose a small hook for debugging / automated screenshots.
-window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer, isUnderground,
+window.__giza = { THREE, scene, camera, player, controls, world, look, input, renderer, isUnderground, travelTo,
   inventory, placedTorches, stones, useItem, selectSlot, toggleMap, TELEPORTS, mats, SERAPEUM, SPHINX, PYRAMIDS, mount, dismount, get riding() { return riding; }, dust, sand, audio, post, day, storm, quest, toast, get runToggle() { return runToggle; },
   get started() { return started; }, set started(v) { started = v; } };
 

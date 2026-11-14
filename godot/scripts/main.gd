@@ -101,6 +101,7 @@ var quest: Node3D
 var minimap: Control
 var fullmap: Control
 var hud_toast: Label
+var top_left: VBoxContainer     # controls hint + tallies
 var hud_quest: Label
 var toasts := []              # [[text, seconds]]
 var toast_left := 0.0
@@ -568,13 +569,22 @@ func _hud() -> void:
 	hud_blurb.add_theme_font_size_override("font_size", 15)
 	hud_blurb.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	layer.add_child(hud_blurb)
+	# The controls hint and the tallies sit in a column that stops short of the minimap, and the
+	# hint wraps: in a narrow window it used to run on underneath the map.
+	top_left = VBoxContainer.new()
+	top_left.position = Vector2(16, 12)
+	top_left.add_theme_constant_override("separation", 2)
+	layer.add_child(top_left)
+	var fit := func(): top_left.size.x = maxf(220.0, get_viewport().get_visible_rect().size.x - 16.0 - 240.0)
+	get_viewport().size_changed.connect(fit)
+	fit.call()
 	var hint := Label.new()
-	hint.position = Vector2(16, 12)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	hint.modulate = Color(1, 1, 1, 0.8)
 	hint.text = "WASD move · mouse look · C crouch · Shift run · Space jump · F fly · L lamp · E ride a camel\nT time of day · K sandstorm · M map · Tab travel list · O / - / = minimap · Esc release mouse"
-	layer.add_child(hint)
+	top_left.add_child(hint)
 	hud_pos = Label.new()
 	hud_pos.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	hud_pos.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -583,12 +593,12 @@ func _hud() -> void:
 	hud_pos.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	layer.add_child(hud_pos)
 	hud_quest = Label.new()
-	hud_quest.position = Vector2(16, 54)
+	hud_quest.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hud_quest.add_theme_font_size_override("font_size", 14)
 	hud_quest.add_theme_color_override("font_color", Color("ffd98a"))
 	hud_quest.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	hud_quest.text = quest.summary()
-	layer.add_child(hud_quest)
+	top_left.add_child(hud_quest)
 	hud_toast = Label.new()
 	hud_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	hud_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -772,7 +782,7 @@ const TOUR_EXTRA := [
 	["noon", 24, 4.2, -176, 5, 0.5, -150, 12.0, ""], ["afternoon", 405, -33, 431, 330, -28, 431, 16.0, ""],
 	["sunset", 650, 60, 560, -250, 20, 330, 18.4, ""], ["night-plateau", 405, -33, 431, 330, -28, 431, 21.5, ""],
 	["night-town", 705, -31, 440, 640, -36, 412, 21.5, ""], ["dawn", 24, 4.2, -176, 5, 0.5, -150, 6.2, ""],
-	["sandstorm", 24, 4.2, -176, 5, 0.5, -150, 9.5, "storm"], ["full-map", 24, 4.2, -176, 5, 0.5, -150, 9.5, "map"],
+	["sandstorm", 24, 4.2, -176, 5, 0.5, -150, 9.5, "storm"], ["banner", 24, 4.2, -176, 5, 0.5, -150, 9.5, "toast"], ["full-map", 24, 4.2, -176, 5, 0.5, -150, 9.5, "map"],
 	["luxor-ships", 3612, 15, 660, 3500, 0, 400, 9.5, ""], ["edge-of-map", -1300, 75, -500, -1700, 40, -1500, 9.5, ""],
 	["valley-floor", 120, 118, -4120, -300, 150, -3700, 9.5, ""], ["kv62-south", -43.0, 98.9, -3988.7, -43.26, 99.2, -3985.4, 9.5, ""],
 	["kv62-north", -40.6, 98.6, -3984.6, -42.6, 98.4, -3988.5, 9.5, ""], ["rideable-camel", -1366, 41, 748, -1372, 40, 742, 9.5, ""]]
@@ -808,6 +818,10 @@ func _tour_step() -> void:
 				storm = true
 				storm_k = 1.0
 			if e[8] == "map": _toggle_map()
+			if e[8] == "toast":          # the longest banner the game shows, to check it against the minimap
+				toasts.clear()
+				toast_left = 0.0
+				toast("Found: Copper fitting from the shaft (1/17)\nLike the copper 'handles' found on the door-slab at the top of the Queen's Chamber shaft by the Upuaut robot in 1993.", 30.0)
 		_apply_time()
 	tour_frame += 1
 	if tour_frame >= 14:
@@ -857,7 +871,7 @@ func _process(dt: float) -> void:
 		hud_toast.custom_minimum_size.x = clampf(get_viewport().get_visible_rect().size.x - 2.0 * 250.0, 260.0, 620.0)
 		hud_toast.size.x = hud_toast.custom_minimum_size.x
 		hud_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-		hud_toast.position.y = 84
+		hud_toast.position.y = maxf(84.0, top_left.position.y + top_left.get_combined_minimum_size().y + 10.0)      # below the hint, however many lines it wrapped to
 		hud_toast.visible = true
 		toast_left = tt[1]
 	var auto := inside or night > 0.5

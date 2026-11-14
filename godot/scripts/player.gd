@@ -97,6 +97,7 @@ func _face_open() -> void:
 	for k in 32:
 		var a := k * TAU / 32.0
 		var d := Vector3(-sin(a), 0, -cos(a))
+		if face_exact and hint_dir != Vector3.ZERO and d.dot(hint_dir) < 0.64: continue      # keep the stop's subject on screen (within 50 degrees)
 		var mean := 0.0
 		var least := 1e9
 		for o in range(-2, 3):
