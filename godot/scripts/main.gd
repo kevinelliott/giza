@@ -189,7 +189,7 @@ func _environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_sky_contribution = 0.35
+	env.ambient_light_sky_contribution = 0.15       # more than this and the blue zenith greys the sand under Forward+
 	env.ambient_light_color = Color(0.78, 0.72, 0.62)
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC

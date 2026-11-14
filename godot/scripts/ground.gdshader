@@ -35,12 +35,15 @@ void fragment() {
 	float px = max(length(dFdx(wp.xz)), length(dFdy(wp.xz)));
 	ripple = mix(0.5, ripple, 1.0 - smoothstep(0.03, 0.1, px));
 	grain = mix(0.5, grain, 1.0 - smoothstep(0.012, 0.035, px));
-	vec3 c = vec3(0.80, 0.70, 0.55) * (0.97 + 0.045 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
+	vec3 c = vec3(0.80, 0.69, 0.51) * (0.97 + 0.045 * ripple) * (0.93 + 0.14 * grain) * mix(0.86, 1.1, tonal);
 	c = mix(c, c * vec3(0.72, 0.68, 0.62), gravel * 0.35);
 	// beyond the mapped extent (the apron under the Grand Egyptian Museum) there is no imagery: plain desert
 	float mapped = step(0.0, g.x) * step(g.x, 1.0) * step(0.0, g.y) * step(g.y, 1.0);
 	vec3 ratio = texture(ground_tex, g).rgb * 2.0;
-	c *= mix(vec3(1.0), ratio, 0.55 * mapped);
+	// The ratio is a multiplier on linear colour (as in the web build), and c is still sRGB here, so
+	// take the 2.2 root. Multiplying it in directly raised it to the power 2.2: where the plateau's
+	// limestone is paler and bluer than open desert (ratio ~1.1-1.3) the sand washed out to grey.
+	c *= pow(mix(vec3(1.0), ratio, 0.55 * mapped), vec3(1.0 / 2.2));
 	vec3 rmask = texture(roads_tex, g).rgb * mapped;
 	vec2 rm = rmask.rg;
 	// the built-up area (roads.png B): packed earth, dust and worn asphalt between the buildings
@@ -55,4 +58,5 @@ void fragment() {
 	c = mix(c, vec3(0.36, 0.29, 0.2) * (0.8 + 0.4 * tonal), steep * 0.8);
 	ALBEDO = pow(c, vec3(2.2));       // the palette above is sRGB
 	ROUGHNESS = mix(1.0, 0.85, road);
+	SPECULAR = mix(0.12, 0.5, road);      // dry sand has almost no sheen; at the default it mirrored the pale horizon
 }
