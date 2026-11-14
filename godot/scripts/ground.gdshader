@@ -52,7 +52,7 @@ void fragment() {
 	earth = mix(earth, vec3(0.33, 0.32, 0.31), smoothstep(0.55, 0.75, fbm(wp.xz * 0.045 + 19.0)) * 0.6);     // patches of old tarmac
 	c = mix(c, earth, urban * 0.92);
 	float road = smoothstep(0.3, 0.65, rm.r);
-	c = mix(c, vec3(0.1, 0.095, 0.09) * (0.82 + 0.3 * noise2(wp.xz * 0.8)), road);
+	c = mix(c, vec3(0.36, 0.35, 0.34) * (0.88 + 0.2 * noise2(wp.xz * 0.8)), road);      // sun-bleached, dusty asphalt (it was near-black)
 	c *= mix(1.0, 0.84, smoothstep(0.25, 0.6, rm.g));
 	float steep = smoothstep(0.94, 0.74, wn.y);
 	c = mix(c, vec3(0.36, 0.29, 0.2) * (0.8 + 0.4 * tonal), steep * 0.8);

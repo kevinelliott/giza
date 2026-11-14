@@ -42,6 +42,26 @@ cd godot && godot --headless --import && godot --headless --export-release "macO
 Presets for **Linux** and **Windows Desktop** are in `export_presets.cfg`
 too; the "Native builds" GitHub Action builds all three.
 
+## Checking a build
+
+Test the **exported** app with the renderer it ships with, not the project
+folder with the Compatibility renderer: both shortcuts have hidden real bugs
+(a data file missing from the export; sand that washed out under Forward+).
+
+```sh
+# self-check, no window: every figure on the ground, heights match the mesh, indoors/outdoors told apart
+build/GizaPlateau-linux.x86_64 --headless -- "--shot=/tmp/none.png" "--do=audit,rooms,lattice"
+
+# a frame of every fast-travel stop and ~20 other scenes (times of day, storm, map, Luxor, the Valley)
+godot --rendering-driver vulkan --rendering-method forward_plus --resolution 960x600 \
+      -- "--tour=/tmp/tour" ["--tour-only=night,sunset"]
+```
+
+Without a GPU, Mesa's software Vulkan works for the tour
+(`VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json`, under `xvfb-run`).
+The workflow runs the self-check on the exported Linux and Mac apps and
+uploads one frame rendered on a Mac.
+
 ## How it fits together
 
 - `tools/export_plateau.mjs` — runs the web version's world builder headless

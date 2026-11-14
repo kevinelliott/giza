@@ -324,7 +324,7 @@ func _update_visitors(dt: float, eye: Vector3) -> void:
 	for p in people:
 		var g: Node3D = p["g"]
 		var far: float = absf(p["x"] - eye.x) + absf(p["z"] - eye.z)
-		g.visible = far < 900.0
+		g.visible = far < 900.0 and Vector2(p["x"] - eye.x, p["z"] - eye.z).length() > 1.3     # nobody stands in your face
 		var ap: AnimationPlayer = g.get_meta("ap")
 		ap.active = far < 260.0                                # distant crowds hold their pose
 		if far > 500.0 and p.has("placed"): continue

@@ -87,6 +87,11 @@ var hud_pos: Label
 var menu: ItemList
 var shot_path := ""
 var shot_at := ""
+var tour_dir := ""          # --tour=<dir>: one frame of every fast-travel stop and a set of other scenes, for checking a renderer
+var tour_only := ""
+var tour_i := -1
+var tour_frame := 0
+var tour_stops := []
 var shot_look := ""
 var frames := 0
 var life: Node3D
@@ -117,6 +122,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shot="): shot_path = a.substr(7)
 		if a.begins_with("--at="): shot_at = a.substr(5)
+		if a.begins_with("--tour="): tour_dir = a.substr(7)
+		if a.begins_with("--tour-only="): tour_only = a.substr(12)
 		if a.begins_with("--look="): shot_look = a.substr(7)
 		if a.begins_with("--hour="): hour = float(a.substr(7))
 		if a.begins_with("--do="): shot_keys = a.substr(5)
@@ -753,7 +760,63 @@ func _unhandled_input(ev: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## Other scenes worth a look besides the fast-travel stops: [name, eye x,y,z, target x,y,z, hour, extra]
+const TOUR_EXTRA := [
+	["sphinx-front", 405, -33, 431, 330, -28, 431, 9.5, ""], ["khufu-crowd", 24, 4.2, -176, 5, 0.5, -150, 9.5, ""],
+	["plateau-aerial", 650, 160, 560, -250, 0, 330, 9.5, ""], ["town-mosque", 750, -34, -625, 772, -24, -582, 9.5, ""],
+	["town-street", 705, -31, 440, 640, -36, 412, 9.5, ""], ["site-buses", -122, 24, 238, -143, 8, 219, 9.5, ""],
+	["menkaure-enclosure", -600, 34, 625, -575, 22, 665, 9.5, ""], ["gem-skyline", -700, 60, -300, -1449, 20, -1500, 9.5, ""],
+	["noon", 24, 4.2, -176, 5, 0.5, -150, 12.0, ""], ["afternoon", 405, -33, 431, 330, -28, 431, 16.0, ""],
+	["sunset", 650, 60, 560, -250, 20, 330, 18.4, ""], ["night-plateau", 405, -33, 431, 330, -28, 431, 21.5, ""],
+	["night-town", 705, -31, 440, 640, -36, 412, 21.5, ""], ["dawn", 24, 4.2, -176, 5, 0.5, -150, 6.2, ""],
+	["sandstorm", 24, 4.2, -176, 5, 0.5, -150, 9.5, "storm"], ["full-map", 24, 4.2, -176, 5, 0.5, -150, 9.5, "map"],
+	["luxor-ships", 3612, 15, 660, 3500, 0, 400, 9.5, ""], ["luxor-corniche", 3640, 4, 560, 3660, 6, 300, 9.5, ""],
+	["valley-floor", 120, 118, -4120, -300, 150, -3700, 9.5, ""], ["kv62-south", -43.0, 98.9, -3988.7, -43.26, 99.2, -3985.4, 9.5, ""],
+	["kv62-north", -40.6, 98.6, -3984.6, -42.6, 98.4, -3988.5, 9.5, ""], ["rideable-camel", -1366, 41, 748, -1372, 40, 742, 9.5, ""]]
+
+
+func _tour_step() -> void:
+	if tour_i < 0:
+		for i in travel.size(): tour_stops.append(["%02d-%s" % [i, String(travel[i]["label"]).to_lower().replace(" ", "-").replace("—", "").replace("'", "").replace("(", "").replace(")", "").replace("--", "-")], i])
+		for e in TOUR_EXTRA: tour_stops.append(["x-" + e[0], e])
+		if tour_only != "": tour_stops = tour_stops.filter(func(st): return Array(tour_only.split(",")).any(func(k): return String(st[0]).contains(k)))
+		DirAccess.make_dir_recursive_absolute(tour_dir)
+		tour_i = 0
+		tour_frame = 0
+	if tour_i >= tour_stops.size():
+		get_tree().quit()
+		return
+	var st: Array = tour_stops[tour_i]
+	if tour_frame == 0:
+		if fullmap.visible: _toggle_map()
+		storm = false
+		storm_k = 0.0
+		hour = 9.5
+		if st[1] is int:
+			_go(st[1])
+		else:
+			var e: Array = st[1]
+			hour = float(e[7])
+			player.fly = true
+			player.face_pending = 0
+			player.teleport(Vector3(e[1], e[2], e[3]))
+			player.look_at_point(Vector3(e[4], e[5], e[6]))
+			if e[8] == "storm":
+				storm = true
+				storm_k = 1.0
+			if e[8] == "map": _toggle_map()
+		_apply_time()
+	tour_frame += 1
+	if tour_frame >= 14:
+		var img := get_viewport().get_texture().get_image()
+		if img != null: img.save_png(tour_dir.path_join(st[0] + ".png"))
+		print("TOUR ", st[0], " inside_k=%.2f sun=%.2f" % [inside_k, sun.light_energy])
+		tour_i += 1
+		tour_frame = 0
+
+
 func _process(dt: float) -> void:
+	if tour_dir != "": _tour_step()
 	var p := player.global_position
 	# indoors the sun and sky are shut out; the rooms carry their own (baked) light
 	var inside := _is_inside(p + Vector3(0, 1.0, 0))
@@ -761,7 +824,7 @@ func _process(dt: float) -> void:
 	storm_k = move_toward(storm_k, 1.0 if storm else 0.0, dt * 0.25)
 	var open := 1.0 - inside_k
 	sun.light_energy = sun_energy * open * (1.0 - 0.8 * storm_k)
-	env.ambient_light_energy = lerpf(0.7, 0.0, inside_k)
+	env.ambient_light_energy = lerpf(0.14, 0.7, day_k) * (1.0 - inside_k)      # the fill light goes down with the sun: at a constant 0.7 the town stood in daylight at night
 	env.background_energy_multiplier = open
 	env.fog_density = (0.00018 + 0.016 * storm_k * storm_k) * open
 	env.fog_sky_affect = storm_k
